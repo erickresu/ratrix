@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_clean_starter/features/auth/data/repositories/auth_repository.dart';
-import 'package:flutter_clean_starter/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:ratrix/features/auth/data/repositories/auth_repository.dart';
+import 'package:ratrix/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
