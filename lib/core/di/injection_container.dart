@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 
 import '../api/api_client.dart';
 import '../api/local_storage_service.dart';
+import '../services/ph_locations_service.dart';
 import '../../features/auth/data/datasources/auth_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
 import '../../features/clients/data/datasources/clients_data_source.dart';
@@ -36,6 +37,8 @@ void setupDependencies() {
   getIt.registerLazySingleton<ClientsRepository>(
     () => ClientsRepository(getIt<ClientsDataSource>()),
   );
+
+  getIt.registerLazySingleton<PhLocationsService>(() => PhLocationsService());
 
   // Register new repositories/services/BLoCs here as features are added.
 }

@@ -16,7 +16,7 @@ class AuthDataSource {
     );
   }
 
-  Future<Response<dynamic>> logout() => _dio.post('api/logout');
+  Future<Response<dynamic>> logout() => _dio.post('v1/api/logout');
 
   Future<Response<dynamic>> getCurrentUser() => _dio.get('api/user');
 }

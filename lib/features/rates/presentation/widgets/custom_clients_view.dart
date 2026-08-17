@@ -19,7 +19,7 @@ class CustomClientsView extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(40, 40, 40, 24),
+          padding: const EdgeInsets.fromLTRB(48, 40, 48, 32),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -48,17 +48,18 @@ class CustomClientsView extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final columns = (constraints.maxWidth / 320).floor().clamp(1, 100);
+              final pageClients = state.pagedClients;
               return GridView.builder(
-                padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
-                itemCount: state.filteredClients.length,
+                padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
+                itemCount: pageClients.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  mainAxisExtent: 224,
+                  mainAxisSpacing: 20,
+                  crossAxisSpacing: 20,
+                  mainAxisExtent: 232,
                 ),
                 itemBuilder: (context, index) {
-                  final client = state.filteredClients[index];
+                  final client = pageClients[index];
                   return _ClientCard(
                     client: client,
                     rateCount: state.clientRateCounts[client.id] ?? 0,
@@ -69,7 +70,101 @@ class CustomClientsView extends StatelessWidget {
             },
           ),
         ),
+        if (state.filteredClients.isNotEmpty)
+          _ClientsPaginationBar(
+            page: state.clientPage,
+            pageCount: state.clientPageCount,
+            totalClients: state.filteredClients.length,
+            onPageChanged: (p) => bloc.add(ClientPageChanged(p)),
+          ),
       ],
+    );
+  }
+}
+
+class _ClientsPaginationBar extends StatelessWidget {
+  const _ClientsPaginationBar({
+    required this.page,
+    required this.pageCount,
+    required this.totalClients,
+    required this.onPageChanged,
+  });
+
+  final int page;
+  final int pageCount;
+  final int totalClients;
+  final ValueChanged<int> onPageChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final rangeStart = page * RatesShellState.clientsPerPage + 1;
+    final rangeEnd = ((page + 1) * RatesShellState.clientsPerPage).clamp(0, totalClients);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(40, 12, 40, 20),
+      decoration: const BoxDecoration(
+        color: RatesColors.surface,
+        border: Border(top: BorderSide(color: RatesColors.border)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Showing $rangeStart–$rangeEnd of $totalClients',
+            style: const TextStyle(fontSize: 13, color: RatesColors.textMuted),
+          ),
+          Row(
+            children: [
+              _PageButton(
+                icon: CupertinoIcons.chevron_left,
+                enabled: page > 0,
+                onTap: () => onPageChanged(page - 1),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Page ${page + 1} of $pageCount',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textBody),
+              ),
+              const SizedBox(width: 8),
+              _PageButton(
+                icon: CupertinoIcons.chevron_right,
+                enabled: page < pageCount - 1,
+                onTap: () => onPageChanged(page + 1),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PageButton extends StatelessWidget {
+  const _PageButton({required this.icon, required this.enabled, required this.onTap});
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: enabled ? onTap : null,
+        child: Container(
+          width: 32,
+          height: 32,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(color: RatesColors.borderStrong),
+            borderRadius: BorderRadius.circular(8),
+            color: RatesColors.surface,
+          ),
+          child: Icon(icon, size: 16, color: enabled ? RatesColors.textBody : RatesColors.textFaint),
+        ),
+      ),
     );
   }
 }
@@ -95,13 +190,14 @@ class _ClientCard extends StatelessWidget {
             color: RatesColors.surface,
             border: Border.all(color: RatesColors.border),
             borderRadius: BorderRadius.circular(12),
+            boxShadow: const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 16, offset: Offset(0, 4))],
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: RatesColors.surfaceMuted))),
                 child: Row(
                   children: [
@@ -167,7 +263,7 @@ class _ClientCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 color: RatesColors.surfaceSubtle,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

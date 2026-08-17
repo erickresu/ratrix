@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -33,15 +34,15 @@ class Step1RateMatrix extends StatelessWidget {
                   ],
                 ),
               ),
-              _MiniButton(label: 'Download template'),
+              _MiniButton(label: 'Download template', icon: CupertinoIcons.doc_text),
               const SizedBox(width: 8),
-              _MiniButton(label: 'Import Excel'),
+              _MiniButton(label: 'Import Excel', icon: CupertinoIcons.arrow_up_doc),
               const SizedBox(width: 8),
-              _MiniButton(label: 'Export Excel'),
+              _MiniButton(label: 'Export Excel', icon: CupertinoIcons.arrow_down_doc),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         Row(
           children: [
             _MatrixTab(label: 'Standard rates', selected: state.matrixTab == 'standard', onTap: () => bloc.add(const MatrixTabChanged('standard'))),
@@ -88,29 +89,32 @@ class Step1RateMatrix extends StatelessWidget {
             ShadButton(backgroundColor: RatesColors.primary, onPressed: () {}, child: const Text('Apply markup')),
           ],
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            const Text('Match by:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(color: RatesColors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
-              child: Row(
-                children: [
-                  for (final basis in LocationBasis.values)
-                    _SegButton(label: basis.label, selected: state.locationBasis == basis, onTap: () => bloc.add(LocationBasisChanged(basis))),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        // "Match by" toggle hidden for the meantime (only City/Province are
+        // wired up; defaults to LocationBasis.city). Re-enable when needed:
+        // Row(
+        //   children: [
+        //     const Text('Match by:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
+        //     const SizedBox(width: 8),
+        //     Container(
+        //       padding: const EdgeInsets.all(2),
+        //       decoration: BoxDecoration(color: RatesColors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
+        //       child: Row(
+        //         children: [
+        //           for (final basis in LocationBasis.enabledValues)
+        //             _SegButton(label: basis.label, selected: state.locationBasis == basis, onTap: () => bloc.add(LocationBasisChanged(basis))),
+        //         ],
+        //       ),
+        //     ),
+        //   ],
+        // ),
+        // const SizedBox(height: 16),
         RateMatrixTable(
           matrixRows: state.matrixRows,
           breakweights: state.breakweights,
           originPlaceholder: 'Search origin ${state.locationBasis.label.toLowerCase()}...',
           destinationPlaceholder: 'Search destination ${state.locationBasis.label.toLowerCase()}...',
+          locationOptions: state.locationSuggestions,
           onOriginChanged: (i, v) => bloc.add(OriginChanged(i, v)),
           onDestinationChanged: (i, v) => bloc.add(DestinationChanged(i, v)),
           onCellChanged: (i, bi, v) => bloc.add(CellChanged(i, bi, v)),
@@ -119,12 +123,12 @@ class Step1RateMatrix extends StatelessWidget {
           onRemoveBreakweight: (i) => bloc.add(BreakweightRemoved(i)),
           onRemoveRoute: (i) => bloc.add(RouteRemoveRequested(i)),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Row(
           children: [
-            _GhostButton(label: '+ Add route', onTap: () => bloc.add(const RouteAdded())),
+            _GhostButton(label: 'Add route', onTap: () => bloc.add(const RouteAdded())),
             const SizedBox(width: 12),
-            _GhostButton(label: '+ Add breakweight', onTap: () => bloc.add(const BreakweightAdded())),
+            _GhostButton(label: 'Add breakweight', onTap: () => bloc.add(const BreakweightAdded())),
           ],
         ),
       ],
@@ -133,15 +137,18 @@ class Step1RateMatrix extends StatelessWidget {
 }
 
 class _MiniButton extends StatelessWidget {
-  const _MiniButton({required this.label});
+  const _MiniButton({required this.label, required this.icon});
 
   final String label;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return ShadButton.outline(
-      backgroundColor: RatesColors.surface,
+    return ShadButton(
+      backgroundColor: RatesColors.primaryChipBg,
+      hoverBackgroundColor: RatesColors.primaryBorder,
       foregroundColor: RatesColors.primaryDeep,
+      leading: Icon(icon, size: 15, color: RatesColors.primaryDeep),
       onPressed: () {},
       child: Text(label),
     );
@@ -210,12 +217,19 @@ class _GhostButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong, width: 1.5, style: BorderStyle.solid), borderRadius: BorderRadius.circular(10)),
-          child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(CupertinoIcons.add, size: 14, color: RatesColors.textMuted),
+              const SizedBox(width: 6),
+              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
+            ],
+          ),
         ),
       ),
     );

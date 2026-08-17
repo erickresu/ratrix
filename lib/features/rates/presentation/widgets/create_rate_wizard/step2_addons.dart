@@ -26,10 +26,10 @@ class Step2Addons extends StatelessWidget {
               : 'Configure additional charges for ${state.freightMode!.label} freight',
           style: const TextStyle(fontSize: 13, color: RatesColors.textMuted),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         for (final group in addonGroupDefs) ...[
           _AddonGroupCard(group: group, bloc: bloc, state: state),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
         ],
       ],
     );
@@ -46,7 +46,7 @@ class _AddonGroupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: RatesColors.surface,
         border: Border.all(color: RatesColors.border),
@@ -57,7 +57,7 @@ class _AddonGroupCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(group.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           LayoutBuilder(
             builder: (context, constraints) {
               const spacing = 28.0;
@@ -86,7 +86,7 @@ class _AddonGroupCard extends StatelessWidget {
                         ],
                       ],
                     ),
-                    if (row != rows.last) const SizedBox(height: 32),
+                    if (row != rows.last) const SizedBox(height: 36),
                   ],
                 ],
               );
@@ -128,7 +128,7 @@ class _AddonField extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(10), color: RatesColors.surfaceSubtle),

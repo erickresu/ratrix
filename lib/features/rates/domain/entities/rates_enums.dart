@@ -46,6 +46,10 @@ enum LocationBasis {
 
   const LocationBasis(this.label);
   final String label;
+
+  // Internal Code matching isn't implemented yet — hide it from the
+  // "Match by" control for now. Remove once it's wired up.
+  static const enabledValues = [LocationBasis.city, LocationBasis.province];
 }
 
 enum AddonMode { exact, percentage }

@@ -14,7 +14,7 @@ class NewRateModal extends StatelessWidget {
     final bloc = context.read<RatesShellBloc>();
 
     return ShadDialog(
-      radius: BorderRadius.circular(20),
+      radius: BorderRadius.circular(16),
       backgroundColor: RatesColors.surface,
       padding: const EdgeInsets.all(32),
       title: const Text('New rate', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
@@ -36,7 +36,7 @@ class NewRateModal extends StatelessWidget {
               child: _OptionCard(
                 title: 'Published rate',
                 description: 'Standard rate visible to all clients on this route.',
-                icon: CupertinoIcons.square,
+                icon: CupertinoIcons.globe,
                 onTap: () {
                   Navigator.of(context).pop();
                   bloc.add(const PublishedRateChosen());
@@ -48,7 +48,7 @@ class NewRateModal extends StatelessWidget {
               child: _OptionCard(
                 title: 'Custom rate',
                 description: 'Negotiated rate assigned to one specific client.',
-                icon: CupertinoIcons.circle_fill,
+                icon: CupertinoIcons.person_crop_circle,
                 onTap: () {
                   Navigator.of(context).pop();
                   bloc.add(const CustomRateChosen());
@@ -75,7 +75,7 @@ class _OptionCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(18),

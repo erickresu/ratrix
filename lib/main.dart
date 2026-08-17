@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -61,12 +63,26 @@ class App extends StatelessWidget {
             title: 'Ratrix',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
+            scrollBehavior: AppScrollBehavior(),
             home: const _AuthGate(),
           );
         },
       ),
     );
   }
+}
+
+/// Allows mouse click-drag scrolling everywhere (Flutter's default
+/// [MaterialScrollBehavior] only enables drag-to-scroll for touch/stylus/
+/// trackpad, so on web/desktop a mouse drag silently does nothing).
+class AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
 }
 
 class _AuthGate extends StatelessWidget {

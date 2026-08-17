@@ -52,6 +52,15 @@ class ClientSearchChanged extends RatesShellEvent {
   List<Object?> get props => [query];
 }
 
+class ClientPageChanged extends RatesShellEvent {
+  const ClientPageChanged(this.page);
+
+  final int page;
+
+  @override
+  List<Object?> get props => [page];
+}
+
 class ClientRatesRequested extends RatesShellEvent {
   const ClientRatesRequested(this.clientId);
 

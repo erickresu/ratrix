@@ -1,11 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+// ignore: unnecessary_import
+import 'package:intl/intl.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../rates_colors.dart';
+
+const _fieldHeight = 44.0;
 
 class Step0RateSetup extends StatelessWidget {
   const Step0RateSetup({super.key});
@@ -19,7 +23,7 @@ class Step0RateSetup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Freight mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Row(
           children: [
             for (final mode in FreightMode.values) ...[
@@ -28,7 +32,61 @@ class Step0RateSetup extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
+        if (state.isCustom) ...[
+          SizedBox(
+            width: 260,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text('Expiry Date ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
+                    const Text('*', style: TextStyle(fontSize: 13, color: RatesColors.destructive)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: state.expiryDate ?? now,
+                        firstDate: now,
+                        lastDate: now.add(const Duration(days: 3650)),
+                      );
+                      if (picked != null) bloc.add(ExpiryDateChanged(picked));
+                    },
+                    child: Container(
+                      height: _fieldHeight,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      alignment: Alignment.centerLeft,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: RatesColors.borderStrong),
+                        borderRadius: BorderRadius.circular(8),
+                        color: RatesColors.surface,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            state.expiryDate == null ? 'Select date' : DateFormat.yMMMd().format(state.expiryDate!),
+                            style: TextStyle(fontSize: 14, color: state.expiryDate == null ? RatesColors.textMuted : RatesColors.textBody),
+                          ),
+                          const Icon(CupertinoIcons.calendar, size: 15, color: RatesColors.textMuted),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28),
+        ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -37,9 +95,10 @@ class Step0RateSetup extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Service mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
+                    height: _fieldHeight,
                     child: ShadSelect<ServiceMode>(
                       initialValue: state.serviceMode,
                       selectedOptionBuilder: (context, value) => Text(value.label),
@@ -58,26 +117,30 @@ class Step0RateSetup extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Charge basis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
-                  const SizedBox(height: 10),
-                  ShadSelect<ChargeBasis>(
-                    initialValue: state.chargeBasis,
-                    selectedOptionBuilder: (context, value) => Text(value.label),
-                    onChanged: (value) {
-                      if (value != null) bloc.add(ChargeBasisChanged(value));
-                    },
-                    options: [for (final b in ChargeBasis.values) ShadOption(value: b, child: Text(b.label))],
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: _fieldHeight,
+                    child: ShadSelect<ChargeBasis>(
+                      initialValue: state.chargeBasis,
+                      selectedOptionBuilder: (context, value) => Text(value.label),
+                      onChanged: (value) {
+                        if (value != null) bloc.add(ChargeBasisChanged(value));
+                      },
+                      options: [for (final b in ChargeBasis.values) ShadOption(value: b, child: Text(b.label))],
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Pricing option', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             ShadSelect<PricingOption>(
               initialValue: state.pricingOption,
               selectedOptionBuilder: (context, value) => Text(value.label),
@@ -88,7 +151,7 @@ class Step0RateSetup extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -98,7 +161,7 @@ class Step0RateSetup extends StatelessWidget {
                 const Text('(optional)', style: TextStyle(fontSize: 13, color: RatesColors.textMuted)),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Container(
@@ -131,7 +194,8 @@ class Step0RateSetup extends StatelessWidget {
 const _freightModeIcons = {
   FreightMode.air: CupertinoIcons.airplane,
   FreightMode.land: CupertinoIcons.car_fill,
-  FreightMode.sea: CupertinoIcons.cube_box_fill,
+  // cupertino_icons has no ship/boat glyph — Material's is the closest match.
+  FreightMode.sea: Icons.directions_boat_filled,
 };
 
 class _FreightModeCard extends StatelessWidget {

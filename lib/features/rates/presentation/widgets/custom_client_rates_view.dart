@@ -22,11 +22,11 @@ class CustomClientRatesView extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(40, 40, 40, 24),
+          padding: const EdgeInsets.fromLTRB(48, 40, 48, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              BackPill(label: 'All Clients', onTap: () => bloc.add(const ClientsBackRequested())),
+              BackPill(onTap: () => bloc.add(const ClientsBackRequested())),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
@@ -53,15 +53,15 @@ class CustomClientRatesView extends StatelessWidget {
                     ),
                     ShadButton(
                       backgroundColor: RatesColors.primary,
-                      foregroundColor: const Color(0xFF0B1210),
-                      leading: const Icon(CupertinoIcons.add, size: 17, color: Color(0xFF0B1210)),
+                      hoverBackgroundColor: RatesColors.primaryHover,
+                      leading: const Icon(CupertinoIcons.add, size: 17, color: Colors.white),
                       onPressed: () => bloc.add(const CreateCustomRateForSelectedClientRequested()),
                       child: const Text('Create New Rate'),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               Row(
                 children: [
                   _TabPill(label: 'Active', selected: state.clientRatesTab == RateStatus.active, onTap: () => bloc.add(const ClientRatesTabChanged(RateStatus.active))),
@@ -72,6 +72,7 @@ class CustomClientRatesView extends StatelessWidget {
                     width: 320,
                     child: ShadInput(
                       placeholder: const Text('Search by charge code, freight mode...'),
+                      leading: const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.search, size: 16, color: RatesColors.textMuted)),
                       onChanged: (v) => bloc.add(ClientRateSearchChanged(v)),
                     ),
                   ),
@@ -82,7 +83,7 @@ class CustomClientRatesView extends StatelessWidget {
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
+            padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
             child: state.filteredClientRates.isEmpty
                 ? Container(
                     width: double.infinity,
@@ -92,16 +93,23 @@ class CustomClientRatesView extends StatelessWidget {
                       border: Border.all(color: RatesColors.borderStrong, style: BorderStyle.solid),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(
-                      'No ${state.clientRatesTab.label.toLowerCase()} rates for this client.',
-                      style: const TextStyle(fontSize: 14, color: RatesColors.textMuted),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(CupertinoIcons.tray, size: 26, color: RatesColors.textFaint),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No ${state.clientRatesTab.label.toLowerCase()} rates for this client.',
+                          style: const TextStyle(fontSize: 14, color: RatesColors.textMuted),
+                        ),
+                      ],
                     ),
                   )
                 : Column(
                     children: [
                       for (final rate in state.filteredClientRates) ...[
                         _ClientRateCard(rate: rate),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                       ],
                     ],
                   ),
@@ -153,11 +161,12 @@ class _ClientRateCard extends StatelessWidget {
     final isActive = rate.status == RateStatus.active;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
         color: RatesColors.surface,
         border: Border.all(color: RatesColors.border),
         borderRadius: BorderRadius.circular(10),
+        boxShadow: const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 12, offset: Offset(0, 3))],
       ),
       child: Row(
         children: [

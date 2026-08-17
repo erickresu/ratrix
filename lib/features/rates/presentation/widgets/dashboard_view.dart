@@ -27,7 +27,7 @@ class DashboardView extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(40, 40, 40, 24),
+          padding: const EdgeInsets.fromLTRB(48, 40, 48, 32),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -55,7 +55,7 @@ class DashboardView extends StatelessWidget {
           child: CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(40, 0, 40, 40),
+                padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
                 sliver: SliverFillRemaining(
                   hasScrollBody: false,
                   child: Column(
@@ -69,7 +69,7 @@ class DashboardView extends StatelessWidget {
                           ],
                         ],
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 40),
                       Expanded(
                         child: SoftCard(
                           padding: EdgeInsets.zero,
@@ -80,7 +80,7 @@ class DashboardView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 22),
                                 child: Text('Recent rates', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: RatesColors.textBody)),
                               ),
                               const Divider(height: 1, color: RatesColors.border),
@@ -147,11 +147,11 @@ class _RecentRatesTable extends StatelessWidget {
         const TableRow(
           decoration: BoxDecoration(color: RatesColors.surfaceSubtle),
           children: [
-            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12), child: Text('ROUTE', style: _headerStyle)),
-            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12), child: Text('CLIENT', style: _headerStyle)),
-            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12), child: Text('TYPE', style: _headerStyle)),
-            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12), alignment: Alignment.centerRight, child: Text('RATE', style: _headerStyle)),
-            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12), child: Text('STATUS', style: _headerStyle)),
+            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('ROUTE', style: _headerStyle)),
+            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('CLIENT', style: _headerStyle)),
+            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('TYPE', style: _headerStyle)),
+            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14), alignment: Alignment.centerRight, child: Text('RATE', style: _headerStyle)),
+            _Cell(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('STATUS', style: _headerStyle)),
           ],
         ),
         for (final rate in rates)
@@ -159,24 +159,24 @@ class _RecentRatesTable extends StatelessWidget {
             decoration: const BoxDecoration(border: Border(top: BorderSide(color: RatesColors.border))),
             children: [
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
                 child: Text(rate.route, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: RatesColors.textBody)),
               ),
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
                 child: Text(rate.client, style: const TextStyle(fontSize: 14, color: RatesColors.textMutedStrong)),
               ),
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
                 child: _typeBadge(rate.type),
               ),
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
                 alignment: Alignment.centerRight,
                 child: Text(rate.price, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: RatesColors.textBody)),
               ),
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
                 child: _statusBadge(rate.status),
               ),
             ],

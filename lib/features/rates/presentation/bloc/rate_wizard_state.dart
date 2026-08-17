@@ -16,6 +16,8 @@ class RateWizardState extends Equatable {
   final String matrixTab;
   final String markup;
   final LocationBasis locationBasis;
+  final List<String> phCities;
+  final List<String> phProvinces;
   final List<MatrixRow> matrixRows;
   final List<Breakweight> breakweights;
   final int? removeRouteIndex;
@@ -42,6 +44,8 @@ class RateWizardState extends Equatable {
     this.matrixTab = 'standard',
     this.markup = '',
     this.locationBasis = LocationBasis.city,
+    this.phCities = const [],
+    this.phProvinces = const [],
     this.matrixRows = const [MatrixRow()],
     this.breakweights = const [Breakweight()],
     this.removeRouteIndex,
@@ -63,6 +67,12 @@ class RateWizardState extends Equatable {
 
   bool get isValid => !isCustom || expiryDate != null;
 
+  List<String> get locationSuggestions => switch (locationBasis) {
+        LocationBasis.city => phCities,
+        LocationBasis.province => phProvinces,
+        LocationBasis.code => const [],
+      };
+
   RateWizardState copyWith({
     int? step,
     FreightMode? freightMode,
@@ -74,6 +84,8 @@ class RateWizardState extends Equatable {
     String? matrixTab,
     String? markup,
     LocationBasis? locationBasis,
+    List<String>? phCities,
+    List<String>? phProvinces,
     List<MatrixRow>? matrixRows,
     List<Breakweight>? breakweights,
     int? removeRouteIndex,
@@ -99,6 +111,8 @@ class RateWizardState extends Equatable {
       matrixTab: matrixTab ?? this.matrixTab,
       markup: markup ?? this.markup,
       locationBasis: locationBasis ?? this.locationBasis,
+      phCities: phCities ?? this.phCities,
+      phProvinces: phProvinces ?? this.phProvinces,
       matrixRows: matrixRows ?? this.matrixRows,
       breakweights: breakweights ?? this.breakweights,
       removeRouteIndex: clearRemoveRouteIndex ? null : (removeRouteIndex ?? this.removeRouteIndex),
@@ -126,6 +140,8 @@ class RateWizardState extends Equatable {
         matrixTab,
         markup,
         locationBasis,
+        phCities,
+        phProvinces,
         matrixRows,
         breakweights,
         removeRouteIndex,

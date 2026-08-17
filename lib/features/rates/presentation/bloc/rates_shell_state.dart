@@ -14,6 +14,7 @@ class RatesShellState extends Equatable {
   final List<Client> clients;
   final Map<String, int> clientRateCounts;
   final String clientSearch;
+  final int clientPage;
 
   final String? selectedClientId;
   final List<ClientRate> selectedClientRates;
@@ -32,16 +33,28 @@ class RatesShellState extends Equatable {
     this.clients = const [],
     this.clientRateCounts = const {},
     this.clientSearch = '',
+    this.clientPage = 0,
     this.selectedClientId,
     this.selectedClientRates = const [],
     this.clientRateSearch = '',
     this.clientRatesTab = RateStatus.active,
   });
 
+  static const clientsPerPage = 15;
+
   List<Client> get filteredClients {
     if (clientSearch.isEmpty) return clients;
     final q = clientSearch.toLowerCase();
     return clients.where((c) => c.name.toLowerCase().contains(q)).toList();
+  }
+
+  int get clientPageCount => (filteredClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);
+
+  List<Client> get pagedClients {
+    final start = clientPage * clientsPerPage;
+    if (start >= filteredClients.length) return const [];
+    final end = (start + clientsPerPage).clamp(0, filteredClients.length);
+    return filteredClients.sublist(start, end);
   }
 
   Client? get selectedClient {
@@ -74,6 +87,7 @@ class RatesShellState extends Equatable {
     List<Client>? clients,
     Map<String, int>? clientRateCounts,
     String? clientSearch,
+    int? clientPage,
     String? selectedClientId,
     List<ClientRate>? selectedClientRates,
     String? clientRateSearch,
@@ -91,6 +105,7 @@ class RatesShellState extends Equatable {
       clients: clients ?? this.clients,
       clientRateCounts: clientRateCounts ?? this.clientRateCounts,
       clientSearch: clientSearch ?? this.clientSearch,
+      clientPage: clientPage ?? this.clientPage,
       selectedClientId: selectedClientId ?? this.selectedClientId,
       selectedClientRates: selectedClientRates ?? this.selectedClientRates,
       clientRateSearch: clientRateSearch ?? this.clientRateSearch,
@@ -111,6 +126,7 @@ class RatesShellState extends Equatable {
         clients,
         clientRateCounts,
         clientSearch,
+        clientPage,
         selectedClientId,
         selectedClientRates,
         clientRateSearch,

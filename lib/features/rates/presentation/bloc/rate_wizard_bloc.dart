@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/services/ph_locations_service.dart';
 import '../../domain/entities/breakweight.dart';
 import '../../domain/entities/matrix_row.dart';
 import '../../domain/entities/rates_enums.dart';
@@ -9,8 +10,13 @@ part 'rate_wizard_event.dart';
 part 'rate_wizard_state.dart';
 
 class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
-  RateWizardBloc({required bool isCustom, String? clientId, String? clientName})
-      : super(RateWizardState(isCustom: isCustom, clientId: clientId, clientName: clientName)) {
+  RateWizardBloc({
+    required bool isCustom,
+    required PhLocationsService phLocationsService,
+    String? clientId,
+    String? clientName,
+  })  : _phLocationsService = phLocationsService,
+        super(RateWizardState(isCustom: isCustom, clientId: clientId, clientName: clientName)) {
     on<WizardStepChanged>((event, emit) => emit(state.copyWith(step: event.step)));
     on<WizardNextStepRequested>((event, emit) {
       if (state.step < 3) emit(state.copyWith(step: state.step + 1));
@@ -169,5 +175,14 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
           .toList();
       emit(state.copyWith(conditionalBreakweights: list));
     });
+
+    on<PhLocationsLoaded>((event, emit) => emit(state.copyWith(phCities: event.cities, phProvinces: event.provinces)));
+
+    _phLocationsService.ensureLoaded().then((_) {
+      if (isClosed) return;
+      add(PhLocationsLoaded(_phLocationsService.cities, _phLocationsService.provinces));
+    });
   }
+
+  final PhLocationsService _phLocationsService;
 }

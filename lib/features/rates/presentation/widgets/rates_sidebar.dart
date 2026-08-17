@@ -91,8 +91,9 @@ class RatesSidebar extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _NotificationsRow(),
-                const SizedBox(height: 4),
+                // Notifications row hidden for the meantime. Re-enable when needed:
+                // _NotificationsRow(),
+                // const SizedBox(height: 4),
                 _ProfileBlock(state: state, bloc: bloc),
               ],
             ),
@@ -282,64 +283,69 @@ class _NotificationsRow extends StatelessWidget {
   }
 }
 
-class _ProfileBlock extends StatelessWidget {
+/// Profile toggle button with a dropdown menu (View profile / Log out).
+///
+/// The menu renders on the root [Overlay] via [CompositedTransformFollower]
+/// instead of a plain [Stack]+[Positioned] — the previous version nested the
+/// dropdown in a [Stack] sized to the profile button itself, which made its
+/// hit-test area unreliable (taps landed on whatever painted beneath it).
+/// Overlay entries are always full top-level render objects, so this
+/// guarantees the menu is actually clickable regardless of surrounding
+/// layout.
+class _ProfileBlock extends StatefulWidget {
   const _ProfileBlock({required this.state, required this.bloc});
 
   final RatesShellState state;
   final RatesShellBloc bloc;
 
   @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () => bloc.add(const ProfileMenuToggled()),
+  State<_ProfileBlock> createState() => _ProfileBlockState();
+}
+
+class _ProfileBlockState extends State<_ProfileBlock> {
+  final _link = LayerLink();
+  OverlayEntry? _entry;
+
+  @override
+  void didUpdateWidget(covariant _ProfileBlock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.state.profileMenuOpen && _entry == null) {
+      // Overlay.insert() marks the Overlay dirty; doing that synchronously
+      // here would run mid-build (didUpdateWidget fires during the parent's
+      // build), which Flutter forbids. Defer to the next frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.state.profileMenuOpen && _entry == null) _open();
+      });
+    } else if (!widget.state.profileMenuOpen && _entry != null) {
+      _close();
+    }
+  }
+
+  @override
+  void dispose() {
+    _close();
+    super.dispose();
+  }
+
+  void _open() {
+    final authBloc = context.read<AuthBloc>();
+    _entry = OverlayEntry(
+      // Overlay's internal Stack hands every entry tight, full-screen
+      // constraints — without this Align, the follower's child would get
+      // force-stretched to fill the viewport instead of shrink-wrapping to
+      // its own content. Align eats the tight constraints and lets the
+      // child size itself naturally.
+      builder: (_) => Align(
+        alignment: Alignment.topLeft,
+        child: CompositedTransformFollower(
+          link: _link,
+          targetAnchor: Alignment.topLeft,
+          followerAnchor: Alignment.bottomLeft,
+          offset: const Offset(0, -8),
+          child: Material(
+            color: Colors.transparent,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: state.profileMenuOpen ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 30,
-                    height: 30,
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(color: RatesColors.primaryChipBg, shape: BoxShape.circle),
-                    child: const Text('AU', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: RatesColors.primaryDeep)),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('Admin User', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-                        Text('Administrator', style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
-                      ],
-                    ),
-                  ),
-                  AnimatedRotation(
-                    turns: state.profileMenuOpen ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 150),
-                    child: Icon(CupertinoIcons.chevron_down, size: 14, color: Colors.white.withValues(alpha: 0.4)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (state.profileMenuOpen)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 52,
-            child: Container(
+              width: 232,
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: RatesColors.sidebarPanelBg,
@@ -350,18 +356,80 @@ class _ProfileBlock extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _MenuRow(label: 'View profile', color: Colors.white.withValues(alpha: 0.8)),
+                  _MenuRow(
+                    label: 'View profile',
+                    color: Colors.white.withValues(alpha: 0.8),
+                    onTap: () => widget.bloc.add(const ProfileMenuToggled()),
+                  ),
                   _MenuRow(
                     label: 'Log out',
                     color: const Color(0xFFFF8A8A),
                     bold: true,
-                    onTap: () => context.read<AuthBloc>().add(const AuthSignOutRequested()),
+                    onTap: () {
+                      widget.bloc.add(const ProfileMenuToggled());
+                      authBloc.add(const AuthSignOutRequested());
+                    },
                   ),
                 ],
               ),
             ),
           ),
-      ],
+        ),
+      ),
+    );
+    Overlay.of(context).insert(_entry!);
+  }
+
+  void _close() {
+    _entry?.remove();
+    _entry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(
+      link: _link,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => widget.bloc.add(const ProfileMenuToggled()),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: widget.state.profileMenuOpen ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(color: RatesColors.primaryChipBg, shape: BoxShape.circle),
+                  child: const Text('AU', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: RatesColors.primaryDeep)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Admin User', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                      Text('Administrator', style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
+                    ],
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: widget.state.profileMenuOpen ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  child: Icon(CupertinoIcons.chevron_down, size: 14, color: Colors.white.withValues(alpha: 0.4)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

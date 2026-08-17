@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../clients/data/repositories/clients_repository.dart';
 import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
@@ -20,7 +21,7 @@ class RatesShellPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => RatesShellBloc(getIt<RatesRepository>())..add(const RatesDataRequested()),
+      create: (_) => RatesShellBloc(getIt<RatesRepository>(), getIt<ClientsRepository>())..add(const RatesDataRequested()),
       child: const _RatesShellView(),
     );
   }

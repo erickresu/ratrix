@@ -32,6 +32,7 @@ dependencies:
   freezed_annotation: ^3.1.0
   intl: ^0.20.2
   easy_stepper: ^1.2.0
+  ph_address_dropdowns: ^0.0.1-beta.2
 
 dev_dependencies:
   flutter_test:

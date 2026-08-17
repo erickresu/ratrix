@@ -23,12 +23,14 @@ class RateMatrixTable extends StatelessWidget {
     required this.onBreakweightMaxChanged,
     required this.onRemoveBreakweight,
     this.onRemoveRoute,
+    this.locationOptions = const [],
   });
 
   final List<domain.MatrixRow> matrixRows;
   final List<Breakweight> breakweights;
   final String originPlaceholder;
   final String destinationPlaceholder;
+  final List<String> locationOptions;
   final void Function(int rowIndex, String value) onOriginChanged;
   final void Function(int rowIndex, String value) onDestinationChanged;
   final void Function(int rowIndex, int breakweightIndex, String value) onCellChanged;
@@ -37,8 +39,8 @@ class RateMatrixTable extends StatelessWidget {
   final void Function(int index) onRemoveBreakweight;
   final void Function(int rowIndex)? onRemoveRoute;
 
-  static const _headerHeight = 92.0;
-  static const _rowHeight = 58.0;
+  static const _headerHeight = 98.0;
+  static const _rowHeight = 64.0;
   static const _bwColWidth = 156.0;
   static const _leftPaneWidth = 560.0;
   static const _removeColWidth = 40.0;
@@ -98,9 +100,11 @@ class RateMatrixTable extends StatelessWidget {
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: ShadInput(
-                              placeholder: Text(originPlaceholder),
-                              initialValue: matrixRows[i].origin,
+                            child: _LocationField(
+                              key: ValueKey('origin-$i-$originPlaceholder'),
+                              value: matrixRows[i].origin,
+                              placeholder: originPlaceholder,
+                              options: locationOptions,
                               onChanged: (v) => onOriginChanged(i, v),
                             ),
                           ),
@@ -108,9 +112,11 @@ class RateMatrixTable extends StatelessWidget {
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: ShadInput(
-                              placeholder: Text(destinationPlaceholder),
-                              initialValue: matrixRows[i].destination,
+                            child: _LocationField(
+                              key: ValueKey('destination-$i-$destinationPlaceholder'),
+                              value: matrixRows[i].destination,
+                              placeholder: destinationPlaceholder,
+                              options: locationOptions,
                               onChanged: (v) => onDestinationChanged(i, v),
                             ),
                           ),
@@ -132,7 +138,8 @@ class RateMatrixTable extends StatelessWidget {
             ),
           ),
           // Breakweight/rate pane: fills the remaining width evenly when the
-          // columns fit, otherwise switches to fixed-width + horizontal scroll.
+          // columns fit, otherwise switches to fixed-width columns with a
+          // visible, draggable horizontal scrollbar.
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -205,12 +212,116 @@ class RateMatrixTable extends StatelessWidget {
                 );
 
                 if (fillWidth) return content;
-                return SingleChildScrollView(scrollDirection: Axis.horizontal, child: content);
+                return _HorizontalScrollPane(child: content);
               },
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Wraps horizontally-overflowing content in a scroll view with a visible,
+/// always-on, draggable scrollbar so the overflow is discoverable — a plain
+/// [SingleChildScrollView] gives no hint that there's more to see.
+class _HorizontalScrollPane extends StatefulWidget {
+  const _HorizontalScrollPane({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_HorizontalScrollPane> createState() => _HorizontalScrollPaneState();
+}
+
+class _HorizontalScrollPaneState extends State<_HorizontalScrollPane> {
+  final _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scrollbar(
+      controller: _controller,
+      thumbVisibility: true,
+      trackVisibility: true,
+      child: SingleChildScrollView(
+        controller: _controller,
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(bottom: 10),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Origin/destination field with a PSGC city or province autocomplete
+/// dropdown (falls back to a plain text field when [options] is empty,
+/// e.g. when matching by "Internal Code").
+class _LocationField extends StatelessWidget {
+  const _LocationField({
+    super.key,
+    required this.value,
+    required this.placeholder,
+    required this.options,
+    required this.onChanged,
+  });
+
+  final String value;
+  final String placeholder;
+  final List<String> options;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return RawAutocomplete<String>(
+      initialValue: TextEditingValue(text: value),
+      optionsBuilder: (textEditingValue) {
+        final query = textEditingValue.text.trim().toLowerCase();
+        if (options.isEmpty || query.isEmpty) return const Iterable<String>.empty();
+        return options.where((o) => o.toLowerCase().contains(query)).take(8);
+      },
+      onSelected: onChanged,
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        return ShadInput(
+          controller: controller,
+          focusNode: focusNode,
+          placeholder: Text(placeholder),
+          onChanged: onChanged,
+        );
+      },
+      optionsViewBuilder: (context, onSelected, resultOptions) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            color: RatesColors.surface,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 220, minWidth: 240),
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                shrinkWrap: true,
+                itemCount: resultOptions.length,
+                itemBuilder: (context, index) {
+                  final option = resultOptions.elementAt(index);
+                  return InkWell(
+                    onTap: () => onSelected(option),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: Text(option, style: const TextStyle(fontSize: 13, color: RatesColors.textBody)),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

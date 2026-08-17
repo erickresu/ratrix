@@ -7,6 +7,16 @@ sealed class RateWizardEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+class PhLocationsLoaded extends RateWizardEvent {
+  const PhLocationsLoaded(this.cities, this.provinces);
+
+  final List<String> cities;
+  final List<String> provinces;
+
+  @override
+  List<Object?> get props => [cities, provinces];
+}
+
 class WizardStepChanged extends RateWizardEvent {
   const WizardStepChanged(this.step);
 

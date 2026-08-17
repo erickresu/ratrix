@@ -27,7 +27,7 @@ class Step3ConditionalAddons extends StatelessWidget {
         const Text('Conditional Add-ons', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
         const SizedBox(height: 4),
         const Text('Charges that only apply when specific conditions are met', style: TextStyle(fontSize: 13, color: RatesColors.textMuted)),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         Row(
           children: [
             for (final type in ConditionalType.values) ...[
@@ -36,7 +36,7 @@ class Step3ConditionalAddons extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
         if (state.conditionalType == null)
           Container(
             width: double.infinity,
@@ -47,7 +47,14 @@ class Step3ConditionalAddons extends StatelessWidget {
               border: Border.all(color: RatesColors.border),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Text('Select a condition above to configure its pricing.', style: TextStyle(fontSize: 14, color: RatesColors.textMuted)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(CupertinoIcons.hand_point_right, size: 22, color: RatesColors.textFaint),
+                SizedBox(height: 10),
+                Text('Select a condition above to configure its pricing.', style: TextStyle(fontSize: 14, color: RatesColors.textMuted)),
+              ],
+            ),
           )
         else
           Column(
@@ -71,29 +78,32 @@ class Step3ConditionalAddons extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const Text('Match by:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(color: RatesColors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
-                    child: Row(
-                      children: [
-                        for (final basis in LocationBasis.values)
-                          _SegButton(label: basis.label, selected: state.locationBasis == basis, onTap: () => bloc.add(LocationBasisChanged(basis))),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
+              // "Match by" toggle hidden for the meantime (only City/Province
+              // are wired up; defaults to LocationBasis.city). Re-enable when needed:
+              // Row(
+              //   children: [
+              //     const Text('Match by:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
+              //     const SizedBox(width: 8),
+              //     Container(
+              //       padding: const EdgeInsets.all(2),
+              //       decoration: BoxDecoration(color: RatesColors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
+              //       child: Row(
+              //         children: [
+              //           for (final basis in LocationBasis.enabledValues)
+              //             _SegButton(label: basis.label, selected: state.locationBasis == basis, onTap: () => bloc.add(LocationBasisChanged(basis))),
+              //         ],
+              //       ),
+              //     ),
+              //   ],
+              // ),
+              // const SizedBox(height: 16),
               RateMatrixTable(
                 matrixRows: state.conditionalMatrixRows,
                 breakweights: state.conditionalBreakweights,
                 originPlaceholder: 'Search origin ${state.locationBasis.label.toLowerCase()}...',
                 destinationPlaceholder: 'Search destination ${state.locationBasis.label.toLowerCase()}...',
+                locationOptions: state.locationSuggestions,
                 onOriginChanged: (i, v) => bloc.add(ConditionalOriginChanged(i, v)),
                 onDestinationChanged: (i, v) => bloc.add(ConditionalDestinationChanged(i, v)),
                 onCellChanged: (i, bi, v) => bloc.add(ConditionalCellChanged(i, bi, v)),
@@ -101,12 +111,12 @@ class Step3ConditionalAddons extends StatelessWidget {
                 onBreakweightMaxChanged: (i, v) => bloc.add(ConditionalBreakweightMaxChanged(i, v)),
                 onRemoveBreakweight: (i) => bloc.add(ConditionalBreakweightRemoved(i)),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Row(
                 children: [
-                  _GhostButton(label: '+ Add route', onTap: () => bloc.add(const ConditionalRouteAdded())),
+                  _GhostButton(label: 'Add route', onTap: () => bloc.add(const ConditionalRouteAdded())),
                   const SizedBox(width: 12),
-                  _GhostButton(label: '+ Add breakweight', onTap: () => bloc.add(const ConditionalBreakweightAdded())),
+                  _GhostButton(label: 'Add breakweight', onTap: () => bloc.add(const ConditionalBreakweightAdded())),
                 ],
               ),
             ],
@@ -136,7 +146,7 @@ class _ConditionCard extends StatelessWidget {
             gradient: selected ? RatesColors.primaryButtonGradient : null,
             color: selected ? null : RatesColors.surfaceSubtle,
             border: Border.all(color: selected ? RatesColors.primary : RatesColors.border, width: selected ? 1.5 : 1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             boxShadow: selected ? const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 12, offset: Offset(0, 3))] : null,
           ),
           child: Row(
@@ -215,12 +225,19 @@ class _GhostButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong, width: 1.5), borderRadius: BorderRadius.circular(10)),
-          child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(CupertinoIcons.add, size: 14, color: RatesColors.textMuted),
+              const SizedBox(width: 6),
+              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
+            ],
+          ),
         ),
       ),
     );
