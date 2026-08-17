@@ -6,7 +6,7 @@ class RateWizardState extends Equatable {
   final String? clientName;
 
   final int step;
-  final FreightMode freightMode;
+  final FreightMode? freightMode;
   final ServiceMode serviceMode;
   final ChargeBasis chargeBasis;
   final PricingOption pricingOption;
@@ -33,7 +33,7 @@ class RateWizardState extends Equatable {
     this.clientId,
     this.clientName,
     this.step = 0,
-    this.freightMode = FreightMode.air,
+    this.freightMode,
     this.serviceMode = ServiceMode.doorToDoor,
     this.chargeBasis = ChargeBasis.kilo,
     this.pricingOption = PricingOption.fixedBreakweight,
@@ -53,7 +53,7 @@ class RateWizardState extends Equatable {
     this.conditionalBreakweights = const [Breakweight()],
   });
 
-  String get chargeCodePrefix => '${freightMode.name.toUpperCase()}_${serviceMode.abbreviation}';
+  String get chargeCodePrefix => '${(freightMode?.name ?? '').toUpperCase()}_${serviceMode.abbreviation}';
 
   String get fullChargeCode {
     if (chargeCodeSuffix.trim().isEmpty) return chargeCodePrefix;

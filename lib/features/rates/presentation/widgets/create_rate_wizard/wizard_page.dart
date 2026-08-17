@@ -56,27 +56,30 @@ class _WizardView extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(40, 40, 40, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const _WizardHeader(),
-                  const SizedBox(height: 28),
-                  const _RateValidityCard(),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Builder(builder: (context) {
-                        final step = context.select((RateWizardBloc b) => b.state.step);
-                        final bloc = context.read<RateWizardBloc>();
-                        return StepRail(currentStep: step, onStepTap: (s) => bloc.add(WizardStepChanged(s)));
-                      }),
-                      const SizedBox(width: 40),
-                      const Expanded(child: _StepContent()),
-                    ],
-                  ),
-                ],
+            child: Container(
+              decoration: const BoxDecoration(gradient: RatesColors.wizardBgGradient),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(40, 40, 40, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _WizardHeader(),
+                    const SizedBox(height: 28),
+                    const _RateValidityCard(),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Builder(builder: (context) {
+                          final step = context.select((RateWizardBloc b) => b.state.step);
+                          final bloc = context.read<RateWizardBloc>();
+                          return StepRail(currentStep: step, onStepTap: (s) => bloc.add(WizardStepChanged(s)));
+                        }),
+                        const SizedBox(width: 40),
+                        const Expanded(child: _StepContent()),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -121,12 +124,14 @@ class _WizardHeader extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: RatesColors.primaryChipBg, borderRadius: BorderRadius.circular(6)),
-          child: Text('${wizardState.freightMode.label.toUpperCase()} FREIGHT', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: RatesColors.primaryDeep, letterSpacing: 0.3)),
-        ),
+        if (wizardState.freightMode != null) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(color: RatesColors.primaryChipBg, borderRadius: BorderRadius.circular(6)),
+            child: Text('${wizardState.freightMode!.label.toUpperCase()} FREIGHT', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: RatesColors.primaryDeep, letterSpacing: 0.3)),
+          ),
+        ],
       ],
     );
   }
@@ -148,7 +153,8 @@ class _RateValidityCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: RatesColors.surface,
           border: Border.all(color: RatesColors.border),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 16, offset: Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,8 +190,8 @@ class _RateValidityCard extends StatelessWidget {
                         if (picked != null) bloc.add(ExpiryDateChanged(picked));
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(8), color: RatesColors.surfaceSubtle),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(10), color: RatesColors.surfaceSubtle),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -261,6 +267,12 @@ class _WizardFooter extends StatelessWidget {
           Row(
             children: [
               ShadButton.outline(
+                onPressed: () => shellBloc.add(const RatesHomeRequested()),
+                child: const Text('Save Changes'),
+              ),
+              const SizedBox(width: 10),
+              ShadButton(
+                gradient: step == 3 ? RatesColors.accentButtonGradient : RatesColors.primaryButtonGradient,
                 onPressed: () {
                   if (step < 3) {
                     wizardBloc.add(const WizardNextStepRequested());
@@ -269,12 +281,6 @@ class _WizardFooter extends StatelessWidget {
                   }
                 },
                 child: Text(step == 3 ? 'Publish Rate' : 'Next'),
-              ),
-              const SizedBox(width: 10),
-              ShadButton(
-                backgroundColor: RatesColors.primary,
-                onPressed: () => shellBloc.add(const RatesHomeRequested()),
-                child: const Text('Save Changes'),
               ),
             ],
           ),

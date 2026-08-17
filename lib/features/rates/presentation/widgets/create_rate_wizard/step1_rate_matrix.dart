@@ -20,7 +20,7 @@ class Step1RateMatrix extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(color: RatesColors.primarySoftBg, borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: RatesColors.primarySoftBg, borderRadius: BorderRadius.circular(14)),
           child: Row(
             children: [
               const Expanded(
@@ -66,7 +66,7 @@ class Step1RateMatrix extends StatelessWidget {
             const SizedBox(width: 24),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(8), color: RatesColors.surfaceSubtle),
+              decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(10), color: RatesColors.surfaceSubtle),
               child: Row(
                 children: [
                   SizedBox(
@@ -214,7 +214,7 @@ class _GhostButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong, width: 1.5, style: BorderStyle.solid), borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong, width: 1.5, style: BorderStyle.solid), borderRadius: BorderRadius.circular(10)),
           child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
         ),
       ),

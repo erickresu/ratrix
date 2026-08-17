@@ -54,7 +54,8 @@ class RateMatrixTable extends StatelessWidget {
       decoration: BoxDecoration(
         color: RatesColors.surface,
         border: Border.all(color: RatesColors.border),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 16, offset: Offset(0, 4))],
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(

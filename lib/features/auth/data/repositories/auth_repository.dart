@@ -100,6 +100,11 @@ class AuthRepository {
 
     final token = (body['token'] ?? body['access_token'])?.toString();
     if (token == null || token.isEmpty) {
+      final status = body['status'];
+      final statusMessage = status is Map ? status['message'] : null;
+      if (statusMessage is String && statusMessage.isNotEmpty) {
+        throw AuthException(statusMessage);
+      }
       throw const AuthException('Login succeeded but no token was returned.');
     }
 

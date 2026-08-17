@@ -14,7 +14,7 @@ class NewRateModal extends StatelessWidget {
     final bloc = context.read<RatesShellBloc>();
 
     return ShadDialog(
-      radius: BorderRadius.circular(16),
+      radius: BorderRadius.circular(20),
       backgroundColor: RatesColors.surface,
       padding: const EdgeInsets.all(32),
       title: const Text('New rate', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
@@ -81,17 +81,17 @@ class _OptionCard extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             border: Border.all(color: RatesColors.border, width: 1.5),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 56,
+                height: 56,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(color: RatesColors.primaryChipBg, borderRadius: BorderRadius.circular(8)),
-                child: Icon(icon, size: 14, color: RatesColors.primary),
+                decoration: const BoxDecoration(color: RatesColors.primaryChipBg, shape: BoxShape.circle),
+                child: Icon(icon, size: 26, color: RatesColors.primary),
               ),
               const SizedBox(height: 14),
               Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: RatesColors.textBody)),

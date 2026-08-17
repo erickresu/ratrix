@@ -106,7 +106,7 @@ class Step0RateSetup extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: RatesColors.surfaceMuted,
                     border: Border.all(color: RatesColors.borderStrong),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(state.chargeCodePrefix, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, fontFamily: 'monospace', color: RatesColors.textMutedStrong)),
                 ),
@@ -149,17 +149,32 @@ class _FreightModeCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
-            color: selected ? RatesColors.primarySoftBg : RatesColors.surface,
-            border: Border.all(color: selected ? RatesColors.primary : RatesColors.borderStrong, width: 1.5),
-            borderRadius: BorderRadius.circular(8),
+            gradient: selected ? RatesColors.primaryButtonGradient : null,
+            color: selected ? null : RatesColors.surfaceSubtle,
+            border: Border.all(color: selected ? RatesColors.primary : RatesColors.border, width: selected ? 1.5 : 1),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: selected ? const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 12, offset: Offset(0, 3))] : null,
           ),
           child: Row(
             children: [
-              Icon(_freightModeIcons[mode], size: 18, color: selected ? RatesColors.primary : RatesColors.textMuted),
-              const SizedBox(width: 10),
-              Text(mode.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? RatesColors.primaryDeeper : RatesColors.textMutedStrong)),
+              Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? Colors.white.withValues(alpha: 0.2) : RatesColors.primaryChipBg,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(_freightModeIcons[mode], size: 26, color: selected ? Colors.white : RatesColors.primaryDeep),
+              ),
+              const SizedBox(width: 12),
+              Text(mode.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? Colors.white : RatesColors.textMutedStrong)),
+              if (selected) ...[
+                const Spacer(),
+                const Icon(CupertinoIcons.check_mark_circled_solid, size: 16, color: Colors.white),
+              ],
             ],
           ),
         ),

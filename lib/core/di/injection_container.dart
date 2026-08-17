@@ -5,6 +5,8 @@ import '../api/api_client.dart';
 import '../api/local_storage_service.dart';
 import '../../features/auth/data/datasources/auth_data_source.dart';
 import '../../features/auth/data/repositories/auth_repository.dart';
+import '../../features/clients/data/datasources/clients_data_source.dart';
+import '../../features/clients/data/repositories/clients_repository.dart';
 import '../../features/rates/data/datasources/rates_local_data_source.dart';
 import '../../features/rates/data/repositories/rates_repository.dart';
 
@@ -26,6 +28,13 @@ void setupDependencies() {
   getIt.registerLazySingleton<RatesLocalDataSource>(() => RatesLocalDataSource());
   getIt.registerLazySingleton<RatesRepository>(
     () => RatesRepository(getIt<RatesLocalDataSource>()),
+  );
+
+  getIt.registerLazySingleton<ClientsDataSource>(
+    () => ClientsDataSource(getIt<Dio>()),
+  );
+  getIt.registerLazySingleton<ClientsRepository>(
+    () => ClientsRepository(getIt<ClientsDataSource>()),
   );
 
   // Register new repositories/services/BLoCs here as features are added.

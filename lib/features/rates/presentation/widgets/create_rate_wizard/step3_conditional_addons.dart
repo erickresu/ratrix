@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -6,6 +7,11 @@ import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../rates_colors.dart';
 import 'rate_matrix_table.dart';
+
+const _conditionalTypeIcons = {
+  ConditionalType.oda: CupertinoIcons.location_slash,
+  ConditionalType.pickup: CupertinoIcons.cube_box,
+};
 
 class Step3ConditionalAddons extends StatelessWidget {
   const Step3ConditionalAddons({super.key});
@@ -36,7 +42,11 @@ class Step3ConditionalAddons extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(40),
             alignment: Alignment.center,
-            decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: RatesColors.surfaceSubtle,
+              border: Border.all(color: RatesColors.border),
+              borderRadius: BorderRadius.circular(14),
+            ),
             child: const Text('Select a condition above to configure its pricing.', style: TextStyle(fontSize: 14, color: RatesColors.textMuted)),
           )
         else
@@ -123,34 +133,41 @@ class _ConditionCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: selected ? RatesColors.primarySoftBg : RatesColors.surface,
-            border: Border.all(color: selected ? RatesColors.primary : RatesColors.borderStrong, width: 1.5),
-            borderRadius: BorderRadius.circular(10),
+            gradient: selected ? RatesColors.primaryButtonGradient : null,
+            color: selected ? null : RatesColors.surfaceSubtle,
+            border: Border.all(color: selected ? RatesColors.primary : RatesColors.border, width: selected ? 1.5 : 1),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: selected ? const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 12, offset: Offset(0, 3))] : null,
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 18,
-                height: 18,
-                margin: const EdgeInsets.only(top: 2),
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
+                  color: selected ? Colors.white.withValues(alpha: 0.2) : RatesColors.primaryChipBg,
                   shape: BoxShape.circle,
-                  border: Border.all(color: selected ? RatesColors.primary : RatesColors.borderStrong, width: 2),
-                  color: selected ? RatesColors.primary : Colors.transparent,
                 ),
+                child: Icon(_conditionalTypeIcons[type], size: 26, color: selected ? Colors.white : RatesColors.primaryDeep),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(type.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? RatesColors.primaryDeeper : RatesColors.textMutedStrong)),
+                    Text(type.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? Colors.white : RatesColors.textMutedStrong)),
                     const SizedBox(height: 2),
-                    Text(type.hint, style: const TextStyle(fontSize: 12, color: RatesColors.textMuted)),
+                    Text(type.hint, style: TextStyle(fontSize: 12, color: selected ? Colors.white.withValues(alpha: 0.85) : RatesColors.textMuted)),
                   ],
                 ),
               ),
+              if (selected)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Icon(CupertinoIcons.check_mark_circled_solid, size: 18, color: Colors.white),
+                ),
             ],
           ),
         ),
@@ -202,7 +219,7 @@ class _GhostButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong, width: 1.5), borderRadius: BorderRadius.circular(8)),
+          decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong, width: 1.5), borderRadius: BorderRadius.circular(10)),
           child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
@@ -350,7 +351,12 @@ class _ProfileBlock extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _MenuRow(label: 'View profile', color: Colors.white.withValues(alpha: 0.8)),
-                  const _MenuRow(label: 'Log out', color: Color(0xFFFF8A8A), bold: true),
+                  _MenuRow(
+                    label: 'Log out',
+                    color: const Color(0xFFFF8A8A),
+                    bold: true,
+                    onTap: () => context.read<AuthBloc>().add(const AuthSignOutRequested()),
+                  ),
                 ],
               ),
             ),
@@ -361,11 +367,12 @@ class _ProfileBlock extends StatelessWidget {
 }
 
 class _MenuRow extends StatelessWidget {
-  const _MenuRow({required this.label, required this.color, this.bold = false});
+  const _MenuRow({required this.label, required this.color, this.bold = false, this.onTap});
 
   final String label;
   final Color color;
   final bool bold;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -373,7 +380,7 @@ class _MenuRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
-        onTap: () {},
+        onTap: onTap ?? () {},
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),

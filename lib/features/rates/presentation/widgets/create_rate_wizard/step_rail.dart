@@ -5,13 +5,33 @@ import 'package:flutter/material.dart';
 import '../../rates_colors.dart';
 
 class StepRail extends StatelessWidget {
-  const StepRail({super.key, required this.currentStep, required this.onStepTap});
+  const StepRail({
+    super.key,
+    required this.currentStep,
+    required this.onStepTap,
+  });
 
   final int currentStep;
   final ValueChanged<int> onStepTap;
 
-  static const _labels = ['Rate Setup', 'Rate Matrix', 'Add-ons', 'Conditional Add-ons'];
-  static const _hints = ['Mode, service & pricing', 'Weight breaks', 'Optional surcharges', 'Rules-based charges'];
+  static const _labels = [
+    'Rate Setup',
+    'Rate Matrix',
+    'Add-ons',
+    'Conditional Add-ons',
+  ];
+  static const _hints = [
+    'Mode, service&pricing',
+    'Weight breaks',
+    'Optional surcharges',
+    'Rules-based charges',
+  ];
+  static const _icons = [
+    CupertinoIcons.slider_horizontal_3,
+    CupertinoIcons.square_grid_3x2,
+    CupertinoIcons.tag,
+    CupertinoIcons.wand_stars,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -21,15 +41,26 @@ class StepRail extends StatelessWidget {
       decoration: BoxDecoration(
         color: RatesColors.surface,
         border: Border.all(color: RatesColors.border),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: RatesColors.shadowSoft,
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Theme(
         // easy_stepper wraps each step in a Material InkWell; without this the
         // default (purple) splash/highlight paints a ring over the step circle.
         data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+            primary: Theme.of(context).colorScheme.secondary,
+          ),
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           hoverColor: Colors.transparent,
+          focusColor: Colors.transparent,
           splashFactory: NoSplash.splashFactory,
         ),
         child: EasyStepper(
@@ -43,11 +74,12 @@ class StepRail extends StatelessWidget {
           verticalAlignment: CrossAxisAlignment.start,
           lineStyle: const LineStyle(
             lineType: LineType.normal,
-            lineLength: 24,
+            lineLength: 44,
             lineThickness: 2,
             unreachedLineColor: RatesColors.border,
             activeLineColor: RatesColors.border,
             finishedLineColor: RatesColors.primary,
+            lineSpace: 0,
           ),
           onStepReached: onStepTap,
           steps: List.generate(_labels.length, (i) {
@@ -60,25 +92,36 @@ class StepRail extends StatelessWidget {
                 height: 28,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: highlighted ? RatesColors.primary : RatesColors.surfaceMuted,
+                  color: highlighted
+                      ? RatesColors.primary
+                      : RatesColors.textFaint.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
                 ),
                 child: isDone
-                    ? const Icon(CupertinoIcons.checkmark_alt, size: 14, color: Colors.white)
-                    : Text(
-                        '${i + 1}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: highlighted ? Colors.white : RatesColors.textMuted,
-                        ),
+                    ? const Icon(
+                        CupertinoIcons.checkmark_alt,
+                        size: 14,
+                        color: Colors.white,
+                      )
+                    : Icon(
+                        _icons[i],
+                        size: 14,
+                        color: highlighted
+                            ? Colors.white
+                            : RatesColors.textMuted,
                       ),
               ),
               customTitle: Container(
                 constraints: const BoxConstraints(maxWidth: 180),
-                padding: const EdgeInsets.only(left: 10, top: 3),
+                margin: const EdgeInsets.only(left: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  color: isActive ? RatesColors.primarySoftBg : Colors.transparent,
+                  color: isActive
+                      ? RatesColors.primarySoftBg
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -89,12 +132,22 @@ class StepRail extends StatelessWidget {
                       _labels[i],
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                        color: isActive ? RatesColors.textBody : RatesColors.textMuted,
+                        fontWeight: isActive
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: isActive
+                            ? RatesColors.textBody
+                            : RatesColors.textMuted,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(_hints[i], style: const TextStyle(fontSize: 12, color: RatesColors.textMuted)),
+                    Text(
+                      _hints[i],
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: RatesColors.textMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),

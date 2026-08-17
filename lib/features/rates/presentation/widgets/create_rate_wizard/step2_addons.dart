@@ -20,7 +20,12 @@ class Step2Addons extends StatelessWidget {
       children: [
         const Text('Add-on Charges', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
         const SizedBox(height: 4),
-        Text('Configure additional charges for ${state.freightMode.label} freight', style: const TextStyle(fontSize: 13, color: RatesColors.textMuted)),
+        Text(
+          state.freightMode == null
+              ? 'Configure additional charges'
+              : 'Configure additional charges for ${state.freightMode!.label} freight',
+          style: const TextStyle(fontSize: 13, color: RatesColors.textMuted),
+        ),
         const SizedBox(height: 20),
         for (final group in addonGroupDefs) ...[
           _AddonGroupCard(group: group, bloc: bloc, state: state),
@@ -45,7 +50,8 @@ class _AddonGroupCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: RatesColors.surface,
         border: Border.all(color: RatesColors.border),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 16, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,7 +131,7 @@ class _AddonField extends StatelessWidget {
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(8), color: RatesColors.surfaceSubtle),
+          decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(10), color: RatesColors.surfaceSubtle),
           child: Row(
             children: [
               Text(isPercentage ? '%' : '₱', style: const TextStyle(fontSize: 13, color: RatesColors.textMuted)),

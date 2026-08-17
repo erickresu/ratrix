@@ -1,12 +1,17 @@
-class ApiConstants {
-  // --- Production ---
-  static const baseUrl = 'https://api.example.com/v1/';
+enum Flavor { staging, prod }
 
-  // --- Local dev (uncomment one, comment the line above) ---
-  // Real Android/iOS phone on same WiFi: use the host machine's LAN IP.
-  //static const baseUrl = 'http://192.168.1.x:8000/v1/';
-  // Android emulator instead: 'http://10.0.2.2:8000/v1/'
-  // iOS sim / web / desktop instead: 'http://localhost:8000/v1/'
+class ApiConstants {
+  static const _flavorName = String.fromEnvironment('FLAVOR', defaultValue: 'staging');
+
+  static Flavor get flavor => _flavorName == 'prod' ? Flavor.prod : Flavor.staging;
+
+  static const _stagingBaseUrl = 'https://api.cerrov5.wyred.tech/';
+  static const _prodBaseUrl = 'https://prod-api.cerrov5.wyred.tech/';
+
+  static String get baseUrl => switch (flavor) {
+        Flavor.prod => _prodBaseUrl,
+        Flavor.staging => _stagingBaseUrl,
+      };
 
   static const defaultDeviceName = 'mobile';
 }

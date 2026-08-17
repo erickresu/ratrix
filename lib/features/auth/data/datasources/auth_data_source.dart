@@ -11,12 +11,12 @@ class AuthDataSource {
     required String deviceName,
   }) {
     return _dio.post(
-      'login',
+      'api/login/token',
       data: {'email': email, 'password': password, 'device_name': deviceName},
     );
   }
 
-  Future<Response<dynamic>> logout() => _dio.post('logout');
+  Future<Response<dynamic>> logout() => _dio.post('api/logout');
 
-  Future<Response<dynamic>> getCurrentUser() => _dio.get('user');
+  Future<Response<dynamic>> getCurrentUser() => _dio.get('api/user');
 }
