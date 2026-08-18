@@ -100,7 +100,7 @@ class RatesColors extends ThemeExtension<RatesColors> {
     sidebarPanelBg: Color(0xFF16201D),
     pageBg: Color(0xFFF8FAFC),
     surface: Colors.white,
-    surfaceSubtle: Color(0xFFF1F5F9),
+    surfaceSubtle: Color(0xFFE8EDF2),
     surfaceMuted: Color(0x40EDF1F5),
     border: Color(0xFFE2E8F0),
     borderStrong: Color(0xFFCBD5E1),

@@ -173,10 +173,8 @@ class Step1RateMatrix extends StatelessWidget {
         RateMatrixTable(
           matrixRows: state.matrixRows,
           breakweights: state.breakweights,
-          originPlaceholder:
-              'Search origin ${state.locationBasis.label.toLowerCase()}...',
-          destinationPlaceholder:
-              'Search destination ${state.locationBasis.label.toLowerCase()}...',
+          originPlaceholder: 'Search origin...',
+          destinationPlaceholder: 'Search destination...',
           locationOptions: state.locationSuggestions,
           onOriginChanged: (i, v) => bloc.add(OriginChanged(i, v)),
           onDestinationChanged: (i, v) => bloc.add(DestinationChanged(i, v)),

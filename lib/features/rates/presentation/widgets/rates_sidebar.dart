@@ -408,11 +408,11 @@ class _ProfileBlockState extends State<_ProfileBlock> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _MenuRow(
-                    label: 'View profile',
-                    color: Colors.white.withValues(alpha: 0.8),
-                    onTap: () => widget.bloc.add(const ProfileMenuToggled()),
-                  ),
+                  // _MenuRow(
+                  //   label: 'View profile',
+                  //   color: Colors.white.withValues(alpha: 0.8),
+                  //   onTap: () => widget.bloc.add(const ProfileMenuToggled()),
+                  // ),
                   _MenuRow(
                     label: 'Log out',
                     color: const Color(0xFFFF8A8A),

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../rates/presentation/rates_colors.dart';
@@ -27,8 +28,8 @@ class _LoginPageState extends State<LoginPage> {
 
   void _submit(BuildContext context) {
     context.read<AuthBloc>().add(
-          AuthSignInRequested(email: _email.text.trim(), password: _password.text),
-        );
+      AuthSignInRequested(email: _email.text.trim(), password: _password.text),
+    );
   }
 
   @override
@@ -36,7 +37,8 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: context.colors.pageBg,
       body: BlocListener<AuthBloc, AuthState>(
-        listenWhen: (prev, curr) => prev.error != curr.error && curr.error != null,
+        listenWhen: (prev, curr) =>
+            prev.error != curr.error && curr.error != null,
         listener: (context, state) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
@@ -57,14 +59,19 @@ class _LoginPageState extends State<LoginPage> {
                   flex: showBrandPanel ? 1 : 1,
                   child: Center(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 48,
+                      ),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 380),
                         child: _LoginForm(
                           email: _email,
                           password: _password,
                           obscurePassword: _obscurePassword,
-                          onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
+                          onToggleObscure: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
                           onSubmit: () => _submit(context),
                         ),
                       ),
@@ -87,7 +94,7 @@ class _BrandPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: context.colors.sidebarBg,
-      padding: const EdgeInsets.all(56),
+      // padding: const EdgeInsets.all(56),
       child: Stack(
         children: [
           Positioned(
@@ -104,35 +111,48 @@ class _BrandPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: context.colors.primary, width: 2.5),
+              SizedBox(
+                width: double.infinity,
+                child: Center(
+                  child: SizedBox(
+                    width: MediaQuery.sizeOf(context).width * 0.3,
+                    child: Lottie.asset(
+                      'assets/lottie/login_animation.json',
+                      repeat: true,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Column(
+                ),
+              ),
+
+              SizedBox(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 50),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('CERRO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.45), letterSpacing: 1)),
-                      const Text('RATRIX', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white, height: 1.1)),
+                      const Text(
+                        'Rate management,built for freight teams.',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          height: 1.25,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+                      Text(
+                        'Publish rates, manage client-specific pricing, and configure surcharges from one place.',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.white.withValues(alpha: 0.6),
+                          height: 1.5,
+                        ),
+                      ),
                     ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 40),
-              const Text(
-                'Rate management,\nbuilt for freight teams.',
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w700, color: Colors.white, height: 1.25, letterSpacing: -0.4),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Publish rates, manage client-specific pricing, and configure surcharges from one place.',
-                style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.6), height: 1.5),
+                ),
               ),
             ],
           ),
@@ -183,11 +203,29 @@ class _LoginForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Welcome back', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: context.colors.textBody, letterSpacing: -0.3)),
+        Text(
+          'Welcome back',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            color: context.colors.textBody,
+            letterSpacing: -0.3,
+          ),
+        ),
         const SizedBox(height: 6),
-        Text('Sign in to manage your rates.', style: TextStyle(fontSize: 14, color: context.colors.textMuted)),
+        Text(
+          'Sign in to manage your rates.',
+          style: TextStyle(fontSize: 14, color: context.colors.textMuted),
+        ),
         const SizedBox(height: 32),
-        Text('Email', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
+        Text(
+          'Email',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: context.colors.textMutedStrong,
+          ),
+        ),
         const SizedBox(height: 8),
         ShadInput(
           controller: email,
@@ -196,7 +234,14 @@ class _LoginForm extends StatelessWidget {
           onSubmitted: (_) => onSubmit(),
         ),
         const SizedBox(height: 20),
-        Text('Password', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
+        Text(
+          'Password',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: context.colors.textMutedStrong,
+          ),
+        ),
         const SizedBox(height: 8),
         ShadInput(
           controller: password,
@@ -211,7 +256,9 @@ class _LoginForm extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(4),
                 child: Icon(
-                  obscurePassword ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
+                  obscurePassword
+                      ? CupertinoIcons.eye
+                      : CupertinoIcons.eye_slash,
                   size: 16,
                   color: context.colors.textMuted,
                 ),
@@ -229,7 +276,10 @@ class _LoginForm extends StatelessWidget {
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text('Sign in'),
           ),

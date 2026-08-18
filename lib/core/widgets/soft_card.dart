@@ -24,7 +24,6 @@ class SoftCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: width,
-      padding: padding,
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(borderRadius),
@@ -36,7 +35,8 @@ class SoftCard extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(padding: padding, child: child),
     );
   }
 }
