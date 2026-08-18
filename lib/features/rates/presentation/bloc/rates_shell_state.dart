@@ -42,7 +42,7 @@ class RatesShellState extends Equatable {
     this.clientRatesTab = RateStatus.active,
   });
 
-  static const clientsPerPage = 15;
+  static const clientsPerPage = 9;
 
   List<Client> get filteredClients {
     if (clientSearch.isEmpty) return clients;

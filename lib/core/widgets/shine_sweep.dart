@@ -38,7 +38,8 @@ class ShineSweep extends StatefulWidget {
   State<ShineSweep> createState() => _ShineSweepState();
 }
 
-class _ShineSweepState extends State<ShineSweep> with SingleTickerProviderStateMixin {
+class _ShineSweepState extends State<ShineSweep>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   Duration get _cycle => widget.period + widget.pause;

@@ -10,6 +10,16 @@ import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 
+const _clientGridColumns = 3;
+const _clientGridRows = 3;
+const _clientGridPadding = EdgeInsets.fromLTRB(48, 0, 48, 28);
+const _clientGridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
+  crossAxisCount: _clientGridColumns,
+  mainAxisSpacing: 28,
+  crossAxisSpacing: 28,
+  mainAxisExtent: 184,
+);
+
 class CustomClientsView extends StatelessWidget {
   const CustomClientsView({super.key});
 
@@ -68,48 +78,30 @@ class CustomClientsView extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = (constraints.maxWidth / 320).floor().clamp(
-                1,
-                100,
-              );
-              final pageClients = state.pagedClients;
-              if (state.isLoading) {
-                return SkeletonShimmer(
+          child: state.isLoading
+              ? SkeletonShimmer(
                   child: GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
-                    itemCount: columns * 2,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: columns,
-                      mainAxisSpacing: 20,
-                      crossAxisSpacing: 20,
-                      mainAxisExtent: 232,
-                    ),
+                    padding: _clientGridPadding,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _clientGridColumns * _clientGridRows,
+                    gridDelegate: _clientGridDelegate,
                     itemBuilder: (context, index) => const GridCardSkeleton(),
                   ),
-                );
-              }
-              return GridView.builder(
-                padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
-                itemCount: pageClients.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  mainAxisSpacing: 20,
-                  crossAxisSpacing: 20,
-                  mainAxisExtent: 232,
+                )
+              : GridView.builder(
+                  padding: _clientGridPadding,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: state.pagedClients.length,
+                  gridDelegate: _clientGridDelegate,
+                  itemBuilder: (context, index) {
+                    final client = state.pagedClients[index];
+                    return _ClientCard(
+                      client: client,
+                      rateCount: state.clientRateCounts[client.id] ?? 0,
+                      onTap: () => bloc.add(ClientRatesRequested(client.id)),
+                    );
+                  },
                 ),
-                itemBuilder: (context, index) {
-                  final client = pageClients[index];
-                  return _ClientCard(
-                    client: client,
-                    rateCount: state.clientRateCounts[client.id] ?? 0,
-                    onTap: () => bloc.add(ClientRatesRequested(client.id)),
-                  );
-                },
-              );
-            },
-          ),
         ),
         if (state.filteredClients.isNotEmpty)
           _ClientsPaginationBar(
@@ -243,18 +235,22 @@ class _ClientCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
             color: context.colors.surface,
-            border: Border.all(color: context.colors.border),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
                 color: context.colors.shadowSoft,
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: context.colors.shadowSoft.withValues(alpha: 0.5),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
               ),
             ],
           ),
@@ -262,23 +258,30 @@ class _ClientCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Accent stripe — quick-glance identity marker.
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 20,
-                ),
+                height: 4,
                 decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: context.colors.surfaceMuted),
+                  gradient: LinearGradient(
+                    colors: [
+                      context.colors.primary,
+                      context.colors.primaryDeep,
+                    ],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
                 ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ClipOval(
                       child: ShineSweep(
                         child: Container(
-                          width: 44,
-                          height: 44,
+                          width: 42,
+                          height: 42,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -317,13 +320,24 @@ class _ClientCard extends StatelessWidget {
                               color: context.colors.textBody,
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            client.accountNumber,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.colors.primary,
-                              fontFamily: 'monospace',
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.colors.surfaceSubtle,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              client.accountNumber,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.textMutedStrong,
+                                fontFamily: 'monospace',
+                              ),
                             ),
                           ),
                         ],
@@ -334,69 +348,96 @@ class _ClientCard extends StatelessWidget {
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '✉ ${client.email}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: context.colors.textMuted,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            CupertinoIcons.mail_solid,
+                            size: 12,
+                            color: context.colors.textFaint,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              client.email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: context.colors.textMuted,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          ShadBadge(
-                            backgroundColor: context.colors.successBg
-                                .withValues(alpha: 0.6),
-                            foregroundColor: context.colors.primaryDeep,
+                          Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
-                              vertical: 4,
+                              vertical: 5,
                             ),
-                            child: Text(
-                              client.businessType.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
-                              ),
+                            decoration: BoxDecoration(
+                              color: context.colors.surfaceSubtle,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.briefcase_fill,
+                                  size: 11,
+                                  color: context.colors.textMutedStrong,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  client.businessType,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.colors.textMutedStrong,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          ShadBadge(
-                            backgroundColor: isInclusive
-                                ? context.colors.primarySoftBg
-                                : context.colors.surface,
-                            foregroundColor: isInclusive
-                                ? context.colors.primaryDeep
-                                : context.colors.textMutedStrong,
+                          Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
-                              vertical: 4,
+                              vertical: 5,
                             ),
-                            shape: isInclusive
-                                ? null
-                                : RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    side: BorderSide(
-                                      color: context.colors.borderStrong,
-                                    ),
+                            decoration: BoxDecoration(
+                              color: context.colors.surfaceSubtle,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  CupertinoIcons.doc_text_fill,
+                                  size: 11,
+                                  color: isInclusive
+                                      ? context.colors.success
+                                      : context.colors.textMutedStrong,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'VAT ${client.vatStatus.label}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: isInclusive
+                                        ? context.colors.success
+                                        : context.colors.textMutedStrong,
                                   ),
-                            child: Text(
-                              'VAT ${client.vatStatus.label}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -405,42 +446,64 @@ class _ClientCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                color: context.colors.surfaceSubtle,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '$rateCount custom rate(s)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: context.colors.textMutedStrong,
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 11,
+                    ),
+                    decoration: BoxDecoration(
+                      color: context.colors.surfaceSubtle,
+                      border: Border(
+                        top: BorderSide(color: context.colors.border),
                       ),
                     ),
-                    Row(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'View rates',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: context.colors.primaryDeep,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              CupertinoIcons.tag_fill,
+                              size: 12,
+                              color: context.colors.textMuted,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$rateCount custom rate${rateCount == 1 ? '' : 's'}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.textMutedStrong,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          CupertinoIcons.arrow_right,
-                          size: 13,
-                          color: context.colors.primaryDeep,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'View rates',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: context.colors.primaryDeep,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              CupertinoIcons.arrow_right,
+                              size: 13,
+                              color: context.colors.primaryDeep,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
