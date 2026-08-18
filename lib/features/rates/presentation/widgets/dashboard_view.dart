@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../core/widgets/shine_sweep.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import '../../../../core/widgets/soft_card.dart';
 import '../../domain/entities/rate_stat.dart';
@@ -33,17 +34,37 @@ class DashboardView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Dashboard', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.colors.textBody)),
+                    Text(
+                      'Dashboard',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                        color: context.colors.textBody,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text('Overview of your active rates and clients', style: TextStyle(fontSize: 14, color: context.colors.textMuted)),
+                    Text(
+                      'Overview of your active rates and clients',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: context.colors.textMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),
               ShadButton(
                 backgroundColor: context.colors.primary,
                 hoverBackgroundColor: context.colors.primaryHover,
-                leading: const Icon(CupertinoIcons.add, size: 17, color: Colors.white),
-                onPressed: () => context.read<RatesShellBloc>().add(const NewRateModalOpened()),
+                leading: const Icon(
+                  CupertinoIcons.add,
+                  size: 17,
+                  color: Colors.white,
+                ),
+                onPressed: () => context.read<RatesShellBloc>().add(
+                  const NewRateModalOpened(),
+                ),
                 child: const Text('Create new rate'),
               ),
             ],
@@ -63,7 +84,8 @@ class DashboardView extends StatelessWidget {
                         children: [
                           for (final stat in state.stats) ...[
                             Expanded(child: _StatCard(stat: stat)),
-                            if (stat != state.stats.last) const SizedBox(width: 20),
+                            if (stat != state.stats.last)
+                              const SizedBox(width: 20),
                           ],
                         ],
                       ),
@@ -78,8 +100,18 @@ class DashboardView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
-                                child: Text('Recent rates', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.colors.textBody)),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 22,
+                                ),
+                                child: Text(
+                                  'Recent rates',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.colors.textBody,
+                                  ),
+                                ),
                               ),
                               Divider(height: 1, color: context.colors.border),
                               _RecentRatesTable(rates: state.recentRates),
@@ -151,16 +183,23 @@ class _DashboardSkeleton extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 22,
+                          ),
                           child: SkeletonBox(width: 120, height: 16),
                         ),
                         Divider(height: 1, color: context.colors.border),
                         for (var i = 0; i < 6; i++) ...[
                           const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 18,
+                            ),
                             child: TableRowSkeleton(),
                           ),
-                          if (i != 5) Divider(height: 1, color: context.colors.border),
+                          if (i != 5)
+                            Divider(height: 1, color: context.colors.border),
                         ],
                       ],
                     ),
@@ -175,6 +214,15 @@ class _DashboardSkeleton extends StatelessWidget {
   }
 }
 
+IconData _statIcon(String label) {
+  final l = label.toLowerCase();
+  if (l.contains('active')) return CupertinoIcons.bolt_fill;
+  if (l.contains('rate')) return CupertinoIcons.tag_fill;
+  if (l.contains('client')) return CupertinoIcons.person_2_fill;
+  if (l.contains('route')) return CupertinoIcons.location_solid;
+  return CupertinoIcons.chart_bar_alt_fill;
+}
+
 class _StatCard extends StatelessWidget {
   const _StatCard({required this.stat});
 
@@ -182,18 +230,111 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SoftCard(
-      padding: const EdgeInsets.all(24),
-      borderRadius: 10,
-      blurRadius: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final isPositive = stat.delta.trim().startsWith('+');
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        border: Border.all(color: context.colors.border),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: context.colors.shadowSoft,
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          Text(stat.label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.colors.textMuted)),
-          const SizedBox(height: 10),
-          Text(stat.value, style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: context.colors.textBody)),
-          const SizedBox(height: 8),
-          Text(stat.delta, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.colors.success)),
+          Positioned(
+            top: 0,
+            bottom: 0,
+            right: -50,
+            child: Center(
+              child: ClipOval(
+                child: ShineSweep(
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    alignment: Alignment.center,
+                    color: context.colors.primary.withValues(alpha: 0.14),
+                    child: Icon(
+                      _statIcon(stat.label),
+                      size: 60,
+                      color: context.colors.primary.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  stat.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: context.colors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  stat.value,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.4,
+                    color: context.colors.textBody,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isPositive
+                        ? context.colors.successBg
+                        : context.colors.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isPositive
+                            ? CupertinoIcons.arrow_up_right
+                            : CupertinoIcons.arrow_down_right,
+                        size: 11,
+                        color: isPositive
+                            ? context.colors.successText
+                            : context.colors.textMuted,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        stat.delta,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isPositive
+                              ? context.colors.successText
+                              : context.colors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -207,7 +348,12 @@ class _RecentRatesTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final headerStyle = TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textMuted, letterSpacing: 0.4);
+    final headerStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: context.colors.textMuted,
+      letterSpacing: 0.4,
+    );
 
     return Table(
       columnWidths: const {
@@ -221,36 +367,89 @@ class _RecentRatesTable extends StatelessWidget {
         TableRow(
           decoration: BoxDecoration(color: context.colors.surfaceSubtle),
           children: [
-            _Cell(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('ROUTE', style: headerStyle)),
-            _Cell(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('CLIENT', style: headerStyle)),
-            _Cell(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('TYPE', style: headerStyle)),
-            _Cell(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), alignment: Alignment.centerRight, child: Text('RATE', style: headerStyle)),
-            _Cell(padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14), child: Text('STATUS', style: headerStyle)),
+            _Cell(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              child: Text('ROUTE', style: headerStyle),
+            ),
+            _Cell(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              child: Text('CLIENT', style: headerStyle),
+            ),
+            _Cell(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              child: Text('TYPE', style: headerStyle),
+            ),
+            _Cell(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              alignment: Alignment.centerRight,
+              child: Text('RATE', style: headerStyle),
+            ),
+            _Cell(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              child: Text('STATUS', style: headerStyle),
+            ),
           ],
         ),
         for (final rate in rates)
           TableRow(
-            decoration: BoxDecoration(border: Border(top: BorderSide(color: context.colors.border))),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: context.colors.border)),
+            ),
             children: [
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                child: Text(rate.route, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: context.colors.textBody)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 18,
+                ),
+                child: Text(
+                  rate.route,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: context.colors.textBody,
+                  ),
+                ),
               ),
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                child: Text(rate.client, style: TextStyle(fontSize: 14, color: context.colors.textMutedStrong)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 18,
+                ),
+                child: Text(
+                  rate.client,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.colors.textMutedStrong,
+                  ),
+                ),
               ),
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 18,
+                ),
                 child: _typeBadge(context, rate.type),
               ),
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 18,
+                ),
                 alignment: Alignment.centerRight,
-                child: Text(rate.price, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textBody)),
+                child: Text(
+                  rate.price,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: context.colors.textBody,
+                  ),
+                ),
               ),
               _Cell(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 18,
+                ),
                 child: _statusBadge(context, rate.status),
               ),
             ],
@@ -262,26 +461,44 @@ class _RecentRatesTable extends StatelessWidget {
   Widget _typeBadge(BuildContext context, RateType type) {
     final isPublished = type == RateType.published;
     return ShadBadge(
-      backgroundColor: isPublished ? context.colors.primaryChipBg : context.colors.customBg,
-      foregroundColor: isPublished ? context.colors.primaryDeep : context.colors.custom,
+      backgroundColor: isPublished
+          ? context.colors.primaryChipBg
+          : context.colors.customBg,
+      foregroundColor: isPublished
+          ? context.colors.primaryDeep
+          : context.colors.custom,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      child: Text(type.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Text(
+        type.label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
   Widget _statusBadge(BuildContext context, RateStatus status) {
     final isActive = status == RateStatus.active;
     return ShadBadge(
-      backgroundColor: isActive ? context.colors.successBg : context.colors.surfaceMuted,
-      foregroundColor: isActive ? context.colors.successText : context.colors.textMuted,
+      backgroundColor: isActive
+          ? context.colors.successBg
+          : context.colors.surfaceMuted,
+      foregroundColor: isActive
+          ? context.colors.successText
+          : context.colors.textMuted,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      child: Text(status.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Text(
+        status.label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
 
 class _Cell extends StatelessWidget {
-  const _Cell({required this.child, required this.padding, this.alignment = Alignment.centerLeft});
+  const _Cell({
+    required this.child,
+    required this.padding,
+    this.alignment = Alignment.centerLeft,
+  });
 
   final Widget child;
   final EdgeInsets padding;

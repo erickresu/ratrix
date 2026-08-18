@@ -24,15 +24,32 @@ class Step3ConditionalAddons extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Conditional Add-ons', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textBody)),
+        Text(
+          'Conditional Add-ons',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: context.colors.textBody,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text('Charges that only apply when specific conditions are met', style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
+        Text(
+          'Charges that only apply when specific conditions are met',
+          style: TextStyle(fontSize: 13, color: context.colors.textMuted),
+        ),
         const SizedBox(height: 28),
         Row(
           children: [
             for (final type in ConditionalType.values) ...[
-              Expanded(child: _ConditionCard(type: type, selected: state.conditionalType == type, onTap: () => bloc.add(ConditionalTypeChanged(type)))),
-              if (type != ConditionalType.values.last) const SizedBox(width: 12),
+              Expanded(
+                child: _ConditionCard(
+                  type: type,
+                  selected: state.conditionalType == type,
+                  onTap: () => bloc.add(ConditionalTypeChanged(type)),
+                ),
+              ),
+              if (type != ConditionalType.values.last)
+                const SizedBox(width: 12),
             ],
           ],
         ),
@@ -50,9 +67,19 @@ class Step3ConditionalAddons extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(CupertinoIcons.hand_point_right, size: 22, color: context.colors.textFaint),
+                Icon(
+                  CupertinoIcons.hand_point_right,
+                  size: 22,
+                  color: context.colors.textFaint,
+                ),
                 const SizedBox(height: 10),
-                Text('Select a condition above to configure its pricing.', style: TextStyle(fontSize: 14, color: context.colors.textMuted)),
+                Text(
+                  'Select a condition above to configure its pricing.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.colors.textMuted,
+                  ),
+                ),
               ],
             ),
           )
@@ -65,15 +92,28 @@ class Step3ConditionalAddons extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Pricing option', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
+                    Text(
+                      'Pricing option',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textMutedStrong,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     ShadSelect<PricingOption>(
                       initialValue: state.conditionalPricingOption,
-                      selectedOptionBuilder: (context, value) => Text(value.label),
+                      selectedOptionBuilder: (context, value) =>
+                          Text(value.label),
                       onChanged: (value) {
-                        if (value != null) bloc.add(ConditionalPricingOptionChanged(value));
+                        if (value != null) {
+                          bloc.add(ConditionalPricingOptionChanged(value));
+                        }
                       },
-                      options: [for (final p in PricingOption.values) ShadOption(value: p, child: Text(p.label))],
+                      options: [
+                        for (final p in PricingOption.values)
+                          ShadOption(value: p, child: Text(p.label)),
+                      ],
                     ),
                   ],
                 ),
@@ -101,22 +141,36 @@ class Step3ConditionalAddons extends StatelessWidget {
               RateMatrixTable(
                 matrixRows: state.conditionalMatrixRows,
                 breakweights: state.conditionalBreakweights,
-                originPlaceholder: 'Search origin ${state.locationBasis.label.toLowerCase()}...',
-                destinationPlaceholder: 'Search destination ${state.locationBasis.label.toLowerCase()}...',
+                originPlaceholder:
+                    'Search origin ${state.locationBasis.label.toLowerCase()}...',
+                destinationPlaceholder:
+                    'Search destination ${state.locationBasis.label.toLowerCase()}...',
                 locationOptions: state.locationSuggestions,
-                onOriginChanged: (i, v) => bloc.add(ConditionalOriginChanged(i, v)),
-                onDestinationChanged: (i, v) => bloc.add(ConditionalDestinationChanged(i, v)),
-                onCellChanged: (i, bi, v) => bloc.add(ConditionalCellChanged(i, bi, v)),
-                onBreakweightMinChanged: (i, v) => bloc.add(ConditionalBreakweightMinChanged(i, v)),
-                onBreakweightMaxChanged: (i, v) => bloc.add(ConditionalBreakweightMaxChanged(i, v)),
-                onRemoveBreakweight: (i) => bloc.add(ConditionalBreakweightRemoved(i)),
+                onOriginChanged: (i, v) =>
+                    bloc.add(ConditionalOriginChanged(i, v)),
+                onDestinationChanged: (i, v) =>
+                    bloc.add(ConditionalDestinationChanged(i, v)),
+                onCellChanged: (i, bi, v) =>
+                    bloc.add(ConditionalCellChanged(i, bi, v)),
+                onBreakweightMinChanged: (i, v) =>
+                    bloc.add(ConditionalBreakweightMinChanged(i, v)),
+                onBreakweightMaxChanged: (i, v) =>
+                    bloc.add(ConditionalBreakweightMaxChanged(i, v)),
+                onRemoveBreakweight: (i) =>
+                    bloc.add(ConditionalBreakweightRemoved(i)),
               ),
               const SizedBox(height: 20),
               Row(
                 children: [
-                  _GhostButton(label: 'Add route', onTap: () => bloc.add(const ConditionalRouteAdded())),
+                  _GhostButton(
+                    label: 'Add route',
+                    onTap: () => bloc.add(const ConditionalRouteAdded()),
+                  ),
                   const SizedBox(width: 12),
-                  _GhostButton(label: 'Add breakweight', onTap: () => bloc.add(const ConditionalBreakweightAdded())),
+                  _GhostButton(
+                    label: 'Add breakweight',
+                    onTap: () => bloc.add(const ConditionalBreakweightAdded()),
+                  ),
                 ],
               ),
             ],
@@ -127,7 +181,11 @@ class Step3ConditionalAddons extends StatelessWidget {
 }
 
 class _ConditionCard extends StatelessWidget {
-  const _ConditionCard({required this.type, required this.selected, required this.onTap});
+  const _ConditionCard({
+    required this.type,
+    required this.selected,
+    required this.onTap,
+  });
 
   final ConditionalType type;
   final bool selected;
@@ -145,9 +203,20 @@ class _ConditionCard extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: selected ? context.colors.primaryButtonGradient : null,
             color: selected ? null : context.colors.surfaceSubtle,
-            border: Border.all(color: selected ? context.colors.primary : context.colors.border, width: selected ? 1.5 : 1),
+            border: Border.all(
+              color: selected ? context.colors.primary : context.colors.border,
+              width: selected ? 1.5 : 1,
+            ),
             borderRadius: BorderRadius.circular(10),
-            boxShadow: selected ? [BoxShadow(color: context.colors.shadowSoft, blurRadius: 12, offset: const Offset(0, 3))] : null,
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: context.colors.shadowSoft,
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -157,57 +226,56 @@ class _ConditionCard extends StatelessWidget {
                 height: 56,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white.withValues(alpha: 0.2) : context.colors.primaryChipBg,
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : context.colors.primaryChipBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(_conditionalTypeIcons[type], size: 26, color: selected ? Colors.white : context.colors.primaryDeep),
+                child: Icon(
+                  _conditionalTypeIcons[type],
+                  size: 26,
+                  color: selected ? Colors.white : context.colors.primaryDeep,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(type.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? Colors.white : context.colors.textMutedStrong)),
+                    Text(
+                      type.label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: selected
+                            ? Colors.white
+                            : context.colors.textMutedStrong,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(type.hint, style: TextStyle(fontSize: 12, color: selected ? Colors.white.withValues(alpha: 0.85) : context.colors.textMuted)),
+                    Text(
+                      type.hint,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: selected
+                            ? Colors.white.withValues(alpha: 0.85)
+                            : context.colors.textMuted,
+                      ),
+                    ),
                   ],
                 ),
               ),
               if (selected)
                 const Padding(
                   padding: EdgeInsets.only(left: 8),
-                  child: Icon(CupertinoIcons.check_mark_circled_solid, size: 18, color: Colors.white),
+                  child: Icon(
+                    CupertinoIcons.check_mark_circled_solid,
+                    size: 18,
+                    color: Colors.white,
+                  ),
                 ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SegButton extends StatelessWidget {
-  const _SegButton({required this.label, required this.selected, required this.onTap});
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(5),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: selected ? context.colors.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(5),
-            boxShadow: selected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 2)] : null,
-          ),
-          child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? context.colors.textBody : context.colors.textMuted)),
         ),
       ),
     );
@@ -229,13 +297,27 @@ class _GhostButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(border: Border.all(color: context.colors.borderStrong, width: 1.5), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(
+            border: Border.all(color: context.colors.borderStrong, width: 1.5),
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(CupertinoIcons.add, size: 14, color: context.colors.textMuted),
+              Icon(
+                CupertinoIcons.add,
+                size: 14,
+                color: context.colors.textMuted,
+              ),
               const SizedBox(width: 6),
-              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMuted)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: context.colors.textMuted,
+                ),
+              ),
             ],
           ),
         ),
