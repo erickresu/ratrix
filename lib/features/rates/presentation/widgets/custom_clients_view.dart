@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/client.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
@@ -23,13 +24,13 @@ class CustomClientsView extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Custom Rate Clients', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: RatesColors.textBody)),
-                    SizedBox(height: 4),
-                    Text('Pick a client to view or set up their negotiated rates', style: TextStyle(fontSize: 14, color: RatesColors.textMuted)),
+                    Text('Custom Rate Clients', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.colors.textBody)),
+                    const SizedBox(height: 4),
+                    Text('Pick a client to view or set up their negotiated rates', style: TextStyle(fontSize: 14, color: context.colors.textMuted)),
                   ],
                 ),
               ),
@@ -37,7 +38,7 @@ class CustomClientsView extends StatelessWidget {
                 width: 300,
                 child: ShadInput(
                   placeholder: const Text('Search clients...'),
-                  leading: const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.search, size: 16, color: RatesColors.textMuted)),
+                  leading: Padding(padding: const EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.search, size: 16, color: context.colors.textMuted)),
                   onChanged: (v) => bloc.add(ClientSearchChanged(v)),
                 ),
               ),
@@ -49,6 +50,21 @@ class CustomClientsView extends StatelessWidget {
             builder: (context, constraints) {
               final columns = (constraints.maxWidth / 320).floor().clamp(1, 100);
               final pageClients = state.pagedClients;
+              if (state.isLoading) {
+                return SkeletonShimmer(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
+                    itemCount: columns * 2,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      mainAxisSpacing: 20,
+                      crossAxisSpacing: 20,
+                      mainAxisExtent: 232,
+                    ),
+                    itemBuilder: (context, index) => const GridCardSkeleton(),
+                  ),
+                );
+              }
               return GridView.builder(
                 padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
                 itemCount: pageClients.length,
@@ -102,16 +118,16 @@ class _ClientsPaginationBar extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(40, 12, 40, 20),
-      decoration: const BoxDecoration(
-        color: RatesColors.surface,
-        border: Border(top: BorderSide(color: RatesColors.border)),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        border: Border(top: BorderSide(color: context.colors.border)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             'Showing $rangeStart–$rangeEnd of $totalClients',
-            style: const TextStyle(fontSize: 13, color: RatesColors.textMuted),
+            style: TextStyle(fontSize: 13, color: context.colors.textMuted),
           ),
           Row(
             children: [
@@ -123,7 +139,7 @@ class _ClientsPaginationBar extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Page ${page + 1} of $pageCount',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textBody),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textBody),
               ),
               const SizedBox(width: 8),
               _PageButton(
@@ -158,11 +174,11 @@ class _PageButton extends StatelessWidget {
           height: 32,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            border: Border.all(color: RatesColors.borderStrong),
+            border: Border.all(color: context.colors.borderStrong),
             borderRadius: BorderRadius.circular(8),
-            color: RatesColors.surface,
+            color: context.colors.surface,
           ),
-          child: Icon(icon, size: 16, color: enabled ? RatesColors.textBody : RatesColors.textFaint),
+          child: Icon(icon, size: 16, color: enabled ? context.colors.textBody : context.colors.textFaint),
         ),
       ),
     );
@@ -187,10 +203,10 @@ class _ClientCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: RatesColors.surface,
-            border: Border.all(color: RatesColors.border),
+            color: context.colors.surface,
+            border: Border.all(color: context.colors.border),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 16, offset: Offset(0, 4))],
+            boxShadow: [BoxShadow(color: context.colors.shadowSoft, blurRadius: 16, offset: const Offset(0, 4))],
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -198,16 +214,16 @@ class _ClientCard extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: RatesColors.surfaceMuted))),
+                decoration: BoxDecoration(border: Border(bottom: BorderSide(color: context.colors.surfaceMuted))),
                 child: Row(
                   children: [
                     Container(
                       width: 44,
                       height: 44,
                       alignment: Alignment.center,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(colors: [RatesColors.primary, RatesColors.primaryDeep], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                        gradient: LinearGradient(colors: [context.colors.primary, context.colors.primaryDeep], begin: Alignment.topLeft, end: Alignment.bottomRight),
                       ),
                       child: Text(client.initials, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
                     ),
@@ -217,9 +233,9 @@ class _ClientCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(client.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
+                          Text(client.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.textBody)),
                           const SizedBox(height: 2),
-                          Text(client.accountNumber, style: const TextStyle(fontSize: 12, color: RatesColors.primary, fontFamily: 'monospace')),
+                          Text(client.accountNumber, style: TextStyle(fontSize: 12, color: context.colors.primary, fontFamily: 'monospace')),
                         ],
                       ),
                     ),
@@ -232,27 +248,27 @@ class _ClientCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('✉ ${client.email}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: RatesColors.textMuted)),
+                      Text('✉ ${client.email}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
                           ShadBadge(
-                            backgroundColor: RatesColors.successBg.withValues(alpha: 0.6),
-                            foregroundColor: RatesColors.primaryDeep,
+                            backgroundColor: context.colors.successBg.withValues(alpha: 0.6),
+                            foregroundColor: context.colors.primaryDeep,
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             child: Text(client.businessType.toUpperCase(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
                           ),
                           ShadBadge(
-                            backgroundColor: isInclusive ? RatesColors.primarySoftBg : RatesColors.surface,
-                            foregroundColor: isInclusive ? RatesColors.primaryDeep : RatesColors.textMutedStrong,
+                            backgroundColor: isInclusive ? context.colors.primarySoftBg : context.colors.surface,
+                            foregroundColor: isInclusive ? context.colors.primaryDeep : context.colors.textMutedStrong,
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             shape: isInclusive
                                 ? null
                                 : RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(6),
-                                    side: const BorderSide(color: RatesColors.borderStrong),
+                                    side: BorderSide(color: context.colors.borderStrong),
                                   ),
                             child: Text('VAT ${client.vatStatus.label}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                           ),
@@ -264,16 +280,16 @@ class _ClientCard extends StatelessWidget {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                color: RatesColors.surfaceSubtle,
+                color: context.colors.surfaceSubtle,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('$rateCount custom rate(s)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
-                    const Row(
+                    Text('$rateCount custom rate(s)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
+                    Row(
                       children: [
-                        Text('View rates', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: RatesColors.primaryDeep)),
-                        SizedBox(width: 4),
-                        Icon(CupertinoIcons.arrow_right, size: 13, color: RatesColors.primaryDeep),
+                        Text('View rates', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primaryDeep)),
+                        const SizedBox(width: 4),
+                        Icon(CupertinoIcons.arrow_right, size: 13, color: context.colors.primaryDeep),
                       ],
                     ),
                   ],

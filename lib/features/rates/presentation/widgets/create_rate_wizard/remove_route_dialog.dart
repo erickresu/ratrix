@@ -10,14 +10,14 @@ class RemoveRouteDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShadDialog.alert(
       radius: BorderRadius.circular(16),
-      backgroundColor: RatesColors.surface,
+      backgroundColor: context.colors.surface,
       padding: const EdgeInsets.all(28),
-      title: const Text('Remove this route?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
-      description: const Padding(
-        padding: EdgeInsets.only(top: 8, bottom: 8),
+      title: Text('Remove this route?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: context.colors.textBody)),
+      description: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 8),
         child: Text(
           "This will delete the route and its breakweight and rate values. This can't be undone.",
-          style: TextStyle(fontSize: 14, color: RatesColors.textMuted, height: 1.5),
+          style: TextStyle(fontSize: 14, color: context.colors.textMuted, height: 1.5),
         ),
       ),
       actions: [

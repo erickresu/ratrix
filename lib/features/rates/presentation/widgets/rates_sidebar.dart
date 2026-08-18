@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/theme/theme_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
@@ -23,7 +24,7 @@ class RatesSidebar extends StatelessWidget {
 
     return Container(
       width: 272,
-      color: RatesColors.sidebarBg,
+      color: RatesColors.dark.sidebarBg,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       child: Column(
         children: [
@@ -84,6 +85,8 @@ class RatesSidebar extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          const _ThemeToggleRow(),
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.only(top: 12),
             decoration: const BoxDecoration(
@@ -104,6 +107,55 @@ class RatesSidebar extends StatelessWidget {
   }
 }
 
+class _ThemeToggleRow extends StatelessWidget {
+  const _ThemeToggleRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final mode = context.watch<ThemeCubit>().state;
+    final isDark = mode == ThemeMode.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => context.read<ThemeCubit>().toggle(),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text('Theme', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
+              Switch(
+                value: isDark,
+                onChanged: (_) => context.read<ThemeCubit>().toggle(),
+                thumbIcon: WidgetStateProperty.resolveWith((states) {
+                  final on = states.contains(WidgetState.selected);
+                  return Icon(
+                    on ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max_fill,
+                    size: 14,
+                    color: on ? RatesColors.dark.primary : const Color(0xFFB45309),
+                  );
+                }),
+                activeTrackColor: RatesColors.dark.primarySoftBg,
+                activeThumbColor: Colors.white,
+                inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
+                inactiveThumbColor: Colors.white,
+                trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Logo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -114,7 +166,7 @@ class _Logo extends StatelessWidget {
           height: 14,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: RatesColors.primary, width: 2),
+            border: Border.all(color: RatesColors.dark.primary, width: 2),
           ),
         ),
         const SizedBox(width: 10),
@@ -154,7 +206,7 @@ class _NavItem extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           decoration: BoxDecoration(
-            color: active ? RatesColors.primary : Colors.transparent,
+            color: active ? RatesColors.dark.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -235,12 +287,12 @@ class _SubNavItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           child: Row(
             children: [
-              Icon(icon, size: 13, color: active ? RatesColors.primary : Colors.white.withValues(alpha: 0.6)),
+              Icon(icon, size: 13, color: active ? RatesColors.dark.primary : Colors.white.withValues(alpha: 0.6)),
               const SizedBox(width: 10),
               Text(
                 label,
                 style: TextStyle(
-                  color: active ? RatesColors.primary : Colors.white.withValues(alpha: 0.6),
+                  color: active ? RatesColors.dark.primary : Colors.white.withValues(alpha: 0.6),
                   fontSize: 13,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                 ),
@@ -274,7 +326,7 @@ class _NotificationsRow extends StatelessWidget {
             child: Container(
               width: 6,
               height: 6,
-              decoration: const BoxDecoration(color: RatesColors.primary, shape: BoxShape.circle),
+              decoration: BoxDecoration(color: RatesColors.dark.primary, shape: BoxShape.circle),
             ),
           ),
         ],
@@ -348,7 +400,7 @@ class _ProfileBlockState extends State<_ProfileBlock> {
               width: 232,
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: RatesColors.sidebarPanelBg,
+                color: RatesColors.dark.sidebarPanelBg,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 24, offset: const Offset(0, 8))],
@@ -406,8 +458,8 @@ class _ProfileBlockState extends State<_ProfileBlock> {
                   width: 30,
                   height: 30,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(color: RatesColors.primaryChipBg, shape: BoxShape.circle),
-                  child: const Text('AU', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: RatesColors.primaryDeep)),
+                  decoration: BoxDecoration(color: RatesColors.dark.primaryChipBg, shape: BoxShape.circle),
+                  child: Text('AU', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: RatesColors.dark.primaryDeep)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(

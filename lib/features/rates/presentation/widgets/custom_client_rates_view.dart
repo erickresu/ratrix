@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/client_rate.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
@@ -30,14 +31,14 @@ class CustomClientRatesView extends StatelessWidget {
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
-                decoration: BoxDecoration(color: RatesColors.sidebarPanelBg, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: context.colors.sidebarPanelBg, borderRadius: BorderRadius.circular(12)),
                 child: Row(
                   children: [
                     Container(
                       width: 52,
                       height: 52,
                       alignment: Alignment.center,
-                      decoration: BoxDecoration(color: RatesColors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(color: context.colors.primary.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                       child: Text(client.initials, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF6FE0C6))),
                     ),
                     const SizedBox(width: 16),
@@ -52,8 +53,8 @@ class CustomClientRatesView extends StatelessWidget {
                       ),
                     ),
                     ShadButton(
-                      backgroundColor: RatesColors.primary,
-                      hoverBackgroundColor: RatesColors.primaryHover,
+                      backgroundColor: context.colors.primary,
+                      hoverBackgroundColor: context.colors.primaryHover,
                       leading: const Icon(CupertinoIcons.add, size: 17, color: Colors.white),
                       onPressed: () => bloc.add(const CreateCustomRateForSelectedClientRequested()),
                       child: const Text('Create New Rate'),
@@ -72,7 +73,7 @@ class CustomClientRatesView extends StatelessWidget {
                     width: 320,
                     child: ShadInput(
                       placeholder: const Text('Search by charge code, freight mode...'),
-                      leading: const Padding(padding: EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.search, size: 16, color: RatesColors.textMuted)),
+                      leading: Padding(padding: const EdgeInsets.only(left: 4), child: Icon(CupertinoIcons.search, size: 16, color: context.colors.textMuted)),
                       onChanged: (v) => bloc.add(ClientRateSearchChanged(v)),
                     ),
                   ),
@@ -84,23 +85,35 @@ class CustomClientRatesView extends StatelessWidget {
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
-            child: state.filteredClientRates.isEmpty
+            child: state.clientRatesLoading
+                ? const SkeletonShimmer(
+                    child: Column(
+                      children: [
+                        ListRowCardSkeleton(),
+                        SizedBox(height: 16),
+                        ListRowCardSkeleton(),
+                        SizedBox(height: 16),
+                        ListRowCardSkeleton(),
+                      ],
+                    ),
+                  )
+                : state.filteredClientRates.isEmpty
                 ? Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(40),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      border: Border.all(color: RatesColors.borderStrong, style: BorderStyle.solid),
+                      border: Border.all(color: context.colors.borderStrong, style: BorderStyle.solid),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(CupertinoIcons.tray, size: 26, color: RatesColors.textFaint),
+                        Icon(CupertinoIcons.tray, size: 26, color: context.colors.textFaint),
                         const SizedBox(height: 12),
                         Text(
                           'No ${state.clientRatesTab.label.toLowerCase()} rates for this client.',
-                          style: const TextStyle(fontSize: 14, color: RatesColors.textMuted),
+                          style: TextStyle(fontSize: 14, color: context.colors.textMuted),
                         ),
                       ],
                     ),
@@ -137,13 +150,13 @@ class _TabPill extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? RatesColors.primary : RatesColors.surface,
-            border: Border.all(color: selected ? RatesColors.primary : RatesColors.borderStrong),
+            color: selected ? context.colors.primary : context.colors.surface,
+            border: Border.all(color: selected ? context.colors.primary : context.colors.borderStrong),
             borderRadius: BorderRadius.circular(7),
           ),
           child: Text(
             label,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: selected ? Colors.white : RatesColors.textMutedStrong),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: selected ? Colors.white : context.colors.textMutedStrong),
           ),
         ),
       ),
@@ -163,16 +176,16 @@ class _ClientRateCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
-        color: RatesColors.surface,
-        border: Border.all(color: RatesColors.border),
+        color: context.colors.surface,
+        border: Border.all(color: context.colors.border),
         borderRadius: BorderRadius.circular(10),
-        boxShadow: const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 12, offset: Offset(0, 3))],
+        boxShadow: [BoxShadow(color: context.colors.shadowSoft, blurRadius: 12, offset: const Offset(0, 3))],
       ),
       child: Row(
         children: [
           ShadBadge(
-            backgroundColor: RatesColors.successBg.withValues(alpha: 0.6),
-            foregroundColor: RatesColors.primaryDeep,
+            backgroundColor: context.colors.successBg.withValues(alpha: 0.6),
+            foregroundColor: context.colors.primaryDeep,
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
             child: Text(rate.freightMode.label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
           ),
@@ -181,15 +194,15 @@ class _ClientRateCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(rate.chargeCode, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'monospace', color: RatesColors.textBody)),
+                Text(rate.chargeCode, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'monospace', color: context.colors.textBody)),
                 const SizedBox(height: 2),
-                Text('${rate.serviceMode.label} · ${rate.routeCount} route(s)', style: const TextStyle(fontSize: 12, color: RatesColors.textMuted)),
+                Text('${rate.serviceMode.label} · ${rate.routeCount} route(s)', style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
               ],
             ),
           ),
           ShadBadge(
-            backgroundColor: isActive ? RatesColors.successBg : RatesColors.surfaceMuted,
-            foregroundColor: isActive ? RatesColors.successText : RatesColors.textMuted,
+            backgroundColor: isActive ? context.colors.successBg : context.colors.surfaceMuted,
+            foregroundColor: isActive ? context.colors.successText : context.colors.textMuted,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             child: Text(rate.expiryLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
           ),

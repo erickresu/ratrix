@@ -54,10 +54,10 @@ class RateMatrixTable extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: RatesColors.surface,
-        border: Border.all(color: RatesColors.border),
+        color: context.colors.surface,
+        border: Border.all(color: context.colors.border),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 16, offset: Offset(0, 4))],
+        boxShadow: [BoxShadow(color: context.colors.shadowSoft, blurRadius: 16, offset: const Offset(0, 4))],
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
@@ -71,11 +71,11 @@ class RateMatrixTable extends StatelessWidget {
                 Container(
                   height: _headerHeight,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: RatesColors.surfaceSubtle,
+                  decoration: BoxDecoration(
+                    color: context.colors.surfaceSubtle,
                     border: Border(
-                      bottom: BorderSide(color: RatesColors.border),
-                      right: BorderSide(color: RatesColors.border),
+                      bottom: BorderSide(color: context.colors.border),
+                      right: BorderSide(color: context.colors.border),
                     ),
                   ),
                   child: Row(
@@ -89,10 +89,10 @@ class RateMatrixTable extends StatelessWidget {
                 for (var i = 0; i < matrixRows.length; i++)
                   Container(
                     height: _rowHeight,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(
-                        top: BorderSide(color: RatesColors.surfaceMuted),
-                        right: BorderSide(color: RatesColors.surfaceMuted),
+                        top: BorderSide(color: context.colors.surfaceMuted),
+                        right: BorderSide(color: context.colors.surfaceMuted),
                       ),
                     ),
                     child: Row(
@@ -127,7 +127,7 @@ class RateMatrixTable extends StatelessWidget {
                             child: IconButton(
                               onPressed: removeDisabled ? null : () => onRemoveRoute!(i),
                               icon: const Icon(CupertinoIcons.xmark, size: 14),
-                              color: removeDisabled ? RatesColors.textFaint : RatesColors.destructive,
+                              color: removeDisabled ? context.colors.textFaint : context.colors.destructive,
                               splashRadius: 16,
                             ),
                           ),
@@ -167,8 +167,8 @@ class RateMatrixTable extends StatelessWidget {
                     for (var i = 0; i < matrixRows.length; i++)
                       Container(
                         height: _rowHeight,
-                        decoration: const BoxDecoration(
-                          border: Border(top: BorderSide(color: RatesColors.surfaceMuted)),
+                        decoration: BoxDecoration(
+                          border: Border(top: BorderSide(color: context.colors.surfaceMuted)),
                         ),
                         child: Row(
                           children: [
@@ -177,13 +177,13 @@ class RateMatrixTable extends StatelessWidget {
                                 width: columnWidth,
                                 alignment: Alignment.center,
                                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                                decoration: const BoxDecoration(
-                                  border: Border(left: BorderSide(color: RatesColors.surfaceMuted)),
+                                decoration: BoxDecoration(
+                                  border: Border(left: BorderSide(color: context.colors.surfaceMuted)),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Text(r'$', style: TextStyle(fontSize: 12, color: RatesColors.primaryDeep)),
+                                    Text(r'$', style: TextStyle(fontSize: 12, color: context.colors.primaryDeep)),
                                     const SizedBox(width: 4),
                                     SizedBox(
                                       width: 68,
@@ -194,8 +194,8 @@ class RateMatrixTable extends StatelessWidget {
                                             : '',
                                         textAlign: TextAlign.center,
                                         padding: _compactInputPadding,
-                                        decoration: const ShadDecoration(
-                                          color: RatesColors.primarySoftBg,
+                                        decoration: ShadDecoration(
+                                          color: context.colors.primarySoftBg,
                                           border: ShadBorder.none,
                                           focusedBorder: ShadBorder.none,
                                         ),
@@ -300,7 +300,7 @@ class _LocationField extends StatelessWidget {
           child: Material(
             elevation: 4,
             borderRadius: BorderRadius.circular(8),
-            color: RatesColors.surface,
+            color: context.colors.surface,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 220, minWidth: 240),
               child: ListView.builder(
@@ -313,7 +313,7 @@ class _LocationField extends StatelessWidget {
                     onTap: () => onSelected(option),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: Text(option, style: const TextStyle(fontSize: 13, color: RatesColors.textBody)),
+                      child: Text(option, style: TextStyle(fontSize: 13, color: context.colors.textBody)),
                     ),
                   );
                 },
@@ -337,10 +337,10 @@ class _HeaderLabel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: RatesColors.textMuted,
+          color: context.colors.textMuted,
           letterSpacing: 0.4,
         ),
       ),
@@ -377,11 +377,11 @@ class _BreakweightHeaderCell extends StatelessWidget {
       width: width,
       height: height,
       padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-      decoration: const BoxDecoration(
-        color: RatesColors.surfaceSubtle,
+      decoration: BoxDecoration(
+        color: context.colors.surfaceSubtle,
         border: Border(
-          left: BorderSide(color: RatesColors.border),
-          bottom: BorderSide(color: RatesColors.border),
+          left: BorderSide(color: context.colors.border),
+          bottom: BorderSide(color: context.colors.border),
         ),
       ),
       child: Stack(
@@ -397,7 +397,7 @@ class _BreakweightHeaderCell extends StatelessWidget {
                 child: Text(
                   'Breakweight ${index + 1}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong),
                 ),
               ),
               const SizedBox(height: 8),
@@ -412,9 +412,9 @@ class _BreakweightHeaderCell extends StatelessWidget {
                       onChanged: onMinChanged,
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Text('–', style: TextStyle(fontSize: 12, color: RatesColors.textMuted)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text('–', style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
                   ),
                   Expanded(
                     child: ShadInput(
@@ -435,7 +435,7 @@ class _BreakweightHeaderCell extends StatelessWidget {
             child: IconButton(
               onPressed: removeDisabled ? null : onRemove,
               icon: const Icon(CupertinoIcons.xmark, size: 12),
-              color: removeDisabled ? RatesColors.textFaint : RatesColors.destructive,
+              color: removeDisabled ? context.colors.textFaint : context.colors.destructive,
               splashRadius: 14,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 20, minHeight: 20),

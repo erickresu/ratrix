@@ -24,9 +24,9 @@ class Step3ConditionalAddons extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Conditional Add-ons', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
+        Text('Conditional Add-ons', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textBody)),
         const SizedBox(height: 4),
-        const Text('Charges that only apply when specific conditions are met', style: TextStyle(fontSize: 13, color: RatesColors.textMuted)),
+        Text('Charges that only apply when specific conditions are met', style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
         const SizedBox(height: 28),
         Row(
           children: [
@@ -43,16 +43,16 @@ class Step3ConditionalAddons extends StatelessWidget {
             padding: const EdgeInsets.all(40),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: RatesColors.surfaceSubtle,
-              border: Border.all(color: RatesColors.border),
+              color: context.colors.surfaceSubtle,
+              border: Border.all(color: context.colors.border),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(CupertinoIcons.hand_point_right, size: 22, color: RatesColors.textFaint),
-                SizedBox(height: 10),
-                Text('Select a condition above to configure its pricing.', style: TextStyle(fontSize: 14, color: RatesColors.textMuted)),
+              children: [
+                Icon(CupertinoIcons.hand_point_right, size: 22, color: context.colors.textFaint),
+                const SizedBox(height: 10),
+                Text('Select a condition above to configure its pricing.', style: TextStyle(fontSize: 14, color: context.colors.textMuted)),
               ],
             ),
           )
@@ -65,7 +65,7 @@ class Step3ConditionalAddons extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Pricing option', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
+                    Text('Pricing option', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
                     const SizedBox(height: 10),
                     ShadSelect<PricingOption>(
                       initialValue: state.conditionalPricingOption,
@@ -143,11 +143,11 @@ class _ConditionCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: selected ? RatesColors.primaryButtonGradient : null,
-            color: selected ? null : RatesColors.surfaceSubtle,
-            border: Border.all(color: selected ? RatesColors.primary : RatesColors.border, width: selected ? 1.5 : 1),
+            gradient: selected ? context.colors.primaryButtonGradient : null,
+            color: selected ? null : context.colors.surfaceSubtle,
+            border: Border.all(color: selected ? context.colors.primary : context.colors.border, width: selected ? 1.5 : 1),
             borderRadius: BorderRadius.circular(10),
-            boxShadow: selected ? const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 12, offset: Offset(0, 3))] : null,
+            boxShadow: selected ? [BoxShadow(color: context.colors.shadowSoft, blurRadius: 12, offset: const Offset(0, 3))] : null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -157,19 +157,19 @@ class _ConditionCard extends StatelessWidget {
                 height: 56,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white.withValues(alpha: 0.2) : RatesColors.primaryChipBg,
+                  color: selected ? Colors.white.withValues(alpha: 0.2) : context.colors.primaryChipBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(_conditionalTypeIcons[type], size: 26, color: selected ? Colors.white : RatesColors.primaryDeep),
+                child: Icon(_conditionalTypeIcons[type], size: 26, color: selected ? Colors.white : context.colors.primaryDeep),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(type.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? Colors.white : RatesColors.textMutedStrong)),
+                    Text(type.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? Colors.white : context.colors.textMutedStrong)),
                     const SizedBox(height: 2),
-                    Text(type.hint, style: TextStyle(fontSize: 12, color: selected ? Colors.white.withValues(alpha: 0.85) : RatesColors.textMuted)),
+                    Text(type.hint, style: TextStyle(fontSize: 12, color: selected ? Colors.white.withValues(alpha: 0.85) : context.colors.textMuted)),
                   ],
                 ),
               ),
@@ -203,11 +203,11 @@ class _SegButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: selected ? RatesColors.surface : Colors.transparent,
+            color: selected ? context.colors.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(5),
             boxShadow: selected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 2)] : null,
           ),
-          child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? RatesColors.textBody : RatesColors.textMuted)),
+          child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? context.colors.textBody : context.colors.textMuted)),
         ),
       ),
     );
@@ -229,13 +229,13 @@ class _GhostButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong, width: 1.5), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(border: Border.all(color: context.colors.borderStrong, width: 1.5), borderRadius: BorderRadius.circular(10)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(CupertinoIcons.add, size: 14, color: RatesColors.textMuted),
+              Icon(CupertinoIcons.add, size: 14, color: context.colors.textMuted),
               const SizedBox(width: 6),
-              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
+              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMuted)),
             ],
           ),
         ),

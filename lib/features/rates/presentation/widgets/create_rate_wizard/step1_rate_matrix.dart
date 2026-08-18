@@ -21,16 +21,16 @@ class Step1RateMatrix extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(color: RatesColors.primarySoftBg, borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(color: context.colors.primarySoftBg, borderRadius: BorderRadius.circular(14)),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Bulk operations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: RatesColors.textBody)),
-                    SizedBox(height: 2),
-                    Text('Download a template, or bulk import/export rate data', style: TextStyle(fontSize: 12, color: RatesColors.textMuted)),
+                    Text('Bulk operations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textBody)),
+                    const SizedBox(height: 2),
+                    Text('Download a template, or bulk import/export rate data', style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
                   ],
                 ),
               ),
@@ -50,7 +50,7 @@ class Step1RateMatrix extends StatelessWidget {
             _MatrixTab(label: 'Express rates', selected: state.matrixTab == 'express', onTap: () => bloc.add(const MatrixTabChanged('express'))),
           ],
         ),
-        const Divider(height: 25, color: RatesColors.border),
+        Divider(height: 25, color: context.colors.border),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -58,16 +58,16 @@ class Step1RateMatrix extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${state.matrixTab == 'standard' ? 'Standard' : 'Express'} rate markup', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: RatesColors.textBody)),
+                  Text('${state.matrixTab == 'standard' ? 'Standard' : 'Express'} rate markup', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.colors.textBody)),
                   const SizedBox(height: 2),
-                  const Text('Apply a percentage markup to all current rates. You can still edit individual rows after.', style: TextStyle(fontSize: 13, color: RatesColors.textMuted)),
+                  Text('Apply a percentage markup to all current rates. You can still edit individual rows after.', style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
                 ],
               ),
             ),
             const SizedBox(width: 24),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(10), color: RatesColors.surfaceSubtle),
+              decoration: BoxDecoration(border: Border.all(color: context.colors.borderStrong), borderRadius: BorderRadius.circular(10), color: context.colors.surfaceSubtle),
               child: Row(
                 children: [
                   SizedBox(
@@ -81,12 +81,12 @@ class Step1RateMatrix extends StatelessWidget {
                       onChanged: (v) => bloc.add(MarkupChanged(v)),
                     ),
                   ),
-                  const Text('%', style: TextStyle(fontSize: 14, color: RatesColors.textMuted)),
+                  Text('%', style: TextStyle(fontSize: 14, color: context.colors.textMuted)),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            ShadButton(backgroundColor: RatesColors.primary, onPressed: () {}, child: const Text('Apply markup')),
+            ShadButton(backgroundColor: context.colors.primary, onPressed: () {}, child: const Text('Apply markup')),
           ],
         ),
         const SizedBox(height: 20),
@@ -145,10 +145,10 @@ class _MiniButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ShadButton(
-      backgroundColor: RatesColors.primaryChipBg,
-      hoverBackgroundColor: RatesColors.primaryBorder,
-      foregroundColor: RatesColors.primaryDeep,
-      leading: Icon(icon, size: 15, color: RatesColors.primaryDeep),
+      backgroundColor: context.colors.primaryChipBg,
+      hoverBackgroundColor: context.colors.primaryBorder,
+      foregroundColor: context.colors.primaryDeep,
+      leading: Icon(icon, size: 15, color: context.colors.primaryDeep),
       onPressed: () {},
       child: Text(label),
     );
@@ -170,8 +170,8 @@ class _MatrixTab extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: selected ? RatesColors.primary : Colors.transparent, width: 2))),
-          child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? RatesColors.textBody : RatesColors.textMuted)),
+          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: selected ? context.colors.primary : Colors.transparent, width: 2))),
+          child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? context.colors.textBody : context.colors.textMuted)),
         ),
       ),
     );
@@ -195,11 +195,11 @@ class _SegButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: selected ? RatesColors.surface : Colors.transparent,
+            color: selected ? context.colors.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(5),
             boxShadow: selected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 2)] : null,
           ),
-          child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? RatesColors.textBody : RatesColors.textMuted)),
+          child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? context.colors.textBody : context.colors.textMuted)),
         ),
       ),
     );
@@ -221,13 +221,13 @@ class _GhostButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong, width: 1.5, style: BorderStyle.solid), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(border: Border.all(color: context.colors.borderStrong, width: 1.5, style: BorderStyle.solid), borderRadius: BorderRadius.circular(10)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(CupertinoIcons.add, size: 14, color: RatesColors.textMuted),
+              Icon(CupertinoIcons.add, size: 14, color: context.colors.textMuted),
               const SizedBox(width: 6),
-              Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMuted)),
+              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMuted)),
             ],
           ),
         ),

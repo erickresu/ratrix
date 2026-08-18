@@ -22,7 +22,7 @@ class Step0RateSetup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Freight mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
+        Text('Freight mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -41,8 +41,8 @@ class Step0RateSetup extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text('Expiry Date ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
-                    const Text('*', style: TextStyle(fontSize: 13, color: RatesColors.destructive)),
+                    Text('Expiry Date ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
+                    Text('*', style: TextStyle(fontSize: 13, color: context.colors.destructive)),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -65,18 +65,18 @@ class Step0RateSetup extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       alignment: Alignment.centerLeft,
                       decoration: BoxDecoration(
-                        border: Border.all(color: RatesColors.borderStrong),
+                        border: Border.all(color: context.colors.borderStrong),
                         borderRadius: BorderRadius.circular(8),
-                        color: RatesColors.surface,
+                        color: context.colors.surface,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             state.expiryDate == null ? 'Select date' : DateFormat.yMMMd().format(state.expiryDate!),
-                            style: TextStyle(fontSize: 14, color: state.expiryDate == null ? RatesColors.textMuted : RatesColors.textBody),
+                            style: TextStyle(fontSize: 14, color: state.expiryDate == null ? context.colors.textMuted : context.colors.textBody),
                           ),
-                          const Icon(CupertinoIcons.calendar, size: 15, color: RatesColors.textMuted),
+                          Icon(CupertinoIcons.calendar, size: 15, color: context.colors.textMuted),
                         ],
                       ),
                     ),
@@ -94,7 +94,7 @@ class Step0RateSetup extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Service mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
+                  Text('Service mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -116,7 +116,7 @@ class Step0RateSetup extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Charge basis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
+                  Text('Charge basis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -139,7 +139,7 @@ class Step0RateSetup extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Pricing option', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
+            Text('Pricing option', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
             const SizedBox(height: 12),
             ShadSelect<PricingOption>(
               initialValue: state.pricingOption,
@@ -157,8 +157,8 @@ class Step0RateSetup extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Text('Charge code name ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
-                const Text('(optional)', style: TextStyle(fontSize: 13, color: RatesColors.textMuted)),
+                Text('Charge code name ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
+                Text('(optional)', style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
               ],
             ),
             const SizedBox(height: 12),
@@ -167,11 +167,11 @@ class Step0RateSetup extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: RatesColors.surfaceMuted,
-                    border: Border.all(color: RatesColors.borderStrong),
+                    color: context.colors.surfaceMuted,
+                    border: Border.all(color: context.colors.borderStrong),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text(state.chargeCodePrefix, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, fontFamily: 'monospace', color: RatesColors.textMutedStrong)),
+                  child: Text(state.chargeCodePrefix, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, fontFamily: 'monospace', color: context.colors.textMutedStrong)),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -215,11 +215,11 @@ class _FreightModeCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
-            gradient: selected ? RatesColors.primaryButtonGradient : null,
-            color: selected ? null : RatesColors.surfaceSubtle,
-            border: Border.all(color: selected ? RatesColors.primary : RatesColors.border, width: selected ? 1.5 : 1),
+            gradient: selected ? context.colors.primaryButtonGradient : null,
+            color: selected ? null : context.colors.surfaceSubtle,
+            border: Border.all(color: selected ? context.colors.primary : context.colors.border, width: selected ? 1.5 : 1),
             borderRadius: BorderRadius.circular(10),
-            boxShadow: selected ? const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 12, offset: Offset(0, 3))] : null,
+            boxShadow: selected ? [BoxShadow(color: context.colors.shadowSoft, blurRadius: 12, offset: const Offset(0, 3))] : null,
           ),
           child: Row(
             children: [
@@ -228,13 +228,13 @@ class _FreightModeCard extends StatelessWidget {
                 height: 56,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected ? Colors.white.withValues(alpha: 0.2) : RatesColors.primaryChipBg,
+                  color: selected ? Colors.white.withValues(alpha: 0.2) : context.colors.primaryChipBg,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(_freightModeIcons[mode], size: 26, color: selected ? Colors.white : RatesColors.primaryDeep),
+                child: Icon(_freightModeIcons[mode], size: 26, color: selected ? Colors.white : context.colors.primaryDeep),
               ),
               const SizedBox(width: 12),
-              Text(mode.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? Colors.white : RatesColors.textMutedStrong)),
+              Text(mode.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? Colors.white : context.colors.textMutedStrong)),
               if (selected) ...[
                 const Spacer(),
                 const Icon(CupertinoIcons.check_mark_circled_solid, size: 16, color: Colors.white),

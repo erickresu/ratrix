@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
+import '../../features/rates/presentation/rates_colors.dart';
 
 class SoftCard extends StatelessWidget {
   final Widget child;
@@ -26,11 +26,11 @@ class SoftCard extends StatelessWidget {
       width: width,
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: context.colors.shadowSoft,
             blurRadius: blurRadius,
             offset: shadowOffset,
           ),

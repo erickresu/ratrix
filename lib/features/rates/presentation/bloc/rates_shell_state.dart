@@ -18,6 +18,7 @@ class RatesShellState extends Equatable {
 
   final String? selectedClientId;
   final List<ClientRate> selectedClientRates;
+  final bool clientRatesLoading;
   final String clientRateSearch;
   final RateStatus clientRatesTab;
 
@@ -36,6 +37,7 @@ class RatesShellState extends Equatable {
     this.clientPage = 0,
     this.selectedClientId,
     this.selectedClientRates = const [],
+    this.clientRatesLoading = false,
     this.clientRateSearch = '',
     this.clientRatesTab = RateStatus.active,
   });
@@ -90,6 +92,7 @@ class RatesShellState extends Equatable {
     int? clientPage,
     String? selectedClientId,
     List<ClientRate>? selectedClientRates,
+    bool? clientRatesLoading,
     String? clientRateSearch,
     RateStatus? clientRatesTab,
   }) {
@@ -108,6 +111,7 @@ class RatesShellState extends Equatable {
       clientPage: clientPage ?? this.clientPage,
       selectedClientId: selectedClientId ?? this.selectedClientId,
       selectedClientRates: selectedClientRates ?? this.selectedClientRates,
+      clientRatesLoading: clientRatesLoading ?? this.clientRatesLoading,
       clientRateSearch: clientRateSearch ?? this.clientRateSearch,
       clientRatesTab: clientRatesTab ?? this.clientRatesTab,
     );
@@ -129,6 +133,7 @@ class RatesShellState extends Equatable {
         clientPage,
         selectedClientId,
         selectedClientRates,
+        clientRatesLoading,
         clientRateSearch,
         clientRatesTab,
       ];

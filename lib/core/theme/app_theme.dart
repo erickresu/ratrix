@@ -1,5 +1,8 @@
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../features/rates/presentation/rates_colors.dart';
 
 /// Swap for your brand palette.
 abstract class AppColors {
@@ -12,6 +15,10 @@ abstract class AppColors {
   static const surface = Color(0xFFFFFFFF);
   static const border = Color(0xFFE2E8F0);
   static const onSurfaceMuted = Color(0xFF64748B);
+
+  static const backgroundDark = Color(0xFF0D1412);
+  static const surfaceDark = Color(0xFF141E1B);
+  static const borderDark = Color(0xFF243530);
 }
 
 enum AppColorKey {
@@ -113,34 +120,29 @@ abstract class AppSpacing {
 }
 
 abstract class AppTheme {
-  static ThemeData get light {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.light,
-      primary: AppColors.primary,
-      secondary: AppColors.secondary,
-      tertiary: AppColors.success,
-      error: AppColors.error,
-      surface: AppColors.surface,
-    );
+  static final _scheme = FlexSchemeColor(
+    primary: AppColors.primary,
+    secondary: AppColors.secondary,
+    tertiary: AppColors.success,
+  );
 
+  static ThemeData get light {
     final textTheme = GoogleFonts.poppinsTextTheme(
       ThemeData(brightness: Brightness.light).textTheme,
     );
 
-    return ThemeData(
+    return FlexThemeData.light(
+      colors: _scheme,
+      surface: AppColors.surface,
+      scaffoldBackground: AppColors.background,
+      error: AppColors.error,
       useMaterial3: true,
-      colorScheme: colorScheme,
       fontFamily: GoogleFonts.poppins().fontFamily,
       textTheme: textTheme,
-      scaffoldBackgroundColor: AppColors.background,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.surface,
-        foregroundColor: Color(0xFF1E293B),
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        surfaceTintColor: Colors.transparent,
-      ),
+      appBarStyle: FlexAppBarStyle.surface,
+      appBarElevation: 0,
+      surfaceTint: Colors.transparent,
+    ).copyWith(
       cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 1,
@@ -151,10 +153,7 @@ abstract class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -182,6 +181,66 @@ abstract class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       dividerColor: AppColors.border,
+      extensions: const [RatesColors.light],
+    );
+  }
+
+  static ThemeData get dark {
+    final textTheme = GoogleFonts.poppinsTextTheme(
+      ThemeData(brightness: Brightness.dark).textTheme,
+    );
+
+    return FlexThemeData.dark(
+      colors: _scheme,
+      surface: AppColors.surfaceDark,
+      scaffoldBackground: AppColors.backgroundDark,
+      error: AppColors.error,
+      useMaterial3: true,
+      fontFamily: GoogleFonts.poppins().fontFamily,
+      textTheme: textTheme,
+      appBarStyle: FlexAppBarStyle.surface,
+      appBarElevation: 0,
+      surfaceTint: Colors.transparent,
+    ).copyWith(
+      cardTheme: CardThemeData(
+        color: AppColors.surfaceDark,
+        elevation: 1,
+        shadowColor: Colors.black.withValues(alpha: 0.4),
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceDark,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.borderDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.borderDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF62766F), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      dividerColor: AppColors.borderDark,
+      extensions: const [RatesColors.dark],
     );
   }
 }

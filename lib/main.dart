@@ -6,6 +6,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'core/di/injection_container.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_cubit.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/login_page.dart';
@@ -22,49 +23,60 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => AuthBloc(getIt<AuthRepository>())..add(const AuthSubscriptionRequested()),
-      child: ShadApp.custom(
-        theme: ShadThemeData(
-          brightness: Brightness.light,
-          colorScheme: const ShadColorScheme(
-            background: RatesColors.pageBg,
-            foreground: RatesColors.textBody,
-            card: RatesColors.surface,
-            cardForeground: RatesColors.textBody,
-            popover: RatesColors.surface,
-            popoverForeground: RatesColors.textBody,
-            primary: RatesColors.primary,
-            primaryForeground: Colors.white,
-            secondary: RatesColors.surfaceMuted,
-            secondaryForeground: RatesColors.textBody,
-            muted: RatesColors.surfaceMuted,
-            mutedForeground: RatesColors.textMuted,
-            accent: RatesColors.primarySoftBg,
-            accentForeground: RatesColors.primaryDeep,
-            destructive: RatesColors.destructive,
-            destructiveForeground: Colors.white,
-            border: RatesColors.border,
-            input: RatesColors.borderStrong,
-            ring: RatesColors.primary,
-            selection: RatesColors.primarySoftBg,
-          ),
-          radius: BorderRadius.circular(8),
-          disableSecondaryBorder: true,
-          inputTheme: const ShadInputTheme(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          ),
-          selectTheme: const ShadSelectTheme(
-            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          ),
-        ),
-        appBuilder: (context) {
-          return MaterialApp(
-            title: 'Ratrix',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
-            scrollBehavior: AppScrollBehavior(),
-            home: const _AuthGate(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => AuthBloc(getIt<AuthRepository>())..add(const AuthSubscriptionRequested())),
+        BlocProvider(create: (_) => ThemeCubit()),
+      ],
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, mode) {
+          final isDark = mode == ThemeMode.dark;
+          final colors = isDark ? RatesColors.dark : RatesColors.light;
+          return ShadApp.custom(
+            theme: ShadThemeData(
+              brightness: isDark ? Brightness.dark : Brightness.light,
+              colorScheme: ShadColorScheme(
+                background: colors.pageBg,
+                foreground: colors.textBody,
+                card: colors.surface,
+                cardForeground: colors.textBody,
+                popover: colors.surface,
+                popoverForeground: colors.textBody,
+                primary: colors.primary,
+                primaryForeground: Colors.white,
+                secondary: colors.surfaceMuted,
+                secondaryForeground: colors.textBody,
+                muted: colors.surfaceMuted,
+                mutedForeground: colors.textMuted,
+                accent: colors.primarySoftBg,
+                accentForeground: colors.primaryDeep,
+                destructive: colors.destructive,
+                destructiveForeground: Colors.white,
+                border: colors.border,
+                input: colors.borderStrong,
+                ring: colors.primary,
+                selection: colors.primarySoftBg,
+              ),
+              radius: BorderRadius.circular(8),
+              disableSecondaryBorder: true,
+              inputTheme: const ShadInputTheme(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              selectTheme: const ShadSelectTheme(
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              ),
+            ),
+            appBuilder: (context) {
+              return MaterialApp(
+                title: 'Ratrix',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.light,
+                darkTheme: AppTheme.dark,
+                themeMode: mode,
+                scrollBehavior: AppScrollBehavior(),
+                home: const _AuthGate(),
+              );
+            },
           );
         },
       ),
@@ -104,10 +116,10 @@ class _SplashView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: RatesColors.pageBg,
+    return Scaffold(
+      backgroundColor: context.colors.pageBg,
       body: Center(
-        child: CircularProgressIndicator(color: RatesColors.primary),
+        child: CircularProgressIndicator(color: context.colors.primary),
       ),
     );
   }

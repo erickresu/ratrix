@@ -18,13 +18,13 @@ class Step2Addons extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Add-on Charges', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
+        Text('Add-on Charges', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textBody)),
         const SizedBox(height: 4),
         Text(
           state.freightMode == null
               ? 'Configure additional charges'
               : 'Configure additional charges for ${state.freightMode!.label} freight',
-          style: const TextStyle(fontSize: 13, color: RatesColors.textMuted),
+          style: TextStyle(fontSize: 13, color: context.colors.textMuted),
         ),
         const SizedBox(height: 24),
         for (final group in addonGroupDefs) ...[
@@ -48,15 +48,15 @@ class _AddonGroupCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: RatesColors.surface,
-        border: Border.all(color: RatesColors.border),
+        color: context.colors.surface,
+        border: Border.all(color: context.colors.border),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [BoxShadow(color: RatesColors.shadowSoft, blurRadius: 16, offset: Offset(0, 4))],
+        boxShadow: [BoxShadow(color: context.colors.shadowSoft, blurRadius: 16, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(group.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
+          Text(group.title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.textBody)),
           const SizedBox(height: 20),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -116,7 +116,7 @@ class _AddonField extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(child: Text(field.label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong))),
+            Expanded(child: Text(field.label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong))),
             if (field.hasToggle)
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -131,10 +131,10 @@ class _AddonField extends StatelessWidget {
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(border: Border.all(color: RatesColors.borderStrong), borderRadius: BorderRadius.circular(10), color: RatesColors.surfaceSubtle),
+          decoration: BoxDecoration(border: Border.all(color: context.colors.borderStrong), borderRadius: BorderRadius.circular(10), color: context.colors.surfaceSubtle),
           child: Row(
             children: [
-              Text(isPercentage ? '%' : '₱', style: const TextStyle(fontSize: 13, color: RatesColors.textMuted)),
+              Text(isPercentage ? '%' : '₱', style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
               const SizedBox(width: 6),
               Expanded(
                 child: ShadInput(
@@ -175,12 +175,12 @@ class _ModeDot extends StatelessWidget {
               height: 12,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: selected ? RatesColors.primary : RatesColors.borderStrong, width: 2),
-                color: selected ? RatesColors.primary : Colors.transparent,
+                border: Border.all(color: selected ? context.colors.primary : context.colors.borderStrong, width: 2),
+                color: selected ? context.colors.primary : Colors.transparent,
               ),
             ),
             const SizedBox(width: 4),
-            Text(label, style: const TextStyle(fontSize: 12, color: RatesColors.textMutedStrong)),
+            Text(label, style: TextStyle(fontSize: 12, color: context.colors.textMutedStrong)),
           ],
         ),
       ),

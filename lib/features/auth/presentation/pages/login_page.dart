@@ -34,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: RatesColors.pageBg,
+      backgroundColor: context.colors.pageBg,
       body: BlocListener<AuthBloc, AuthState>(
         listenWhen: (prev, curr) => prev.error != curr.error && curr.error != null,
         listener: (context, state) {
@@ -42,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(
-                backgroundColor: RatesColors.destructive,
+                backgroundColor: context.colors.destructive,
                 content: Text(state.error!),
               ),
             );
@@ -86,19 +86,19 @@ class _BrandPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: RatesColors.sidebarBg,
+      color: context.colors.sidebarBg,
       padding: const EdgeInsets.all(56),
       child: Stack(
         children: [
           Positioned(
             top: -80,
             right: -80,
-            child: _Glow(color: RatesColors.primary.withValues(alpha: 0.16)),
+            child: _Glow(color: context.colors.primary.withValues(alpha: 0.16)),
           ),
           Positioned(
             bottom: -100,
             left: -60,
-            child: _Glow(color: RatesColors.custom.withValues(alpha: 0.10)),
+            child: _Glow(color: context.colors.custom.withValues(alpha: 0.10)),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +111,7 @@ class _BrandPanel extends StatelessWidget {
                     height: 18,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: RatesColors.primary, width: 2.5),
+                      border: Border.all(color: context.colors.primary, width: 2.5),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -183,11 +183,11 @@ class _LoginForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('Welcome back', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: RatesColors.textBody, letterSpacing: -0.3)),
+        Text('Welcome back', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: context.colors.textBody, letterSpacing: -0.3)),
         const SizedBox(height: 6),
-        const Text('Sign in to manage your rates.', style: TextStyle(fontSize: 14, color: RatesColors.textMuted)),
+        Text('Sign in to manage your rates.', style: TextStyle(fontSize: 14, color: context.colors.textMuted)),
         const SizedBox(height: 32),
-        const Text('Email', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
+        Text('Email', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
         const SizedBox(height: 8),
         ShadInput(
           controller: email,
@@ -196,7 +196,7 @@ class _LoginForm extends StatelessWidget {
           onSubmitted: (_) => onSubmit(),
         ),
         const SizedBox(height: 20),
-        const Text('Password', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
+        Text('Password', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
         const SizedBox(height: 8),
         ShadInput(
           controller: password,
@@ -213,7 +213,7 @@ class _LoginForm extends StatelessWidget {
                 child: Icon(
                   obscurePassword ? CupertinoIcons.eye : CupertinoIcons.eye_slash,
                   size: 16,
-                  color: RatesColors.textMuted,
+                  color: context.colors.textMuted,
                 ),
               ),
             ),
@@ -223,7 +223,7 @@ class _LoginForm extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ShadButton(
-            gradient: RatesColors.primaryButtonGradient,
+            gradient: context.colors.primaryButtonGradient,
             onPressed: isSubmitting ? null : onSubmit,
             child: isSubmitting
                 ? const SizedBox(

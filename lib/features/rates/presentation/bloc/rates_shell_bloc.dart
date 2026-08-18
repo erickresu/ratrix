@@ -83,13 +83,18 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
   }
 
   Future<void> _onClientRatesRequested(ClientRatesRequested event, Emitter<RatesShellState> emit) async {
-    final rates = await _repository.fetchClientRates(event.clientId);
     emit(state.copyWith(
       view: RatesView.customClientRates,
       selectedClientId: event.clientId,
-      selectedClientRates: rates,
+      selectedClientRates: const [],
+      clientRatesLoading: true,
       clientRatesTab: RateStatus.active,
       clientRateSearch: '',
+    ));
+    final rates = await _repository.fetchClientRates(event.clientId);
+    emit(state.copyWith(
+      selectedClientRates: rates,
+      clientRatesLoading: false,
     ));
   }
 }

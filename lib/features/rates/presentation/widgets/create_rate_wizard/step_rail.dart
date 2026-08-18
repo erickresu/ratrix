@@ -39,14 +39,14 @@ class StepRail extends StatelessWidget {
       width: 260,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
       decoration: BoxDecoration(
-        color: RatesColors.surface,
-        border: Border.all(color: RatesColors.border),
+        color: context.colors.surface,
+        border: Border.all(color: context.colors.border),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: RatesColors.shadowSoft,
+            color: context.colors.shadowSoft,
             blurRadius: 16,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -72,13 +72,13 @@ class StepRail extends StatelessWidget {
           internalPadding: 8,
           verticalTitlePlacement: VerticalTitlePlacement.side,
           verticalAlignment: CrossAxisAlignment.start,
-          lineStyle: const LineStyle(
+          lineStyle: LineStyle(
             lineType: LineType.normal,
             lineLength: 44,
             lineThickness: 2,
-            unreachedLineColor: RatesColors.border,
-            activeLineColor: RatesColors.border,
-            finishedLineColor: RatesColors.primary,
+            unreachedLineColor: context.colors.border,
+            activeLineColor: context.colors.border,
+            finishedLineColor: context.colors.primary,
             lineSpace: 0,
           ),
           onStepReached: onStepTap,
@@ -93,8 +93,8 @@ class StepRail extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: highlighted
-                      ? RatesColors.primary
-                      : RatesColors.textFaint.withValues(alpha: 0.18),
+                      ? context.colors.primary
+                      : context.colors.textFaint.withValues(alpha: 0.18),
                   shape: BoxShape.circle,
                 ),
                 child: isDone
@@ -108,7 +108,7 @@ class StepRail extends StatelessWidget {
                         size: 14,
                         color: highlighted
                             ? Colors.white
-                            : RatesColors.textMuted,
+                            : context.colors.textMuted,
                       ),
               ),
               customTitle: Container(
@@ -120,7 +120,7 @@ class StepRail extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? RatesColors.primarySoftBg
+                      ? context.colors.primarySoftBg
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -136,16 +136,16 @@ class StepRail extends StatelessWidget {
                             ? FontWeight.w700
                             : FontWeight.w500,
                         color: isActive
-                            ? RatesColors.textBody
-                            : RatesColors.textMuted,
+                            ? context.colors.textBody
+                            : context.colors.textMuted,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       _hints[i],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: RatesColors.textMuted,
+                        color: context.colors.textMuted,
                       ),
                     ),
                   ],

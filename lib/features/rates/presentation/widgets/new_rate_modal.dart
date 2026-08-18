@@ -15,12 +15,12 @@ class NewRateModal extends StatelessWidget {
 
     return ShadDialog(
       radius: BorderRadius.circular(16),
-      backgroundColor: RatesColors.surface,
+      backgroundColor: context.colors.surface,
       padding: const EdgeInsets.all(32),
-      title: const Text('New rate', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: RatesColors.textBody)),
-      description: const Padding(
-        padding: EdgeInsets.only(top: 4),
-        child: Text('Choose how this rate should be set up.', style: TextStyle(fontSize: 14, color: RatesColors.textMuted)),
+      title: Text('New rate', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: context.colors.textBody)),
+      description: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text('Choose how this rate should be set up.', style: TextStyle(fontSize: 14, color: context.colors.textMuted)),
       ),
       actions: [
         ShadButton.outline(
@@ -80,7 +80,7 @@ class _OptionCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            border: Border.all(color: RatesColors.border, width: 1.5),
+            border: Border.all(color: context.colors.border, width: 1.5),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
@@ -90,13 +90,13 @@ class _OptionCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(color: RatesColors.primaryChipBg, shape: BoxShape.circle),
-                child: Icon(icon, size: 26, color: RatesColors.primary),
+                decoration: BoxDecoration(color: context.colors.primaryChipBg, shape: BoxShape.circle),
+                child: Icon(icon, size: 26, color: context.colors.primary),
               ),
               const SizedBox(height: 14),
-              Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: RatesColors.textBody)),
+              Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.colors.textBody)),
               const SizedBox(height: 6),
-              Text(description, style: const TextStyle(fontSize: 13, color: RatesColors.textMuted, height: 1.4)),
+              Text(description, style: TextStyle(fontSize: 13, color: context.colors.textMuted, height: 1.4)),
             ],
           ),
         ),

@@ -50,7 +50,7 @@ class _RatesShellView extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: RatesColors.pageBg,
+      backgroundColor: context.colors.pageBg,
       body: Row(
         children: [
           const RatesSidebar(),

@@ -15,14 +15,14 @@ class BackPill extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
         onTap: onTap,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(vertical: 4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(CupertinoIcons.back, size: 16, color: RatesColors.textMutedStrong),
-              SizedBox(width: 6),
-              Text('Back', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: RatesColors.textMutedStrong)),
+              Icon(CupertinoIcons.back, size: 16, color: context.colors.textMutedStrong),
+              const SizedBox(width: 6),
+              Text('Back', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
             ],
           ),
         ),

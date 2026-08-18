@@ -57,7 +57,7 @@ class _WizardView extends StatelessWidget {
         children: [
           Expanded(
             child: Container(
-              decoration: const BoxDecoration(gradient: RatesColors.wizardBgGradient),
+              decoration: BoxDecoration(gradient: context.colors.wizardBgGradient),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(48, 40, 48, 32),
                 child: Column(
@@ -108,14 +108,14 @@ class _WizardHeader extends StatelessWidget {
           children: [
             Text(
               wizardState.isCustom ? 'Create New Custom Rate' : 'New rate',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: RatesColors.textBody),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.colors.textBody),
             ),
             if (wizardState.isCustom && wizardState.clientName != null) ...[
               const SizedBox(width: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: RatesColors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
-                child: Text(wizardState.clientName!, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: RatesColors.textMutedStrong)),
+                decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
+                child: Text(wizardState.clientName!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong)),
               ),
             ],
           ],
@@ -124,8 +124,8 @@ class _WizardHeader extends StatelessWidget {
           const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: RatesColors.primaryChipBg, borderRadius: BorderRadius.circular(6)),
-            child: Text('${wizardState.freightMode!.label.toUpperCase()} FREIGHT', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: RatesColors.primaryDeep, letterSpacing: 0.3)),
+            decoration: BoxDecoration(color: context.colors.primaryChipBg, borderRadius: BorderRadius.circular(6)),
+            child: Text('${wizardState.freightMode!.label.toUpperCase()} FREIGHT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.primaryDeep, letterSpacing: 0.3)),
           ),
         ],
       ],
@@ -145,9 +145,9 @@ class _StepContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Step ${state.step + 1} of 4', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: RatesColors.primary, letterSpacing: 0.6)),
+        Text('Step ${state.step + 1} of 4', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.primary, letterSpacing: 0.6)),
         const SizedBox(height: 4),
-        Text(stepLabels[state.step], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: RatesColors.textBody)),
+        Text(stepLabels[state.step], style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.colors.textBody)),
         const SizedBox(height: 32),
         switch (state.step) {
           0 => const Step0RateSetup(),
@@ -171,9 +171,9 @@ class _WizardFooter extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(48, 20, 48, 20),
-      decoration: const BoxDecoration(
-        color: RatesColors.surface,
-        border: Border(top: BorderSide(color: RatesColors.border)),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        border: Border(top: BorderSide(color: context.colors.border)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -189,7 +189,7 @@ class _WizardFooter extends StatelessWidget {
           Row(
             children: [
               ShadButton(
-                gradient: step == 3 ? RatesColors.accentButtonGradient : RatesColors.primaryButtonGradient,
+                gradient: step == 3 ? context.colors.accentButtonGradient : context.colors.primaryButtonGradient,
                 leading: Icon(step == 3 ? CupertinoIcons.paperplane_fill : null, size: 16),
                 trailing: step == 3 ? null : const Icon(CupertinoIcons.arrow_right, size: 16),
                 onPressed: () {
