@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/pagination_bar.dart';
 import '../../../../core/widgets/shine_sweep.dart';
 import '../../../../core/widgets/skeleton_box.dart';
@@ -11,15 +12,24 @@ import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 
-const _clientGridColumns = 3;
 const _clientGridRows = 3;
 const _clientGridPadding = EdgeInsets.fromLTRB(48, 0, 48, 28);
-const _clientGridDelegate = SliverGridDelegateWithFixedCrossAxisCount(
-  crossAxisCount: _clientGridColumns,
-  mainAxisSpacing: 28,
-  crossAxisSpacing: 28,
-  mainAxisExtent: 184,
-);
+const _clientGridPaddingMobile = EdgeInsets.fromLTRB(16, 0, 16, 28);
+
+SliverGridDelegateWithFixedCrossAxisCount _clientGridDelegate(int crossAxisCount) {
+  return SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: crossAxisCount,
+    mainAxisSpacing: 28,
+    crossAxisSpacing: 28,
+    mainAxisExtent: 184,
+  );
+}
+
+int _clientGridColumnCount(BuildContext context) {
+  if (Breakpoints.isMobile(context)) return 1;
+  if (Breakpoints.isDesktop(context)) return 3;
+  return 2;
+}
 
 class CustomClientsView extends StatelessWidget {
   const CustomClientsView({super.key});
@@ -28,72 +38,84 @@ class CustomClientsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<RatesShellBloc>();
     final state = context.watch<RatesShellBloc>().state;
+    final isMobile = Breakpoints.isMobile(context);
+    final columns = _clientGridColumnCount(context);
+    final gridDelegate = _clientGridDelegate(columns);
+    final gridPadding = isMobile ? _clientGridPaddingMobile : _clientGridPadding;
+
+    final searchField = ShadInput(
+      placeholder: const Text('Search clients...'),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 4),
+        child: Icon(
+          CupertinoIcons.search,
+          size: 16,
+          color: context.colors.textMuted,
+        ),
+      ),
+      onChanged: (v) => bloc.add(ClientSearchChanged(v)),
+    );
+
+    final titleColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Custom Rate Clients',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+            color: context.colors.textBody,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Pick a client to view or set up their negotiated rates',
+          style: TextStyle(
+            fontSize: 14,
+            color: context.colors.textMuted,
+          ),
+        ),
+      ],
+    );
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(48, 40, 48, 32),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
+          padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 40, isMobile ? 16 : 48, 32),
+          child: isMobile
+              ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Custom Rate Clients',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                        color: context.colors.textBody,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Pick a client to view or set up their negotiated rates',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: context.colors.textMuted,
-                      ),
-                    ),
+                    titleColumn,
+                    const SizedBox(height: 16),
+                    SizedBox(width: double.infinity, child: searchField),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: titleColumn),
+                    SizedBox(width: 300, child: searchField),
                   ],
                 ),
-              ),
-              SizedBox(
-                width: 300,
-                child: ShadInput(
-                  placeholder: const Text('Search clients...'),
-                  leading: Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(
-                      CupertinoIcons.search,
-                      size: 16,
-                      color: context.colors.textMuted,
-                    ),
-                  ),
-                  onChanged: (v) => bloc.add(ClientSearchChanged(v)),
-                ),
-              ),
-            ],
-          ),
         ),
         Expanded(
           child: state.isLoading
               ? SkeletonShimmer(
                   child: GridView.builder(
-                    padding: _clientGridPadding,
+                    padding: gridPadding,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _clientGridColumns * _clientGridRows,
-                    gridDelegate: _clientGridDelegate,
+                    itemCount: columns * _clientGridRows,
+                    gridDelegate: gridDelegate,
                     itemBuilder: (context, index) => const GridCardSkeleton(),
                   ),
                 )
               : GridView.builder(
-                  padding: _clientGridPadding,
+                  padding: gridPadding,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: state.pagedClients.length,
-                  gridDelegate: _clientGridDelegate,
+                  gridDelegate: gridDelegate,
                   itemBuilder: (context, index) {
                     final client = state.pagedClients[index];
                     return _ClientCard(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/shine_sweep.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import '../../../../core/widgets/soft_card.dart';
@@ -18,6 +19,7 @@ class DashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<RatesShellBloc>().state;
+    final isMobile = Breakpoints.isMobile(context);
 
     if (state.isLoading) {
       return const _DashboardSkeleton();
@@ -26,7 +28,7 @@ class DashboardView extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(48, 40, 48, 32),
+          padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 40, isMobile ? 16 : 48, 32),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -74,21 +76,33 @@ class DashboardView extends StatelessWidget {
           child: CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
+                padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 0, isMobile ? 16 : 48, 48),
                 sliver: SliverFillRemaining(
                   hasScrollBody: false,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          for (final stat in state.stats) ...[
-                            Expanded(child: _StatCard(stat: stat)),
-                            if (stat != state.stats.last)
-                              const SizedBox(width: 20),
-                          ],
-                        ],
-                      ),
+                      isMobile
+                          ? Wrap(
+                              spacing: 20,
+                              runSpacing: 20,
+                              children: [
+                                for (final stat in state.stats)
+                                  SizedBox(
+                                    width: (MediaQuery.sizeOf(context).width - 16 * 2 - 20) / 2,
+                                    child: _StatCard(stat: stat),
+                                  ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                for (final stat in state.stats) ...[
+                                  Expanded(child: _StatCard(stat: stat)),
+                                  if (stat != state.stats.last)
+                                    const SizedBox(width: 20),
+                                ],
+                              ],
+                            ),
                       const SizedBox(height: 40),
                       Text(
                         'Recent rates',
@@ -127,11 +141,12 @@ class _DashboardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Breakpoints.isMobile(context);
     return SkeletonShimmer(
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(48, 40, 48, 32),
+            padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 40, isMobile ? 16 : 48, 32),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -151,7 +166,7 @@ class _DashboardSkeleton extends StatelessWidget {
           ),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
+              padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 0, isMobile ? 16 : 48, 48),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -337,6 +352,8 @@ class _RecentRatesTable extends StatelessWidget {
 
   final List<RecentRate> rates;
 
+  static const _tableMinWidth = 640.0;
+
   @override
   Widget build(BuildContext context) {
     final headerStyle = TextStyle(
@@ -358,7 +375,7 @@ class _RecentRatesTable extends StatelessWidget {
       );
     }
 
-    return Column(
+    final table = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
@@ -403,6 +420,13 @@ class _RecentRatesTable extends StatelessWidget {
             ),
           ),
       ],
+    );
+
+    if (!Breakpoints.isMobile(context)) return table;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(width: _tableMinWidth, child: table),
     );
   }
 

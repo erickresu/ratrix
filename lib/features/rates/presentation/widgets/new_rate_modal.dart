@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../core/utils/breakpoints.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 
@@ -12,11 +13,32 @@ class NewRateModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<RatesShellBloc>();
+    final isMobile = Breakpoints.isMobile(context);
+
+    final publishedCard = _OptionCard(
+      title: 'Published rate',
+      description: 'Standard rate visible to all clients on this route.',
+      icon: CupertinoIcons.globe,
+      onTap: () {
+        Navigator.of(context).pop();
+        bloc.add(const PublishedRateChosen());
+      },
+    );
+
+    final customCard = _OptionCard(
+      title: 'Custom rate',
+      description: 'Negotiated rate assigned to one specific client.',
+      icon: CupertinoIcons.person_crop_circle,
+      onTap: () {
+        Navigator.of(context).pop();
+        bloc.add(const CustomRateChosen());
+      },
+    );
 
     return ShadDialog(
       radius: BorderRadius.circular(16),
       backgroundColor: context.colors.surface,
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isMobile ? 20 : 32),
       title: Text('New rate', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: context.colors.textBody)),
       description: Padding(
         padding: const EdgeInsets.only(top: 4),
@@ -30,33 +52,21 @@ class NewRateModal extends StatelessWidget {
       ],
       child: Padding(
         padding: const EdgeInsets.only(top: 20, bottom: 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: _OptionCard(
-                title: 'Published rate',
-                description: 'Standard rate visible to all clients on this route.',
-                icon: CupertinoIcons.globe,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  bloc.add(const PublishedRateChosen());
-                },
+        child: isMobile
+            ? Column(
+                children: [
+                  publishedCard,
+                  const SizedBox(height: 14),
+                  customCard,
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(child: publishedCard),
+                  const SizedBox(width: 14),
+                  Expanded(child: customCard),
+                ],
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _OptionCard(
-                title: 'Custom rate',
-                description: 'Negotiated rate assigned to one specific client.',
-                icon: CupertinoIcons.person_crop_circle,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  bloc.add(const CustomRateChosen());
-                },
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

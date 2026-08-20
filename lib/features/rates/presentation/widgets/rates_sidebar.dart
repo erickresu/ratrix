@@ -24,6 +24,15 @@ class RatesSidebar extends StatelessWidget {
     final isCalculatorActive =
         state.view == RatesView.shippingCalculatorClients || state.view == RatesView.shippingCalculatorForm;
 
+    // On mobile the sidebar renders inside a Scaffold `Drawer`; closing it
+    // after a navigation tap matches standard drawer UX. `maybePop` is a
+    // no-op when there's no drawer route to pop (desktop's inline sidebar),
+    // so this is safe to call unconditionally.
+    void navigate(void Function() dispatch) {
+      dispatch();
+      Navigator.maybePop(context);
+    }
+
     return Container(
       width: 272,
       color: RatesColors.dark.sidebarBg,
@@ -36,7 +45,7 @@ class RatesSidebar extends StatelessWidget {
             icon: CupertinoIcons.house,
             label: 'Home',
             active: isDashboard,
-            onTap: () => bloc.add(const RatesHomeRequested()),
+            onTap: () => navigate(() => bloc.add(const RatesHomeRequested())),
           ),
           const SizedBox(height: 4),
           _NavParent(
@@ -58,13 +67,13 @@ class RatesSidebar extends StatelessWidget {
                       icon: CupertinoIcons.arrow_up,
                       label: 'Publish Rates',
                       active: isPublishActive,
-                      onTap: () => bloc.add(const PublishedRateChosen()),
+                      onTap: () => navigate(() => bloc.add(const PublishedRateChosen())),
                     ),
                     _SubNavItem(
                       icon: CupertinoIcons.list_bullet,
                       label: 'Custom Rates',
                       active: isCustomActive,
-                      onTap: () => bloc.add(const CustomClientsRequested()),
+                      onTap: () => navigate(() => bloc.add(const CustomClientsRequested())),
                     ),
                   ],
                 ),
@@ -76,7 +85,7 @@ class RatesSidebar extends StatelessWidget {
             icon: Icons.local_shipping_rounded,
             label: 'Shipping Calculator',
             active: isCalculatorActive,
-            onTap: () => bloc.add(const ShippingCalculatorRequested()),
+            onTap: () => navigate(() => bloc.add(const ShippingCalculatorRequested())),
           ),
           const Spacer(),
           const _ThemeToggleRow(),

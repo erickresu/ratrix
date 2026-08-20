@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/rates/presentation/rates_colors.dart';
+import '../utils/breakpoints.dart';
 
 /// A "Showing X–Y of Z" + prev/page/next control bar for a paged list.
 /// [page] is 0-indexed; [itemsPerPage] and [totalItems] drive the displayed
@@ -27,48 +28,72 @@ class PaginationBar extends StatelessWidget {
     final pageCount = _pageCount;
     final rangeStart = totalItems == 0 ? 0 : page * itemsPerPage + 1;
     final rangeEnd = ((page + 1) * itemsPerPage).clamp(0, totalItems);
+    final isMobile = Breakpoints.isMobile(context);
+
+    final rangeText = Text(
+      'Showing $rangeStart–$rangeEnd of $totalItems',
+      style: TextStyle(fontSize: 13, color: context.colors.textMuted),
+    );
+
+    final pageControls = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _PageButton(
+          icon: CupertinoIcons.chevron_left,
+          enabled: page > 0,
+          onTap: () => onPageChanged(page - 1),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Page ${page + 1} of $pageCount',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: context.colors.textBody,
+          ),
+        ),
+        const SizedBox(width: 8),
+        _PageButton(
+          icon: CupertinoIcons.chevron_right,
+          enabled: page < pageCount - 1,
+          onTap: () => onPageChanged(page + 1),
+        ),
+      ],
+    );
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(40, 12, 40, 20),
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 16 : 40,
+        12,
+        isMobile ? 16 : 40,
+        20,
+      ),
       decoration: BoxDecoration(
         color: context.colors.surface,
         border: Border(top: BorderSide(color: context.colors.border)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Showing $rangeStart–$rangeEnd of $totalItems',
-            style: TextStyle(fontSize: 13, color: context.colors.textMuted),
-          ),
-          Row(
-            children: [
-              _PageButton(
-                icon: CupertinoIcons.chevron_left,
-                enabled: page > 0,
-                onTap: () => onPageChanged(page - 1),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Page ${page + 1} of $pageCount',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textBody),
-              ),
-              const SizedBox(width: 8),
-              _PageButton(
-                icon: CupertinoIcons.chevron_right,
-                enabled: page < pageCount - 1,
-                onTap: () => onPageChanged(page + 1),
-              ),
-            ],
-          ),
-        ],
-      ),
+      child: isMobile
+          ? Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 8,
+              children: [rangeText, pageControls],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [rangeText, pageControls],
+            ),
     );
   }
 }
 
 class _PageButton extends StatelessWidget {
-  const _PageButton({required this.icon, required this.enabled, required this.onTap});
+  const _PageButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
 
   final IconData icon;
   final bool enabled;
@@ -90,7 +115,11 @@ class _PageButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             color: context.colors.surface,
           ),
-          child: Icon(icon, size: 16, color: enabled ? context.colors.textBody : context.colors.textFaint),
+          child: Icon(
+            icon,
+            size: 16,
+            color: enabled ? context.colors.textBody : context.colors.textFaint,
+          ),
         ),
       ),
     );

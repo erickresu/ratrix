@@ -1,5 +1,67 @@
 part of 'shipping_calculator_bloc.dart';
 
+/// Distinct origin/destination pair pulled from a rate's routes.
+typedef RouteChoice = ({String origin, String destination});
+
+/// Result of a Fixed Breakweight Pricing calculation — the only pricing
+/// option this calculator can compute without a live backend endpoint (the
+/// other 6 bracket-pricing formulas aren't modeled; see [CalcResult.error]).
+class CalcResult extends Equatable {
+  const CalcResult({
+    this.actualWeight,
+    this.volumetricWeight,
+    this.cbm,
+    this.chargeableWeight,
+    this.matchedTierMin,
+    this.matchedTierMax,
+    this.tierRate,
+    this.baseFreight,
+    this.fuelSurcharge,
+    this.flatFees = const {},
+    this.subTotal,
+    this.error,
+  });
+
+  final num? actualWeight;
+  final num? volumetricWeight;
+  final num? cbm;
+  final num? chargeableWeight;
+  final num? matchedTierMin;
+  final num? matchedTierMax;
+  final num? tierRate;
+  final num? baseFreight;
+  final num? fuelSurcharge;
+  final Map<String, num> flatFees;
+
+  /// Base freight + fuel surcharge + flat fees, before VAT. VAT and rounding
+  /// are applied on top of this at render time from the current toggle
+  /// state, so changing those toggles doesn't require recomputing anything.
+  final num? subTotal;
+
+  /// Set instead of the numeric fields when the calculation couldn't be
+  /// performed (e.g. non-Fixed-Breakweight pricing option, or no matching
+  /// breakweight tier for the chargeable weight).
+  final String? error;
+
+  @override
+  List<Object?> get props => [
+        actualWeight,
+        volumetricWeight,
+        cbm,
+        chargeableWeight,
+        matchedTierMin,
+        matchedTierMax,
+        tierRate,
+        baseFreight,
+        fuelSurcharge,
+        flatFees,
+        subTotal,
+        error,
+      ];
+}
+
+enum VatMode { standard, exempt, zeroRated }
+
 class ShippingCalculatorState extends Equatable {
   final RateType rateType;
   final FreightMode freightMode;
@@ -9,6 +71,19 @@ class ShippingCalculatorState extends Equatable {
   final List<ClientRate> clientRates;
   final bool ratesLoading;
   final String? selectedChargeCode;
+  final String? selectedRateId;
+
+  /// Full rate record for the selected rate table — origin/destination
+  /// choices and the calculation itself are both derived from its routes,
+  /// addons, and pricing option, since only a route actually saved on this
+  /// rate can be priced against it.
+  final RatrixRate? selectedRate;
+  final bool routesLoading;
+
+  final CalcResult? calcResult;
+  final bool roundedDisplay;
+  final VatMode vatMode;
+  final bool vatInclusive;
 
   final String origin;
   final String destination;
@@ -32,6 +107,13 @@ class ShippingCalculatorState extends Equatable {
     this.clientRates = const [],
     this.ratesLoading = false,
     this.selectedChargeCode,
+    this.selectedRateId,
+    this.selectedRate,
+    this.routesLoading = false,
+    this.calcResult,
+    this.roundedDisplay = false,
+    this.vatMode = VatMode.standard,
+    this.vatInclusive = false,
     this.origin = '',
     this.destination = '',
     this.length = '',
@@ -53,6 +135,47 @@ class ShippingCalculatorState extends Equatable {
       .where((r) => r.freightMode == freightMode && r.serviceMode == serviceMode)
       .toList();
 
+  /// Distinct origin/destination pairs actually saved on the selected rate
+  /// table — the only choices Origin/Destination may offer, since pricing
+  /// only exists for a route this specific rate defines.
+  List<RouteChoice> get routeChoices {
+    final seen = <String>{};
+    final choices = <RouteChoice>[];
+    for (final route in selectedRate?.routes ?? const <RatrixRoute>[]) {
+      final origin = route.origin?.displayLabel;
+      final destination = route.destination?.displayLabel;
+      if (origin == null || destination == null) continue;
+      final key = '$origin|$destination';
+      if (!seen.add(key)) continue;
+      choices.add((origin: origin, destination: destination));
+    }
+    return choices;
+  }
+
+  List<String> get availableOrigins => {for (final c in routeChoices) c.origin}.toList();
+
+  List<String> get availableDestinations {
+    if (origin.isEmpty) return {for (final c in routeChoices) c.destination}.toList();
+    return {for (final c in routeChoices) if (c.origin == origin) c.destination}.toList();
+  }
+
+  static const vatRate = 0.12;
+
+  /// VAT amount on top of [CalcResult.subTotal], per the current VAT
+  /// toggles — 0 for Exempt/Zero Rated, or 12% of the sub-total for
+  /// Exclusive, or the VAT already folded into an Inclusive sub-total
+  /// (backed out via subTotal / 1.12 * 0.12) for Inclusive.
+  num get vatAmount {
+    final subTotal = calcResult?.subTotal;
+    if (subTotal == null || vatMode != VatMode.standard) return 0;
+    return vatInclusive ? subTotal - (subTotal / (1 + vatRate)) : subTotal * vatRate;
+  }
+
+  num get grandTotal {
+    final subTotal = calcResult?.subTotal ?? 0;
+    return vatInclusive ? subTotal : subTotal + vatAmount;
+  }
+
   ShippingCalculatorState copyWith({
     RateType? rateType,
     FreightMode? freightMode,
@@ -62,6 +185,14 @@ class ShippingCalculatorState extends Equatable {
     bool? ratesLoading,
     String? selectedChargeCode,
     bool clearRateTable = false,
+    String? selectedRateId,
+    RatrixRate? selectedRate,
+    bool? routesLoading,
+    CalcResult? calcResult,
+    bool clearCalcResult = false,
+    bool? roundedDisplay,
+    VatMode? vatMode,
+    bool? vatInclusive,
     String? origin,
     String? destination,
     String? length,
@@ -83,8 +214,15 @@ class ShippingCalculatorState extends Equatable {
       clientRates: clientRates ?? this.clientRates,
       ratesLoading: ratesLoading ?? this.ratesLoading,
       selectedChargeCode: clearRateTable ? null : (selectedChargeCode ?? this.selectedChargeCode),
-      origin: origin ?? this.origin,
-      destination: destination ?? this.destination,
+      selectedRateId: clearRateTable ? null : (selectedRateId ?? this.selectedRateId),
+      selectedRate: clearRateTable ? null : (selectedRate ?? this.selectedRate),
+      routesLoading: routesLoading ?? this.routesLoading,
+      calcResult: clearCalcResult || clearRateTable ? null : (calcResult ?? this.calcResult),
+      roundedDisplay: roundedDisplay ?? this.roundedDisplay,
+      vatMode: vatMode ?? this.vatMode,
+      vatInclusive: vatInclusive ?? this.vatInclusive,
+      origin: clearRateTable ? '' : (origin ?? this.origin),
+      destination: clearRateTable ? '' : (destination ?? this.destination),
       length: length ?? this.length,
       width: width ?? this.width,
       height: height ?? this.height,
@@ -106,6 +244,13 @@ class ShippingCalculatorState extends Equatable {
         clientRates,
         ratesLoading,
         selectedChargeCode,
+        selectedRateId,
+        selectedRate,
+        routesLoading,
+        calcResult,
+        roundedDisplay,
+        vatMode,
+        vatInclusive,
         origin,
         destination,
         length,

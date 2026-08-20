@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/utils/breakpoints.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
 import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/rates_enums.dart';
@@ -51,26 +52,40 @@ class _RatesShellView extends StatelessWidget {
       });
     }
 
+    final isMobile = Breakpoints.isMobile(context);
+    final content = switch (state.view) {
+      RatesView.dashboard => const DashboardView(),
+      RatesView.customClients => const CustomClientsView(),
+      RatesView.customClientRates => const CustomClientRatesView(),
+      RatesView.create => WizardPage(
+          key: ValueKey('wizard-${state.rateChoice}-${state.selectedClientId}'),
+          isCustom: state.rateChoice == RateType.custom,
+        ),
+      RatesView.shippingCalculatorClients => const ShippingCalculatorClientsView(),
+      RatesView.shippingCalculatorForm => ShippingCalculatorFormView(
+          key: ValueKey('shipping-calc-${state.selectedCalcClientId}'),
+        ),
+    };
+
+    if (isMobile) {
+      return Scaffold(
+        backgroundColor: context.colors.pageBg,
+        drawer: const Drawer(width: 272, child: RatesSidebar()),
+        appBar: AppBar(
+          backgroundColor: RatesColors.dark.sidebarBg,
+          foregroundColor: Colors.white,
+          title: const Text('CERRO RATRIX', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+        ),
+        body: content,
+      );
+    }
+
     return Scaffold(
       backgroundColor: context.colors.pageBg,
       body: Row(
         children: [
           const RatesSidebar(),
-          Expanded(
-            child: switch (state.view) {
-              RatesView.dashboard => const DashboardView(),
-              RatesView.customClients => const CustomClientsView(),
-              RatesView.customClientRates => const CustomClientRatesView(),
-              RatesView.create => WizardPage(
-                  key: ValueKey('wizard-${state.rateChoice}-${state.selectedClientId}'),
-                  isCustom: state.rateChoice == RateType.custom,
-                ),
-              RatesView.shippingCalculatorClients => const ShippingCalculatorClientsView(),
-              RatesView.shippingCalculatorForm => ShippingCalculatorFormView(
-                  key: ValueKey('shipping-calc-${state.selectedCalcClientId}'),
-                ),
-            },
-          ),
+          Expanded(child: content),
         ],
       ),
     );

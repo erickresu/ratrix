@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../../core/utils/breakpoints.dart';
 import '../../../domain/entities/breakweight.dart';
 import '../../../domain/entities/matrix_row.dart' as domain;
 import '../../rates_colors.dart';
@@ -43,6 +44,7 @@ class RateMatrixTable extends StatelessWidget {
   static const _rowHeight = 64.0;
   static const _bwColWidth = 156.0;
   static const _leftPaneWidth = 560.0;
+  static const _leftPaneWidthMobile = 340.0;
   static const _removeColWidth = 40.0;
   static const _compactInputPadding = EdgeInsets.symmetric(horizontal: 6, vertical: 8);
 
@@ -50,17 +52,11 @@ class RateMatrixTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final removeDisabled = matrixRows.length <= 1;
     final bwRemoveDisabled = breakweights.length <= 1;
-    final leftPaneWidth = _leftPaneWidth + (onRemoveRoute != null ? _removeColWidth : 0);
+    final isMobile = Breakpoints.isMobile(context);
+    final basePaneWidth = isMobile ? _leftPaneWidthMobile : _leftPaneWidth;
+    final leftPaneWidth = basePaneWidth + (onRemoveRoute != null ? _removeColWidth : 0);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        border: Border.all(color: context.colors.border),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: context.colors.shadowSoft, blurRadius: 16, offset: const Offset(0, 4))],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
+    final table = Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Fixed origin/destination pane.
@@ -139,84 +135,131 @@ class RateMatrixTable extends StatelessWidget {
           ),
           // Breakweight/rate pane: fills the remaining width evenly when the
           // columns fit, otherwise switches to fixed-width columns with a
-          // visible, draggable horizontal scrollbar.
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final naturalWidth = breakweights.length * _bwColWidth;
-                final fillWidth = naturalWidth <= constraints.maxWidth;
-                final columnWidth = fillWidth ? constraints.maxWidth / breakweights.length : _bwColWidth;
-
-                final content = Column(
-                  children: [
-                    Row(
-                      children: [
-                        for (var bi = 0; bi < breakweights.length; bi++)
-                          _BreakweightHeaderCell(
-                            index: bi,
-                            breakweight: breakweights[bi],
-                            width: columnWidth,
-                            height: _headerHeight,
-                            removeDisabled: bwRemoveDisabled,
-                            onMinChanged: (v) => onBreakweightMinChanged(bi, v),
-                            onMaxChanged: (v) => onBreakweightMaxChanged(bi, v),
-                            onRemove: () => onRemoveBreakweight(bi),
-                          ),
-                      ],
-                    ),
-                    for (var i = 0; i < matrixRows.length; i++)
-                      Container(
-                        height: _rowHeight,
-                        decoration: BoxDecoration(
-                          border: Border(top: BorderSide(color: context.colors.surfaceMuted)),
-                        ),
-                        child: Row(
-                          children: [
-                            for (var bi = 0; bi < breakweights.length; bi++)
-                              Container(
-                                width: columnWidth,
-                                alignment: Alignment.center,
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                decoration: BoxDecoration(
-                                  border: Border(left: BorderSide(color: context.colors.surfaceMuted)),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(r'$', style: TextStyle(fontSize: 12, color: context.colors.primaryDeep)),
-                                    const SizedBox(width: 4),
-                                    SizedBox(
-                                      width: 68,
-                                      child: ShadInput(
-                                        placeholder: const Text('0.00'),
-                                        initialValue: i < matrixRows.length && bi < matrixRows[i].rates.length
-                                            ? matrixRows[i].rates[bi]
-                                            : '',
-                                        textAlign: TextAlign.center,
-                                        padding: _compactInputPadding,
-                                        decoration: ShadDecoration(
-                                          color: context.colors.primarySoftBg,
-                                          border: ShadBorder.none,
-                                          focusedBorder: ShadBorder.none,
-                                        ),
-                                        onChanged: (v) => onCellChanged(i, bi, v),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                  ],
-                );
-
-                if (fillWidth) return content;
-                return _HorizontalScrollPane(child: content);
-              },
-            ),
+          // visible, draggable horizontal scrollbar. On mobile the whole
+          // table (this build method's caller) is already wrapped in a
+          // single horizontal scroll view, so this pane just renders at its
+          // natural fixed width instead of trying to fill/scroll on its own
+          // (avoiding an Expanded-with-no-bound-width crash + nested
+          // horizontal scrolling).
+          buildBreakweightPane(
+            context: context,
+            isMobile: isMobile,
+            bwRemoveDisabled: bwRemoveDisabled,
           ),
         ],
+      );
+
+    final decoratedTable = Container(
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        border: Border.all(color: context.colors.border),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: context.colors.shadowSoft, blurRadius: 16, offset: const Offset(0, 4))],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: table,
+    );
+
+    if (!isMobile) return decoratedTable;
+
+    // On mobile, the left pane alone can exceed the viewport width, so the
+    // whole table (left pane + right pane) scrolls horizontally as one unit
+    // instead of only the right pane scrolling while the left pane is fixed.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: decoratedTable,
+    );
+  }
+
+  Widget buildBreakweightPane({
+    required BuildContext context,
+    required bool isMobile,
+    required bool bwRemoveDisabled,
+  }) {
+    Widget buildContent(double columnWidth) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              for (var bi = 0; bi < breakweights.length; bi++)
+                _BreakweightHeaderCell(
+                  index: bi,
+                  breakweight: breakweights[bi],
+                  width: columnWidth,
+                  height: _headerHeight,
+                  removeDisabled: bwRemoveDisabled,
+                  onMinChanged: (v) => onBreakweightMinChanged(bi, v),
+                  onMaxChanged: (v) => onBreakweightMaxChanged(bi, v),
+                  onRemove: () => onRemoveBreakweight(bi),
+                ),
+            ],
+          ),
+          for (var i = 0; i < matrixRows.length; i++)
+            Container(
+              height: _rowHeight,
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: context.colors.surfaceMuted)),
+              ),
+              child: Row(
+                children: [
+                  for (var bi = 0; bi < breakweights.length; bi++)
+                    Container(
+                      width: columnWidth,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        border: Border(left: BorderSide(color: context.colors.surfaceMuted)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(r'$', style: TextStyle(fontSize: 12, color: context.colors.primaryDeep)),
+                          const SizedBox(width: 4),
+                          SizedBox(
+                            width: 68,
+                            child: ShadInput(
+                              placeholder: const Text('0.00'),
+                              initialValue: i < matrixRows.length && bi < matrixRows[i].rates.length
+                                  ? matrixRows[i].rates[bi]
+                                  : '',
+                              textAlign: TextAlign.center,
+                              padding: _compactInputPadding,
+                              decoration: ShadDecoration(
+                                color: context.colors.primarySoftBg,
+                                border: ShadBorder.none,
+                                focusedBorder: ShadBorder.none,
+                              ),
+                              onChanged: (v) => onCellChanged(i, bi, v),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      );
+    }
+
+    if (isMobile) {
+      // The whole table already scrolls horizontally as one unit on mobile
+      // (see `build`), so this pane renders at its natural fixed width with
+      // no Expanded/LayoutBuilder fill logic and no nested scroll view.
+      return buildContent(_bwColWidth);
+    }
+
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final naturalWidth = breakweights.length * _bwColWidth;
+          final fillWidth = naturalWidth <= constraints.maxWidth;
+          final columnWidth = fillWidth ? constraints.maxWidth / breakweights.length : _bwColWidth;
+          final content = buildContent(columnWidth);
+
+          if (fillWidth) return content;
+          return _HorizontalScrollPane(child: content);
+        },
       ),
     );
   }

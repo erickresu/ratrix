@@ -48,12 +48,12 @@ class CalcServiceLevelChanged extends ShippingCalculatorEvent {
 }
 
 class CalcRateTableChanged extends ShippingCalculatorEvent {
-  const CalcRateTableChanged(this.chargeCode);
+  const CalcRateTableChanged(this.rate);
 
-  final String chargeCode;
+  final ClientRate rate;
 
   @override
-  List<Object?> get props => [chargeCode];
+  List<Object?> get props => [rate];
 }
 
 class CalcOriginChanged extends ShippingCalculatorEvent {
@@ -139,4 +139,35 @@ class CalcChargeBasisChanged extends ShippingCalculatorEvent {
 
 class CalcSubmitRequested extends ShippingCalculatorEvent {
   const CalcSubmitRequested();
+}
+
+class CalcRoundedDisplayToggled extends ShippingCalculatorEvent {
+  const CalcRoundedDisplayToggled(this.rounded);
+
+  final bool rounded;
+
+  @override
+  List<Object?> get props => [rounded];
+}
+
+class CalcVatModeChanged extends ShippingCalculatorEvent {
+  const CalcVatModeChanged(this.mode);
+
+  final VatMode mode;
+
+  @override
+  List<Object?> get props => [mode];
+}
+
+class CalcVatInclusiveToggled extends ShippingCalculatorEvent {
+  const CalcVatInclusiveToggled(this.inclusive);
+
+  final bool inclusive;
+
+  @override
+  List<Object?> get props => [inclusive];
+}
+
+class CalcResultDismissed extends ShippingCalculatorEvent {
+  const CalcResultDismissed();
 }

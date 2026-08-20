@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import '../../../../../core/utils/breakpoints.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../rates_colors.dart';
 import 'rate_matrix_table.dart';
@@ -13,6 +14,44 @@ class Step1RateMatrix extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<RateWizardBloc>();
     final state = context.watch<RateWizardBloc>().state;
+    final isMobile = Breakpoints.isMobile(context);
+
+    final bulkOpsText = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Bulk operations',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: context.colors.textBody,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Download a template, or bulk import/export rate data',
+          style: TextStyle(
+            fontSize: 12,
+            color: context.colors.textMuted,
+          ),
+        ),
+      ],
+    );
+
+    final bulkOpsButtons = [
+      _MiniButton(
+        label: 'Download template',
+        icon: CupertinoIcons.doc_text,
+      ),
+      _MiniButton(
+        label: 'Import Excel',
+        icon: CupertinoIcons.arrow_up_doc,
+      ),
+      _MiniButton(
+        label: 'Export Excel',
+        icon: CupertinoIcons.arrow_down_doc,
+      ),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,47 +62,24 @@ class Step1RateMatrix extends StatelessWidget {
             color: context.colors.primarySoftBg,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
+          child: isMobile
+              ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Bulk operations',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: context.colors.textBody,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Download a template, or bulk import/export rate data',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.colors.textMuted,
-                      ),
-                    ),
+                    bulkOpsText,
+                    const SizedBox(height: 12),
+                    Wrap(spacing: 8, runSpacing: 8, children: bulkOpsButtons),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: bulkOpsText),
+                    for (final button in bulkOpsButtons) ...[
+                      button,
+                      if (button != bulkOpsButtons.last) const SizedBox(width: 8),
+                    ],
                   ],
                 ),
-              ),
-              _MiniButton(
-                label: 'Download template',
-                icon: CupertinoIcons.doc_text,
-              ),
-              const SizedBox(width: 8),
-              _MiniButton(
-                label: 'Import Excel',
-                icon: CupertinoIcons.arrow_up_doc,
-              ),
-              const SizedBox(width: 8),
-              _MiniButton(
-                label: 'Export Excel',
-                icon: CupertinoIcons.arrow_down_doc,
-              ),
-            ],
-          ),
         ),
         const SizedBox(height: 28),
         Row(
@@ -82,74 +98,94 @@ class Step1RateMatrix extends StatelessWidget {
           ],
         ),
         Divider(height: 25, color: context.colors.border),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${state.matrixTab == 'standard' ? 'Standard' : 'Express'} rate markup',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: context.colors.textBody,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Apply a percentage markup to all current rates. You can still edit individual rows after.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.colors.textMuted,
-                    ),
-                  ),
-                ],
+        Builder(builder: (context) {
+          final markupDescription = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${state.matrixTab == 'standard' ? 'Standard' : 'Express'} rate markup',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: context.colors.textBody,
+                ),
               ),
-            ),
-            const SizedBox(width: 24),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: context.colors.borderStrong),
-                borderRadius: BorderRadius.circular(10),
-                color: context.colors.surfaceSubtle,
+              const SizedBox(height: 2),
+              Text(
+                'Apply a percentage markup to all current rates. You can still edit individual rows after.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.colors.textMuted,
+                ),
               ),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 60,
-                    child: ShadInput(
-                      placeholder: const Text('0.0'),
-                      initialValue: state.markup,
-                      textAlign: TextAlign.right,
-                      decoration: const ShadDecoration(
-                        border: ShadBorder.none,
-                        focusedBorder: ShadBorder.none,
+            ],
+          );
+
+          final markupControls = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: context.colors.borderStrong),
+                  borderRadius: BorderRadius.circular(10),
+                  color: context.colors.surfaceSubtle,
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 60,
+                      child: ShadInput(
+                        placeholder: const Text('0.0'),
+                        initialValue: state.markup,
+                        textAlign: TextAlign.right,
+                        decoration: const ShadDecoration(
+                          border: ShadBorder.none,
+                          focusedBorder: ShadBorder.none,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        onChanged: (v) => bloc.add(MarkupChanged(v)),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      onChanged: (v) => bloc.add(MarkupChanged(v)),
                     ),
-                  ),
-                  Text(
-                    '%',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: context.colors.textMuted,
+                    Text(
+                      '%',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: context.colors.textMuted,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            ShadButton(
-              backgroundColor: context.colors.primary,
-              onPressed: () {},
-              child: const Text('Apply markup'),
-            ),
-          ],
-        ),
+              const SizedBox(width: 8),
+              ShadButton(
+                backgroundColor: context.colors.primary,
+                onPressed: () {},
+                child: const Text('Apply markup'),
+              ),
+            ],
+          );
+
+          if (isMobile) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                markupDescription,
+                const SizedBox(height: 12),
+                markupControls,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: markupDescription),
+              const SizedBox(width: 24),
+              markupControls,
+            ],
+          );
+        }),
         const SizedBox(height: 20),
         // "Match by" toggle hidden for the meantime (only City/Province are
         // wired up; defaults to LocationBasis.city). Re-enable when needed:

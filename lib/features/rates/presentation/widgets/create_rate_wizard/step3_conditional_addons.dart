@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../../core/utils/breakpoints.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../rates_colors.dart';
@@ -20,6 +21,7 @@ class Step3ConditionalAddons extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<RateWizardBloc>();
     final state = context.watch<RateWizardBloc>().state;
+    final isMobile = Breakpoints.isMobile(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,21 +40,35 @@ class Step3ConditionalAddons extends StatelessWidget {
           style: TextStyle(fontSize: 13, color: context.colors.textMuted),
         ),
         const SizedBox(height: 28),
-        Row(
-          children: [
-            for (final type in ConditionalType.values) ...[
-              Expanded(
-                child: _ConditionCard(
-                  type: type,
-                  selected: state.conditionalType == type,
-                  onTap: () => bloc.add(ConditionalTypeChanged(type)),
-                ),
+        isMobile
+            ? Column(
+                children: [
+                  for (final type in ConditionalType.values) ...[
+                    _ConditionCard(
+                      type: type,
+                      selected: state.conditionalType == type,
+                      onTap: () => bloc.add(ConditionalTypeChanged(type)),
+                    ),
+                    if (type != ConditionalType.values.last)
+                      const SizedBox(height: 12),
+                  ],
+                ],
+              )
+            : Row(
+                children: [
+                  for (final type in ConditionalType.values) ...[
+                    Expanded(
+                      child: _ConditionCard(
+                        type: type,
+                        selected: state.conditionalType == type,
+                        onTap: () => bloc.add(ConditionalTypeChanged(type)),
+                      ),
+                    ),
+                    if (type != ConditionalType.values.last)
+                      const SizedBox(width: 12),
+                  ],
+                ],
               ),
-              if (type != ConditionalType.values.last)
-                const SizedBox(width: 12),
-            ],
-          ],
-        ),
         const SizedBox(height: 28),
         if (state.conditionalType == null)
           Container(
@@ -88,7 +104,7 @@ class Step3ConditionalAddons extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: 340,
+                width: isMobile ? double.infinity : 340,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../../core/utils/breakpoints.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../../domain/entities/rates_fk_ids.dart';
 import '../../bloc/rate_wizard_bloc.dart';
@@ -19,6 +20,7 @@ class Step0RateSetup extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<RateWizardBloc>();
     final state = context.watch<RateWizardBloc>().state;
+    final isMobile = Breakpoints.isMobile(context);
 
     final serviceModeOptions = state.freightMode == null
         ? ServiceMode.values
@@ -35,8 +37,15 @@ class Step0RateSetup extends StatelessWidget {
         Row(
           children: [
             for (final mode in FreightMode.values) ...[
-              Expanded(child: _FreightModeCard(mode: mode, selected: state.freightMode == mode, onTap: () => bloc.add(FreightModeChanged(mode)))),
-              if (mode != FreightMode.values.last) const SizedBox(width: 12),
+              Expanded(
+                child: _FreightModeCard(
+                  mode: mode,
+                  selected: state.freightMode == mode,
+                  compact: isMobile,
+                  onTap: () => bloc.add(FreightModeChanged(mode)),
+                ),
+              ),
+              if (mode != FreightMode.values.last) SizedBox(width: isMobile ? 8 : 12),
             ],
           ],
         ),
@@ -95,56 +104,69 @@ class Step0RateSetup extends StatelessWidget {
           ),
           const SizedBox(height: 28),
         ],
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Service mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: _fieldHeight,
-                    child: ShadSelect<ServiceMode>(
-                      key: ValueKey('service-mode-${state.freightMode}'),
-                      initialValue: state.serviceMode,
-                      selectedOptionBuilder: (context, value) => Text(value.label),
-                      onChanged: (value) {
-                        if (value != null) bloc.add(ServiceModeChanged(value));
-                      },
-                      options: [for (final m in serviceModeOptions) ShadOption(value: m, child: Text(m.label))],
-                    ),
-                  ),
-                ],
+        Builder(builder: (context) {
+          final serviceModeField = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Service mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: _fieldHeight,
+                child: ShadSelect<ServiceMode>(
+                  key: ValueKey('service-mode-${state.freightMode}'),
+                  initialValue: state.serviceMode,
+                  selectedOptionBuilder: (context, value) => Text(value.label),
+                  onChanged: (value) {
+                    if (value != null) bloc.add(ServiceModeChanged(value));
+                  },
+                  options: [for (final m in serviceModeOptions) ShadOption(value: m, child: Text(m.label))],
+                ),
               ),
-            ),
-            const SizedBox(width: 32),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Charge basis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: _fieldHeight,
-                    child: ShadSelect<ChargeBasis>(
-                      key: ValueKey('charge-basis-${state.freightMode}'),
-                      initialValue: state.chargeBasis,
-                      selectedOptionBuilder: (context, value) => Text(value.label),
-                      onChanged: (value) {
-                        if (value != null) bloc.add(ChargeBasisChanged(value));
-                      },
-                      options: [for (final b in chargeBasisOptions) ShadOption(value: b, child: Text(b.label))],
-                    ),
-                  ),
-                ],
+            ],
+          );
+
+          final chargeBasisField = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Charge basis', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: _fieldHeight,
+                child: ShadSelect<ChargeBasis>(
+                  key: ValueKey('charge-basis-${state.freightMode}'),
+                  initialValue: state.chargeBasis,
+                  selectedOptionBuilder: (context, value) => Text(value.label),
+                  onChanged: (value) {
+                    if (value != null) bloc.add(ChargeBasisChanged(value));
+                  },
+                  options: [for (final b in chargeBasisOptions) ShadOption(value: b, child: Text(b.label))],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+
+          if (isMobile) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                serviceModeField,
+                const SizedBox(height: 20),
+                chargeBasisField,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: serviceModeField),
+              const SizedBox(width: 32),
+              Expanded(child: chargeBasisField),
+            ],
+          );
+        }),
         const SizedBox(height: 28),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,21 +231,23 @@ const _freightModeIcons = {
 };
 
 class _FreightModeCard extends StatelessWidget {
-  const _FreightModeCard({required this.mode, required this.selected, required this.onTap});
+  const _FreightModeCard({required this.mode, required this.selected, required this.onTap, this.compact = false});
 
   final FreightMode mode;
   final bool selected;
+  final bool compact;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = compact ? 40.0 : 56.0;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 16, vertical: compact ? 10 : 16),
           decoration: BoxDecoration(
             gradient: selected ? context.colors.primaryButtonGradient : null,
             color: selected ? null : context.colors.surfaceSubtle,
@@ -231,26 +255,50 @@ class _FreightModeCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             boxShadow: selected ? [BoxShadow(color: context.colors.shadowSoft, blurRadius: 12, offset: const Offset(0, 3))] : null,
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? Colors.white.withValues(alpha: 0.2) : context.colors.primaryChipBg,
-                  shape: BoxShape.circle,
+          child: compact
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: iconSize,
+                      height: iconSize,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected ? Colors.white.withValues(alpha: 0.2) : context.colors.primaryChipBg,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(_freightModeIcons[mode], size: 18, color: selected ? Colors.white : context.colors.primaryDeep),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      mode.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : context.colors.textMutedStrong),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Container(
+                      width: iconSize,
+                      height: iconSize,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected ? Colors.white.withValues(alpha: 0.2) : context.colors.primaryChipBg,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(_freightModeIcons[mode], size: 26, color: selected ? Colors.white : context.colors.primaryDeep),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(mode.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? Colors.white : context.colors.textMutedStrong)),
+                    if (selected) ...[
+                      const Spacer(),
+                      const Icon(CupertinoIcons.check_mark_circled_solid, size: 16, color: Colors.white),
+                    ],
+                  ],
                 ),
-                child: Icon(_freightModeIcons[mode], size: 26, color: selected ? Colors.white : context.colors.primaryDeep),
-              ),
-              const SizedBox(width: 12),
-              Text(mode.label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: selected ? Colors.white : context.colors.textMutedStrong)),
-              if (selected) ...[
-                const Spacer(),
-                const Icon(CupertinoIcons.check_mark_circled_solid, size: 16, color: Colors.white),
-              ],
-            ],
-          ),
         ),
       ),
     );

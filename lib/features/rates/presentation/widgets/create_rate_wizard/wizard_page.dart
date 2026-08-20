@@ -5,6 +5,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../../core/di/injection_container.dart';
 import '../../../../../core/services/ph_locations_service.dart';
+import '../../../../../core/utils/breakpoints.dart';
 import '../../../data/repositories/rates_repository.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../bloc/rates_shell_bloc.dart';
@@ -88,28 +89,33 @@ class _WizardView extends StatelessWidget {
           Expanded(
             child: Container(
               decoration: BoxDecoration(gradient: context.colors.wizardBgGradient),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(48, 40, 48, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _WizardHeader(),
-                    const SizedBox(height: 32),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Builder(builder: (context) {
-                          final step = context.select((RateWizardBloc b) => b.state.step);
-                          final bloc = context.read<RateWizardBloc>();
-                          return StepRail(currentStep: step, onStepTap: (s) => bloc.add(WizardStepChanged(s)));
-                        }),
-                        const SizedBox(width: 48),
-                        const Expanded(child: _StepContent()),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              child: Builder(builder: (context) {
+                final isMobile = Breakpoints.isMobile(context);
+                return SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 40, isMobile ? 16 : 48, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _WizardHeader(),
+                      const SizedBox(height: 32),
+                      isMobile
+                          ? const _StepContent()
+                          : Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Builder(builder: (context) {
+                                  final step = context.select((RateWizardBloc b) => b.state.step);
+                                  final bloc = context.read<RateWizardBloc>();
+                                  return StepRail(currentStep: step, onStepTap: (s) => bloc.add(WizardStepChanged(s)));
+                                }),
+                                const SizedBox(width: 48),
+                                const Expanded(child: _StepContent()),
+                              ],
+                            ),
+                    ],
+                  ),
+                );
+              }),
             ),
           ),
           const _WizardFooter(),
@@ -199,9 +205,48 @@ class _WizardFooter extends StatelessWidget {
     final step = context.select((RateWizardBloc b) => b.state.step);
     final isSubmitting = context.select((RateWizardBloc b) => b.state.isSubmitting);
     final isEditing = context.select((RateWizardBloc b) => b.state.editingRateId != null);
+    final isMobile = Breakpoints.isMobile(context);
+
+    final nextButton = ShadButton(
+      gradient: step == 3 ? context.colors.accentButtonGradient : context.colors.primaryButtonGradient,
+      leading: step == 3 && isSubmitting
+          ? const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            )
+          : Icon(step == 3 ? CupertinoIcons.paperplane_fill : null, size: 16),
+      trailing: step == 3 ? null : const Icon(CupertinoIcons.arrow_right, size: 16),
+      onPressed: (step == 3 && isSubmitting)
+          ? null
+          : () {
+              if (step < 3) {
+                wizardBloc.add(const WizardNextStepRequested());
+              } else {
+                wizardBloc.add(const RateSubmitRequested());
+              }
+            },
+      child: Text(step == 3 ? (isSubmitting ? 'Publishing...' : 'Publish Rate') : 'Next'),
+    );
+
+    final saveChangesButton = ShadButton.outline(
+      leading: isSubmitting
+          ? const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(CupertinoIcons.checkmark_alt, size: 15),
+      onPressed: isSubmitting ? null : () => wizardBloc.add(const RateSubmitRequested(stayOnPage: true)),
+      child: Text(isSubmitting ? 'Saving...' : 'Save changes'),
+    );
+
+    final trailingButtons = isEditing && step < 3
+        ? [saveChangesButton, nextButton]
+        : [nextButton];
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(48, 20, 48, 20),
+      padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 20, isMobile ? 16 : 48, 20),
       decoration: BoxDecoration(
         color: context.colors.surface,
         border: Border(top: BorderSide(color: context.colors.border)),
@@ -217,45 +262,21 @@ class _WizardFooter extends StatelessWidget {
             )
           else
             const SizedBox.shrink(),
-          Row(
-            children: [
-              if (isEditing && step < 3) ...[
-                ShadButton.outline(
-                  leading: isSubmitting
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(CupertinoIcons.checkmark_alt, size: 15),
-                  onPressed: isSubmitting ? null : () => wizardBloc.add(const RateSubmitRequested(stayOnPage: true)),
-                  child: Text(isSubmitting ? 'Saving...' : 'Save changes'),
+          isMobile
+              ? Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: trailingButtons,
+                )
+              : Row(
+                  children: [
+                    for (final button in trailingButtons) ...[
+                      button,
+                      if (button != trailingButtons.last) const SizedBox(width: 12),
+                    ],
+                  ],
                 ),
-                const SizedBox(width: 12),
-              ],
-              ShadButton(
-                gradient: step == 3 ? context.colors.accentButtonGradient : context.colors.primaryButtonGradient,
-                leading: step == 3 && isSubmitting
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Icon(step == 3 ? CupertinoIcons.paperplane_fill : null, size: 16),
-                trailing: step == 3 ? null : const Icon(CupertinoIcons.arrow_right, size: 16),
-                onPressed: (step == 3 && isSubmitting)
-                    ? null
-                    : () {
-                        if (step < 3) {
-                          wizardBloc.add(const WizardNextStepRequested());
-                        } else {
-                          wizardBloc.add(const RateSubmitRequested());
-                        }
-                      },
-                child: Text(step == 3 ? (isSubmitting ? 'Publishing...' : 'Publish Rate') : 'Next'),
-              ),
-            ],
-          ),
         ],
       ),
     );

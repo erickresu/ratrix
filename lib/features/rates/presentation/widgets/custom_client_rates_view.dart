@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ratrix/core/widgets/shine_sweep.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/pagination_bar.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/client_rate.dart';
@@ -22,172 +23,221 @@ class CustomClientRatesView extends StatelessWidget {
     final state = context.watch<RatesShellBloc>().state;
     final client = state.selectedClient;
     if (client == null) return const SizedBox.shrink();
+    final isMobile = Breakpoints.isMobile(context);
+
+    final avatar = ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: ShineSweep(
+        child: Container(
+          width: 52,
+          height: 52,
+          alignment: Alignment.center,
+          color: context.colors.primary.withValues(alpha: 0.2),
+          child: Text(
+            client.initials,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF6FE0C6),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final clientInfo = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          client.name,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '${client.accountNumber} · ${client.email}',
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.white.withValues(alpha: 0.55),
+            fontFamily: 'monospace',
+          ),
+        ),
+      ],
+    );
+
+    final createRateButton = ShadButton(
+      backgroundColor: context.colors.primary,
+      hoverBackgroundColor: context.colors.primaryHover,
+      leading: const Icon(
+        CupertinoIcons.add,
+        size: 17,
+        color: Colors.white,
+      ),
+      onPressed: () => bloc.add(
+        const CreateCustomRateForSelectedClientRequested(),
+      ),
+      child: const Text('Create New Rate'),
+    );
+
+    final tabsRow = Row(
+      children: [
+        _TabPill(
+          label: 'Active',
+          selected: state.clientRatesTab == RateStatus.active,
+          onTap: () => bloc.add(
+            const ClientRatesTabChanged(RateStatus.active),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _TabPill(
+          label: 'Expired',
+          selected: state.clientRatesTab == RateStatus.expired,
+          onTap: () => bloc.add(
+            const ClientRatesTabChanged(RateStatus.expired),
+          ),
+        ),
+      ],
+    );
+
+    final freightFilter = SizedBox(
+      width: 170,
+      child: ShadSelect<String>(
+        placeholder: const Text('Freight mode'),
+        initialValue: state.clientRateFreightFilter?.name ?? _kAllValue,
+        selectedOptionBuilder: (context, value) =>
+            Text(value == _kAllValue ? 'All modes' : FreightMode.values.byName(value).label),
+        onChanged: (value) {
+          if (value == null) return;
+          bloc.add(ClientRateFreightFilterChanged(value == _kAllValue ? null : FreightMode.values.byName(value)));
+        },
+        options: [
+          const ShadOption(value: _kAllValue, child: Text('All modes')),
+          for (final m in FreightMode.values) ShadOption(value: m.name, child: Text(m.label)),
+        ],
+      ),
+    );
+
+    final serviceFilter = SizedBox(
+      width: 170,
+      child: ShadSelect<String>(
+        placeholder: const Text('Service mode'),
+        initialValue: state.clientRateServiceFilter?.name ?? _kAllValue,
+        selectedOptionBuilder: (context, value) =>
+            Text(value == _kAllValue ? 'All services' : ServiceMode.values.byName(value).label),
+        onChanged: (value) {
+          if (value == null) return;
+          bloc.add(ClientRateServiceFilterChanged(value == _kAllValue ? null : ServiceMode.values.byName(value)));
+        },
+        options: [
+          const ShadOption(value: _kAllValue, child: Text('All services')),
+          for (final m in ServiceMode.values) ShadOption(value: m.name, child: Text(m.label)),
+        ],
+      ),
+    );
+
+    final searchField = SizedBox(
+      width: 260,
+      child: ShadInput(
+        placeholder: const Text(
+          'Search by charge code, freight mode...',
+        ),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Icon(
+            CupertinoIcons.search,
+            size: 16,
+            color: context.colors.textMuted,
+          ),
+        ),
+        onChanged: (v) => bloc.add(ClientRateSearchChanged(v)),
+      ),
+    );
+
+    final sortToggle = _SortByExpiryToggle(
+      active: state.clientRateSortByExpiry,
+      onTap: () => bloc.add(const ClientRateSortByExpiryToggled()),
+    );
+
+    final filtersControlsRow = isMobile
+        ? Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [freightFilter, serviceFilter, searchField, sortToggle],
+          )
+        : Row(
+            children: [
+              tabsRow,
+              const Spacer(),
+              freightFilter,
+              const SizedBox(width: 8),
+              serviceFilter,
+              const SizedBox(width: 8),
+              searchField,
+              const SizedBox(width: 8),
+              sortToggle,
+            ],
+          );
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(48, 40, 48, 32),
+          padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 40, isMobile ? 16 : 48, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               BackPill(onTap: () => bloc.add(const ClientsBackRequested())),
               const SizedBox(height: 24),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 28,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16 : 32,
+                  vertical: isMobile ? 20 : 28,
                 ),
                 decoration: BoxDecoration(
                   color: context.colors.sidebarPanelBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: ShineSweep(
-                        child: Container(
-                          width: 52,
-                          height: 52,
-                          alignment: Alignment.center,
-                          color: context.colors.primary.withValues(alpha: 0.2),
-                          child: Text(
-                            client.initials,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF6FE0C6),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                child: isMobile
+                    ? Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 16,
+                        runSpacing: 16,
                         children: [
-                          Text(
-                            client.name,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              avatar,
+                              const SizedBox(width: 16),
+                              Flexible(child: clientInfo),
+                            ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${client.accountNumber} · ${client.email}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.white.withValues(alpha: 0.55),
-                              fontFamily: 'monospace',
-                            ),
-                          ),
+                          createRateButton,
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          avatar,
+                          const SizedBox(width: 16),
+                          Expanded(child: clientInfo),
+                          createRateButton,
                         ],
                       ),
-                    ),
-                    ShadButton(
-                      backgroundColor: context.colors.primary,
-                      hoverBackgroundColor: context.colors.primaryHover,
-                      leading: const Icon(
-                        CupertinoIcons.add,
-                        size: 17,
-                        color: Colors.white,
-                      ),
-                      onPressed: () => bloc.add(
-                        const CreateCustomRateForSelectedClientRequested(),
-                      ),
-                      child: const Text('Create New Rate'),
-                    ),
-                  ],
-                ),
               ),
               const SizedBox(height: 28),
-              Row(
-                children: [
-                  _TabPill(
-                    label: 'Active',
-                    selected: state.clientRatesTab == RateStatus.active,
-                    onTap: () => bloc.add(
-                      const ClientRatesTabChanged(RateStatus.active),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _TabPill(
-                    label: 'Expired',
-                    selected: state.clientRatesTab == RateStatus.expired,
-                    onTap: () => bloc.add(
-                      const ClientRatesTabChanged(RateStatus.expired),
-                    ),
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 170,
-                    child: ShadSelect<String>(
-                      placeholder: const Text('Freight mode'),
-                      initialValue: state.clientRateFreightFilter?.name ?? _kAllValue,
-                      selectedOptionBuilder: (context, value) =>
-                          Text(value == _kAllValue ? 'All modes' : FreightMode.values.byName(value).label),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        bloc.add(ClientRateFreightFilterChanged(value == _kAllValue ? null : FreightMode.values.byName(value)));
-                      },
-                      options: [
-                        const ShadOption(value: _kAllValue, child: Text('All modes')),
-                        for (final m in FreightMode.values) ShadOption(value: m.name, child: Text(m.label)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 170,
-                    child: ShadSelect<String>(
-                      placeholder: const Text('Service mode'),
-                      initialValue: state.clientRateServiceFilter?.name ?? _kAllValue,
-                      selectedOptionBuilder: (context, value) =>
-                          Text(value == _kAllValue ? 'All services' : ServiceMode.values.byName(value).label),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        bloc.add(ClientRateServiceFilterChanged(value == _kAllValue ? null : ServiceMode.values.byName(value)));
-                      },
-                      options: [
-                        const ShadOption(value: _kAllValue, child: Text('All services')),
-                        for (final m in ServiceMode.values) ShadOption(value: m.name, child: Text(m.label)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 260,
-                    child: ShadInput(
-                      placeholder: const Text(
-                        'Search by charge code, freight mode...',
-                      ),
-                      leading: Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Icon(
-                          CupertinoIcons.search,
-                          size: 16,
-                          color: context.colors.textMuted,
-                        ),
-                      ),
-                      onChanged: (v) => bloc.add(ClientRateSearchChanged(v)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _SortByExpiryToggle(
-                    active: state.clientRateSortByExpiry,
-                    onTap: () => bloc.add(const ClientRateSortByExpiryToggled()),
-                  ),
-                ],
-              ),
+              if (isMobile) ...[
+                tabsRow,
+                const SizedBox(height: 16),
+              ],
+              filtersControlsRow,
             ],
           ),
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
+            padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 0, isMobile ? 16 : 48, 48),
             child: state.clientRatesLoading
                 ? const SkeletonShimmer(
                     child: Column(
