@@ -22,17 +22,25 @@ class RatesDataSource {
   Future<Response<dynamic>> fetchRatesByType(
     String rateType, {
     int? clientId,
+    int? page,
     int? perPage,
   }) =>
       _dio.get(
         'api/rates/$rateType',
         queryParameters: {
           if (clientId != null) 'client_id': clientId,
-          if (perPage != null) 'per_page': perPage,
+          if (page != null) 'page': page,
+          // The backend accepts three aliases for the same param; send all
+          // three so it works regardless of which one it actually reads.
+          if (perPage != null) ...{
+            'pageSize': perPage,
+            'page_size': perPage,
+            'per_page': perPage,
+          },
         },
       );
 
-  Future<Response<dynamic>> updateRate(String id, Map<String, dynamic> body) => _dio.put('api/rates/$id', data: body);
+  Future<Response<dynamic>> updateRate(String id, Map<String, dynamic> body) => _dio.patch('api/rates/$id', data: body);
 
   Future<Response<dynamic>> deleteRate(String id) => _dio.delete('api/rates/$id');
 

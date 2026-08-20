@@ -86,4 +86,26 @@ class RatesFkIds {
     FreightMode.land: [ServiceMode.doorToDoor],
     FreightMode.sea: ServiceMode.values,
   };
+
+  // ---------------------------------------------------------------------
+  // Reverse lookups (id -> enum), used when loading an existing rate for
+  // edit. Derived from the forward maps above rather than hardcoding a
+  // second copy of the id numbers, so the two can never drift apart.
+  // ---------------------------------------------------------------------
+
+  static final Map<int, FreightMode> freightModeFromId = {
+    for (final e in freightModeIds.entries) e.value: e.key,
+  };
+
+  static final Map<int, ServiceMode> serviceModeFromId = {
+    for (final e in serviceModeIds.entries) e.value: e.key,
+  };
+
+  static final Map<int, ChargeBasis> chargeBasisFromId = {
+    for (final e in chargeBasisIds.entries) e.value: e.key,
+  };
+
+  static final Map<int, PricingOption> pricingOptionFromId = {
+    for (final e in chargeOptionIds.entries) e.value: e.key,
+  };
 }

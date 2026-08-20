@@ -21,6 +21,20 @@ class RatesShellState extends Equatable {
   final bool clientRatesLoading;
   final String clientRateSearch;
   final RateStatus clientRatesTab;
+  final int clientRatePage;
+  final FreightMode? clientRateFreightFilter;
+  final ServiceMode? clientRateServiceFilter;
+  final bool clientRateSortByExpiry;
+
+  /// The full rate being edited, set once `EditRateRequested`'s fetch
+  /// resolves; `WizardPage` reads this to construct `RateWizardBloc` in
+  /// edit mode. Cleared whenever a fresh (create) wizard is opened.
+  final RatrixRate? existingRate;
+  final bool editRateLoading;
+
+  final String calcClientSearch;
+  final int calcClientPage;
+  final String? selectedCalcClientId;
 
   const RatesShellState({
     this.isLoading = true,
@@ -40,9 +54,19 @@ class RatesShellState extends Equatable {
     this.clientRatesLoading = false,
     this.clientRateSearch = '',
     this.clientRatesTab = RateStatus.active,
+    this.clientRatePage = 0,
+    this.clientRateFreightFilter,
+    this.clientRateServiceFilter,
+    this.clientRateSortByExpiry = false,
+    this.existingRate,
+    this.editRateLoading = false,
+    this.calcClientSearch = '',
+    this.calcClientPage = 0,
+    this.selectedCalcClientId,
   });
 
   static const clientsPerPage = 9;
+  static const clientRatesPerPage = 6;
 
   List<Client> get filteredClients {
     if (clientSearch.isEmpty) return clients;
@@ -67,13 +91,56 @@ class RatesShellState extends Equatable {
     return null;
   }
 
+  List<Client> get filteredCalcClients {
+    if (calcClientSearch.isEmpty) return clients;
+    final q = calcClientSearch.toLowerCase();
+    return clients.where((c) => c.name.toLowerCase().contains(q)).toList();
+  }
+
+  int get calcClientPageCount => (filteredCalcClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);
+
+  List<Client> get pagedCalcClients {
+    final start = calcClientPage * clientsPerPage;
+    if (start >= filteredCalcClients.length) return const [];
+    final end = (start + clientsPerPage).clamp(0, filteredCalcClients.length);
+    return filteredCalcClients.sublist(start, end);
+  }
+
+  Client? get selectedCalcClient {
+    if (selectedCalcClientId == null) return null;
+    for (final c in clients) {
+      if (c.id == selectedCalcClientId) return c;
+    }
+    return null;
+  }
+
   List<ClientRate> get filteredClientRates {
     final q = clientRateSearch.toLowerCase();
     return selectedClientRates.where((r) {
       if (r.status != clientRatesTab) return false;
+      if (clientRateFreightFilter != null && r.freightMode != clientRateFreightFilter) return false;
+      if (clientRateServiceFilter != null && r.serviceMode != clientRateServiceFilter) return false;
       if (q.isEmpty) return true;
       return r.chargeCode.toLowerCase().contains(q) || r.freightMode.label.toLowerCase().contains(q);
-    }).toList();
+    }).toList()
+      ..sort((a, b) {
+        if (!clientRateSortByExpiry) return 0;
+        final ad = a.expiryDate;
+        final bd = b.expiryDate;
+        if (ad == null && bd == null) return 0;
+        if (ad == null) return 1;
+        if (bd == null) return -1;
+        return ad.compareTo(bd);
+      });
+  }
+
+  int get clientRatePageCount => (filteredClientRates.length / clientRatesPerPage).ceil().clamp(1, 1 << 30);
+
+  List<ClientRate> get pagedClientRates {
+    final start = clientRatePage * clientRatesPerPage;
+    if (start >= filteredClientRates.length) return const [];
+    final end = (start + clientRatesPerPage).clamp(0, filteredClientRates.length);
+    return filteredClientRates.sublist(start, end);
   }
 
   RatesShellState copyWith({
@@ -95,6 +162,19 @@ class RatesShellState extends Equatable {
     bool? clientRatesLoading,
     String? clientRateSearch,
     RateStatus? clientRatesTab,
+    int? clientRatePage,
+    FreightMode? clientRateFreightFilter,
+    bool clearClientRateFreightFilter = false,
+    ServiceMode? clientRateServiceFilter,
+    bool clearClientRateServiceFilter = false,
+    bool? clientRateSortByExpiry,
+    RatrixRate? existingRate,
+    bool clearExistingRate = false,
+    bool? editRateLoading,
+    String? calcClientSearch,
+    int? calcClientPage,
+    String? selectedCalcClientId,
+    bool clearSelectedCalcClientId = false,
   }) {
     return RatesShellState(
       isLoading: isLoading ?? this.isLoading,
@@ -114,6 +194,15 @@ class RatesShellState extends Equatable {
       clientRatesLoading: clientRatesLoading ?? this.clientRatesLoading,
       clientRateSearch: clientRateSearch ?? this.clientRateSearch,
       clientRatesTab: clientRatesTab ?? this.clientRatesTab,
+      clientRatePage: clientRatePage ?? this.clientRatePage,
+      clientRateFreightFilter: clearClientRateFreightFilter ? null : (clientRateFreightFilter ?? this.clientRateFreightFilter),
+      clientRateServiceFilter: clearClientRateServiceFilter ? null : (clientRateServiceFilter ?? this.clientRateServiceFilter),
+      clientRateSortByExpiry: clientRateSortByExpiry ?? this.clientRateSortByExpiry,
+      existingRate: clearExistingRate ? null : (existingRate ?? this.existingRate),
+      editRateLoading: editRateLoading ?? this.editRateLoading,
+      calcClientSearch: calcClientSearch ?? this.calcClientSearch,
+      calcClientPage: calcClientPage ?? this.calcClientPage,
+      selectedCalcClientId: clearSelectedCalcClientId ? null : (selectedCalcClientId ?? this.selectedCalcClientId),
     );
   }
 
@@ -133,8 +222,17 @@ class RatesShellState extends Equatable {
         clientPage,
         selectedClientId,
         selectedClientRates,
+        existingRate,
+        editRateLoading,
         clientRatesLoading,
         clientRateSearch,
         clientRatesTab,
+        clientRatePage,
+        clientRateFreightFilter,
+        clientRateServiceFilter,
+        clientRateSortByExpiry,
+        calcClientSearch,
+        calcClientPage,
+        selectedCalcClientId,
       ];
 }

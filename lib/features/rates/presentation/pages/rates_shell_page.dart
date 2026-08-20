@@ -13,6 +13,8 @@ import '../widgets/custom_clients_view.dart';
 import '../widgets/dashboard_view.dart';
 import '../widgets/new_rate_modal.dart';
 import '../widgets/rates_sidebar.dart';
+import '../widgets/shipping_calculator/shipping_calculator_clients_view.dart';
+import '../widgets/shipping_calculator/shipping_calculator_form_view.dart';
 import '../rates_colors.dart';
 
 class RatesShellPage extends StatelessWidget {
@@ -62,6 +64,10 @@ class _RatesShellView extends StatelessWidget {
               RatesView.create => WizardPage(
                   key: ValueKey('wizard-${state.rateChoice}-${state.selectedClientId}'),
                   isCustom: state.rateChoice == RateType.custom,
+                ),
+              RatesView.shippingCalculatorClients => const ShippingCalculatorClientsView(),
+              RatesView.shippingCalculatorForm => ShippingCalculatorFormView(
+                  key: ValueKey('shipping-calc-${state.selectedCalcClientId}'),
                 ),
             },
           ),

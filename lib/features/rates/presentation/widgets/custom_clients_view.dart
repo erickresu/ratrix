@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../core/widgets/pagination_bar.dart';
 import '../../../../core/widgets/shine_sweep.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/client.dart';
@@ -104,115 +105,13 @@ class CustomClientsView extends StatelessWidget {
                 ),
         ),
         if (state.filteredClients.isNotEmpty)
-          _ClientsPaginationBar(
+          PaginationBar(
             page: state.clientPage,
-            pageCount: state.clientPageCount,
-            totalClients: state.filteredClients.length,
+            itemsPerPage: RatesShellState.clientsPerPage,
+            totalItems: state.filteredClients.length,
             onPageChanged: (p) => bloc.add(ClientPageChanged(p)),
           ),
       ],
-    );
-  }
-}
-
-class _ClientsPaginationBar extends StatelessWidget {
-  const _ClientsPaginationBar({
-    required this.page,
-    required this.pageCount,
-    required this.totalClients,
-    required this.onPageChanged,
-  });
-
-  final int page;
-  final int pageCount;
-  final int totalClients;
-  final ValueChanged<int> onPageChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final rangeStart = page * RatesShellState.clientsPerPage + 1;
-    final rangeEnd = ((page + 1) * RatesShellState.clientsPerPage).clamp(
-      0,
-      totalClients,
-    );
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(40, 12, 40, 20),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        border: Border(top: BorderSide(color: context.colors.border)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Showing $rangeStart–$rangeEnd of $totalClients',
-            style: TextStyle(fontSize: 13, color: context.colors.textMuted),
-          ),
-          Row(
-            children: [
-              _PageButton(
-                icon: CupertinoIcons.chevron_left,
-                enabled: page > 0,
-                onTap: () => onPageChanged(page - 1),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Page ${page + 1} of $pageCount',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: context.colors.textBody,
-                ),
-              ),
-              const SizedBox(width: 8),
-              _PageButton(
-                icon: CupertinoIcons.chevron_right,
-                enabled: page < pageCount - 1,
-                onTap: () => onPageChanged(page + 1),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PageButton extends StatelessWidget {
-  const _PageButton({
-    required this.icon,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: enabled ? onTap : null,
-        child: Container(
-          width: 32,
-          height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            border: Border.all(color: context.colors.borderStrong),
-            borderRadius: BorderRadius.circular(8),
-            color: context.colors.surface,
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: enabled ? context.colors.textBody : context.colors.textFaint,
-          ),
-        ),
-      ),
     );
   }
 }

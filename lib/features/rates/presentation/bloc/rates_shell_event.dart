@@ -96,6 +96,83 @@ class ClientRatesTabChanged extends RatesShellEvent {
   List<Object?> get props => [tab];
 }
 
+class ClientRatePageChanged extends RatesShellEvent {
+  const ClientRatePageChanged(this.page);
+
+  final int page;
+
+  @override
+  List<Object?> get props => [page];
+}
+
+class ClientRateFreightFilterChanged extends RatesShellEvent {
+  const ClientRateFreightFilterChanged(this.freightMode);
+
+  final FreightMode? freightMode;
+
+  @override
+  List<Object?> get props => [freightMode];
+}
+
+class ClientRateServiceFilterChanged extends RatesShellEvent {
+  const ClientRateServiceFilterChanged(this.serviceMode);
+
+  final ServiceMode? serviceMode;
+
+  @override
+  List<Object?> get props => [serviceMode];
+}
+
+class ClientRateSortByExpiryToggled extends RatesShellEvent {
+  const ClientRateSortByExpiryToggled();
+}
+
 class CreateCustomRateForSelectedClientRequested extends RatesShellEvent {
   const CreateCustomRateForSelectedClientRequested();
+}
+
+/// Fetches the full [RatrixRate] for `rateId` and opens the wizard in edit
+/// mode once it resolves. Fired when a [ClientRate] card is tapped.
+class EditRateRequested extends RatesShellEvent {
+  const EditRateRequested(this.rateId);
+
+  final String rateId;
+
+  @override
+  List<Object?> get props => [rateId];
+}
+
+class ShippingCalculatorRequested extends RatesShellEvent {
+  const ShippingCalculatorRequested();
+}
+
+class ShippingCalculatorClientChosen extends RatesShellEvent {
+  const ShippingCalculatorClientChosen(this.clientId);
+
+  final String clientId;
+
+  @override
+  List<Object?> get props => [clientId];
+}
+
+class ShippingCalculatorClientSearchChanged extends RatesShellEvent {
+  const ShippingCalculatorClientSearchChanged(this.query);
+
+  final String query;
+
+  @override
+  List<Object?> get props => [query];
+}
+
+class ShippingCalculatorClientPageChanged extends RatesShellEvent {
+  const ShippingCalculatorClientPageChanged(this.page);
+
+  final int page;
+
+  @override
+  List<Object?> get props => [page];
+}
+
+class ShippingCalculatorBackRequested extends RatesShellEvent {
+  const ShippingCalculatorBackRequested();
 }

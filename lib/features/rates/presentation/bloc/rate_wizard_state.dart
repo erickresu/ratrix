@@ -5,6 +5,11 @@ class RateWizardState extends Equatable {
   final String? clientId;
   final String? clientName;
 
+  /// The id of the rate being edited, non-null only when the wizard was
+  /// opened from an existing `RatrixRate` (edit mode). When set, submit
+  /// calls `updateRate` instead of `createRate`.
+  final String? editingRateId;
+
   final int step;
   final FreightMode? freightMode;
   final ServiceMode serviceMode;
@@ -33,11 +38,13 @@ class RateWizardState extends Equatable {
   final bool isSubmitting;
   final String? submitError;
   final bool submitSucceeded;
+  final bool lastSubmitStayedOnPage;
 
   const RateWizardState({
     required this.isCustom,
     this.clientId,
     this.clientName,
+    this.editingRateId,
     this.step = 0,
     this.freightMode,
     this.serviceMode = ServiceMode.doorToDoor,
@@ -62,6 +69,7 @@ class RateWizardState extends Equatable {
     this.isSubmitting = false,
     this.submitError,
     this.submitSucceeded = false,
+    this.lastSubmitStayedOnPage = false,
   });
 
   String get chargeCodePrefix => '${(freightMode?.name ?? '').toUpperCase()}_${serviceMode.abbreviation}';
@@ -108,11 +116,13 @@ class RateWizardState extends Equatable {
     bool clearSubmitError = false,
     bool? submitSucceeded,
     bool clearSubmitSucceeded = false,
+    bool? lastSubmitStayedOnPage,
   }) {
     return RateWizardState(
       isCustom: isCustom,
       clientId: clientId,
       clientName: clientName,
+      editingRateId: editingRateId,
       step: step ?? this.step,
       freightMode: freightMode ?? this.freightMode,
       serviceMode: serviceMode ?? this.serviceMode,
@@ -137,6 +147,7 @@ class RateWizardState extends Equatable {
       isSubmitting: isSubmitting ?? this.isSubmitting,
       submitError: clearSubmitError ? null : (submitError ?? this.submitError),
       submitSucceeded: clearSubmitSucceeded ? false : (submitSucceeded ?? this.submitSucceeded),
+      lastSubmitStayedOnPage: lastSubmitStayedOnPage ?? this.lastSubmitStayedOnPage,
     );
   }
 
@@ -145,6 +156,7 @@ class RateWizardState extends Equatable {
         isCustom,
         clientId,
         clientName,
+        editingRateId,
         step,
         freightMode,
         serviceMode,
@@ -169,5 +181,6 @@ class RateWizardState extends Equatable {
         isSubmitting,
         submitError,
         submitSucceeded,
+        lastSubmitStayedOnPage,
       ];
 }

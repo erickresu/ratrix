@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MatrixRow {
 
- String get origin; String get destination; List<String> get rates;
+ String get origin; String get destination; List<String> get rates; String? get routeId; int? get originId; int? get destinationId;
 /// Create a copy of MatrixRow
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $MatrixRowCopyWith<MatrixRow> get copyWith => _$MatrixRowCopyWithImpl<MatrixRow>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MatrixRow&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.destination, destination) || other.destination == destination)&&const DeepCollectionEquality().equals(other.rates, rates));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MatrixRow&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.destination, destination) || other.destination == destination)&&const DeepCollectionEquality().equals(other.rates, rates)&&(identical(other.routeId, routeId) || other.routeId == routeId)&&(identical(other.originId, originId) || other.originId == originId)&&(identical(other.destinationId, destinationId) || other.destinationId == destinationId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,origin,destination,const DeepCollectionEquality().hash(rates));
+int get hashCode => Object.hash(runtimeType,origin,destination,const DeepCollectionEquality().hash(rates),routeId,originId,destinationId);
 
 @override
 String toString() {
-  return 'MatrixRow(origin: $origin, destination: $destination, rates: $rates)';
+  return 'MatrixRow(origin: $origin, destination: $destination, rates: $rates, routeId: $routeId, originId: $originId, destinationId: $destinationId)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $MatrixRowCopyWith<$Res>  {
   factory $MatrixRowCopyWith(MatrixRow value, $Res Function(MatrixRow) _then) = _$MatrixRowCopyWithImpl;
 @useResult
 $Res call({
- String origin, String destination, List<String> rates
+ String origin, String destination, List<String> rates, String? routeId, int? originId, int? destinationId
 });
 
 
@@ -62,12 +62,15 @@ class _$MatrixRowCopyWithImpl<$Res>
 
 /// Create a copy of MatrixRow
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? origin = null,Object? destination = null,Object? rates = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? origin = null,Object? destination = null,Object? rates = null,Object? routeId = freezed,Object? originId = freezed,Object? destinationId = freezed,}) {
   return _then(_self.copyWith(
 origin: null == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
 as String,destination: null == destination ? _self.destination : destination // ignore: cast_nullable_to_non_nullable
 as String,rates: null == rates ? _self.rates : rates // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,routeId: freezed == routeId ? _self.routeId : routeId // ignore: cast_nullable_to_non_nullable
+as String?,originId: freezed == originId ? _self.originId : originId // ignore: cast_nullable_to_non_nullable
+as int?,destinationId: freezed == destinationId ? _self.destinationId : destinationId // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -152,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String origin,  String destination,  List<String> rates)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String origin,  String destination,  List<String> rates,  String? routeId,  int? originId,  int? destinationId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MatrixRow() when $default != null:
-return $default(_that.origin,_that.destination,_that.rates);case _:
+return $default(_that.origin,_that.destination,_that.rates,_that.routeId,_that.originId,_that.destinationId);case _:
   return orElse();
 
 }
@@ -173,10 +176,10 @@ return $default(_that.origin,_that.destination,_that.rates);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String origin,  String destination,  List<String> rates)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String origin,  String destination,  List<String> rates,  String? routeId,  int? originId,  int? destinationId)  $default,) {final _that = this;
 switch (_that) {
 case _MatrixRow():
-return $default(_that.origin,_that.destination,_that.rates);case _:
+return $default(_that.origin,_that.destination,_that.rates,_that.routeId,_that.originId,_that.destinationId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -193,10 +196,10 @@ return $default(_that.origin,_that.destination,_that.rates);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String origin,  String destination,  List<String> rates)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String origin,  String destination,  List<String> rates,  String? routeId,  int? originId,  int? destinationId)?  $default,) {final _that = this;
 switch (_that) {
 case _MatrixRow() when $default != null:
-return $default(_that.origin,_that.destination,_that.rates);case _:
+return $default(_that.origin,_that.destination,_that.rates,_that.routeId,_that.originId,_that.destinationId);case _:
   return null;
 
 }
@@ -208,7 +211,7 @@ return $default(_that.origin,_that.destination,_that.rates);case _:
 
 
 class _MatrixRow implements MatrixRow {
-  const _MatrixRow({this.origin = '', this.destination = '', final  List<String> rates = const <String>['']}): _rates = rates;
+  const _MatrixRow({this.origin = '', this.destination = '', final  List<String> rates = const <String>[''], this.routeId, this.originId, this.destinationId}): _rates = rates;
   
 
 @override@JsonKey() final  String origin;
@@ -220,6 +223,9 @@ class _MatrixRow implements MatrixRow {
   return EqualUnmodifiableListView(_rates);
 }
 
+@override final  String? routeId;
+@override final  int? originId;
+@override final  int? destinationId;
 
 /// Create a copy of MatrixRow
 /// with the given fields replaced by the non-null parameter values.
@@ -231,16 +237,16 @@ _$MatrixRowCopyWith<_MatrixRow> get copyWith => __$MatrixRowCopyWithImpl<_Matrix
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MatrixRow&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.destination, destination) || other.destination == destination)&&const DeepCollectionEquality().equals(other._rates, _rates));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MatrixRow&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.destination, destination) || other.destination == destination)&&const DeepCollectionEquality().equals(other._rates, _rates)&&(identical(other.routeId, routeId) || other.routeId == routeId)&&(identical(other.originId, originId) || other.originId == originId)&&(identical(other.destinationId, destinationId) || other.destinationId == destinationId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,origin,destination,const DeepCollectionEquality().hash(_rates));
+int get hashCode => Object.hash(runtimeType,origin,destination,const DeepCollectionEquality().hash(_rates),routeId,originId,destinationId);
 
 @override
 String toString() {
-  return 'MatrixRow(origin: $origin, destination: $destination, rates: $rates)';
+  return 'MatrixRow(origin: $origin, destination: $destination, rates: $rates, routeId: $routeId, originId: $originId, destinationId: $destinationId)';
 }
 
 
@@ -251,7 +257,7 @@ abstract mixin class _$MatrixRowCopyWith<$Res> implements $MatrixRowCopyWith<$Re
   factory _$MatrixRowCopyWith(_MatrixRow value, $Res Function(_MatrixRow) _then) = __$MatrixRowCopyWithImpl;
 @override @useResult
 $Res call({
- String origin, String destination, List<String> rates
+ String origin, String destination, List<String> rates, String? routeId, int? originId, int? destinationId
 });
 
 
@@ -268,12 +274,15 @@ class __$MatrixRowCopyWithImpl<$Res>
 
 /// Create a copy of MatrixRow
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? origin = null,Object? destination = null,Object? rates = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? origin = null,Object? destination = null,Object? rates = null,Object? routeId = freezed,Object? originId = freezed,Object? destinationId = freezed,}) {
   return _then(_MatrixRow(
 origin: null == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
 as String,destination: null == destination ? _self.destination : destination // ignore: cast_nullable_to_non_nullable
 as String,rates: null == rates ? _self._rates : rates // ignore: cast_nullable_to_non_nullable
-as List<String>,
+as List<String>,routeId: freezed == routeId ? _self.routeId : routeId // ignore: cast_nullable_to_non_nullable
+as String?,originId: freezed == originId ? _self.originId : originId // ignore: cast_nullable_to_non_nullable
+as int?,destinationId: freezed == destinationId ? _self.destinationId : destinationId // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

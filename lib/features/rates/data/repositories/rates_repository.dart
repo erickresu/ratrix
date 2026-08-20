@@ -35,6 +35,16 @@ class RatesRepository {
     return rows.whereType<Map<String, dynamic>>().map(RatrixRate.fromJson).toList();
   }
 
+  /// Same as [_fetchAllRates] but via the paginated `GET api/rates/{type}`
+  /// endpoint (only `publish`/`custom` are valid `rateType` values here) —
+  /// use this when filtering by client, since it's the endpoint built for
+  /// that query shape rather than fetching the unbounded full list.
+  Future<List<RatrixRate>> _fetchRatesByType(String rateType, {int? clientId, int perPage = 5000}) async {
+    final res = await _dataSource.fetchRatesByType(rateType, clientId: clientId, page: 1, perPage: perPage);
+    final rows = _asList(res.data);
+    return rows.whereType<Map<String, dynamic>>().map(RatrixRate.fromJson).toList();
+  }
+
   List<dynamic> _asList(dynamic body) {
     if (body is List) return body;
     if (body is Map<String, dynamic> && body['data'] is List) return body['data'] as List;
@@ -117,7 +127,7 @@ class RatesRepository {
   Future<List<ClientRate>> fetchClientRates(String clientId) async {
     final id = int.tryParse(clientId);
     if (id == null) return const [];
-    final rates = await _fetchAllRates(rateType: 'custom', clientId: id);
+    final rates = await _fetchRatesByType('custom', clientId: id);
     return rates.map((r) => _mapClientRate(r, clientId)).toList();
   }
 
@@ -132,9 +142,10 @@ class RatesRepository {
     final isExpired = rate.isExpired;
     final expiryLabel = rate.rateExpiry == null
         ? (isExpired ? 'Expired' : 'Active')
-        : '${isExpired ? 'Expired' : 'Active'} (${_formatDate(rate.rateExpiry!)})';
+        : (isExpired ? 'Expired ${_formatDate(rate.rateExpiry!)}' : 'Active until ${_formatDate(rate.rateExpiry!)}');
 
     return ClientRate(
+      id: rate.id,
       clientId: clientId,
       chargeCode: rate.chargeCode ?? '—',
       freightMode: freightMode,
@@ -142,6 +153,7 @@ class RatesRepository {
       routeCount: rate.routes.length,
       status: isExpired ? RateStatus.expired : RateStatus.active,
       expiryLabel: expiryLabel,
+      expiryDate: rate.rateExpiry,
     );
   }
 

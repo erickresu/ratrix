@@ -39,11 +39,22 @@ class RateWizardPayloadMapper {
   /// breakweight columns. Every row shares the same breakweight set in the
   /// wizard UI, so `MatrixRow.rates[i]` pairs with `breakweights[i]`
   /// losslessly.
+  ///
+  /// When [original] is given (edit mode, row untouched since load), it's
+  /// used as the base map as-is — the server's own `id`/`origin`/
+  /// `destination` come back byte-for-byte — with only `breakweights`
+  /// replaced by the wizard's current rate values. This avoids resending a
+  /// reconstructed (id-less) `origin`/`destination` for rows the user never
+  /// touched, which the API's duplicate-route check can't disambiguate.
   static Map<String, dynamic> _mapRoute({
     required String origin,
     required String destination,
     required List<String> rates,
     required List<({String min, String max})> breakweightBounds,
+    Map<String, dynamic>? original,
+    String? routeId,
+    int? originId,
+    int? destinationId,
   }) {
     final breakweights = <Map<String, dynamic>>[];
     for (var i = 0; i < breakweightBounds.length && i < rates.length; i++) {
@@ -58,9 +69,25 @@ class RateWizardPayloadMapper {
       });
     }
 
+    if (original != null) {
+      return {
+        ...original,
+        if (breakweights.isNotEmpty) 'breakweights': breakweights,
+      };
+    }
+
     return {
-      if (origin.trim().isNotEmpty) 'origin': {'label': origin.trim()},
-      if (destination.trim().isNotEmpty) 'destination': {'label': destination.trim()},
+      if (routeId != null) 'id': routeId,
+      if (origin.trim().isNotEmpty)
+        'origin': {
+          if (originId != null) 'id': originId,
+          'label': origin.trim(),
+        },
+      if (destination.trim().isNotEmpty)
+        'destination': {
+          if (destinationId != null) 'id': destinationId,
+          'label': destination.trim(),
+        },
       if (breakweights.isNotEmpty) 'breakweights': breakweights,
     };
   }
@@ -130,7 +157,7 @@ class RateWizardPayloadMapper {
     required PricingOption pricingOption,
     required String fullChargeCode,
     required DateTime? expiryDate,
-    required List<({String origin, String destination, List<String> rates})> rows,
+    required List<({String origin, String destination, List<String> rates, Map<String, dynamic>? original, String? routeId, int? originId, int? destinationId})> rows,
     required List<({String min, String max})> breakweightBounds,
     required Map<String, String> addonValues,
     required Map<String, AddonMode> addonModes,
@@ -147,6 +174,10 @@ class RateWizardPayloadMapper {
           destination: row.destination,
           rates: row.rates,
           breakweightBounds: breakweightBounds,
+          original: row.original,
+          routeId: row.routeId,
+          originId: row.originId,
+          destinationId: row.destinationId,
         ),
     ];
 

@@ -3,6 +3,20 @@
 // tables). Plain classes with `fromJson`/`toJson`, matching the style of
 // `lib/features/clients/domain/entities/client.dart`.
 
+/// Laravel decimal-cast columns (all the `ratrix_addons` money fields,
+/// breakweight rates, etc) serialize as JSON strings (e.g. `"10.00"`), not
+/// numbers — a plain `json[key] as num?` throws on every non-null value and,
+/// caught by an outer blanket try/catch, silently drops the whole rate from
+/// the list. Parse defensively instead: accept a real num as-is, or a string
+/// via `num.tryParse`.
+num? _asNum(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value;
+  return num.tryParse(value.toString());
+}
+
+int? _asInt(dynamic value) => _asNum(value)?.toInt();
+
 class RatrixLookupOption {
   const RatrixLookupOption({required this.id, required this.name, this.code});
 
@@ -11,7 +25,7 @@ class RatrixLookupOption {
   final String? code;
 
   factory RatrixLookupOption.fromJson(Map<String, dynamic> json) => RatrixLookupOption(
-        id: json['id'] as int,
+        id: _asInt(json['id'])!,
         name: (json['name'] ?? '').toString(),
         code: json['code']?.toString(),
       );
@@ -19,6 +33,7 @@ class RatrixLookupOption {
 
 class RatrixAddress {
   const RatrixAddress({
+    this.id,
     this.cityId,
     this.provinceId,
     this.regionId,
@@ -29,6 +44,7 @@ class RatrixAddress {
     this.address1,
   });
 
+  final int? id;
   final int? cityId;
   final int? provinceId;
   final int? regionId;
@@ -39,11 +55,12 @@ class RatrixAddress {
   final String? address1;
 
   factory RatrixAddress.fromJson(Map<String, dynamic> json) => RatrixAddress(
-        cityId: json['city_id'] as int?,
-        provinceId: json['province_id'] as int?,
-        regionId: json['region_id'] as int?,
-        islandId: json['island_id'] as int?,
-        barangayId: json['barangay_id'] as int?,
+        id: _asInt(json['id']),
+        cityId: _asInt(json['city_id']),
+        provinceId: _asInt(json['province_id']),
+        regionId: _asInt(json['region_id']),
+        islandId: _asInt(json['island_id']),
+        barangayId: _asInt(json['barangay_id']),
         zipcode: json['zipcode']?.toString(),
         label: json['label']?.toString(),
         address1: json['address1']?.toString(),
@@ -72,9 +89,9 @@ class RatrixBreakweight {
   final num rate;
 
   factory RatrixBreakweight.fromJson(Map<String, dynamic> json) => RatrixBreakweight(
-        min: (json['breakweight_min'] as num?) ?? 0,
-        max: (json['breakweight_max'] as num?) ?? 0,
-        rate: (json['rate'] as num?) ?? 0,
+        min: (_asNum(json['breakweight_min'])) ?? 0,
+        max: (_asNum(json['breakweight_max'])) ?? 0,
+        rate: (_asNum(json['rate'])) ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
@@ -117,15 +134,15 @@ class RatrixRoute {
 
   factory RatrixRoute.fromJson(Map<String, dynamic> json) => RatrixRoute(
         id: json['id']?.toString(),
-        vehicleTypeId: json['vehicle_type_id'] as int?,
-        containerSizeId: json['container_size_id'] as int?,
-        frequencyBasisId: json['frequency_basis_id'] as int?,
-        minDistance: json['min_distance'] as num?,
-        maxDistance: json['max_distance'] as num?,
-        numberOfTrips: json['number_of_trips'] as int?,
-        excessRate: json['excess_rate'] as num?,
-        timeInHours: json['time_in_hours'] as num?,
-        rate: json['rate'] as num?,
+        vehicleTypeId: _asInt(json['vehicle_type_id']),
+        containerSizeId: _asInt(json['container_size_id']),
+        frequencyBasisId: _asInt(json['frequency_basis_id']),
+        minDistance: _asNum(json['min_distance']),
+        maxDistance: _asNum(json['max_distance']),
+        numberOfTrips: _asInt(json['number_of_trips']),
+        excessRate: _asNum(json['excess_rate']),
+        timeInHours: _asNum(json['time_in_hours']),
+        rate: _asNum(json['rate']),
         breakweights: (json['breakweights'] as List<dynamic>? ?? const [])
             .whereType<Map<String, dynamic>>()
             .map(RatrixBreakweight.fromJson)
@@ -209,33 +226,33 @@ class RatrixAddons {
   final num? hazardousGoodsHandling;
 
   factory RatrixAddons.fromJson(Map<String, dynamic> json) => RatrixAddons(
-        baseFreightRate: json['base_freight_rate'] as num?,
-        fuelSurcharge: json['fuel_surcharge'] as num?,
+        baseFreightRate: _asNum(json['base_freight_rate']),
+        fuelSurcharge: _asNum(json['fuel_surcharge']),
         fuelSurchargeType: json['fuel_surcharge_type']?.toString(),
-        securitySurcharge: json['security_surcharge'] as num?,
+        securitySurcharge: _asNum(json['security_surcharge']),
         // `oda`/`pickup_fee` can also be a bracket-config object — only the
         // flat-decimal form is supported here (see repository TODO).
         oda: json['oda'] is num ? json['oda'] as num : null,
-        waybillFee: json['waybill_fee'] as num?,
-        bookingHandlingFee: json['booking_handling_fee'] as num?,
-        documentationFee: json['documentation_fee'] as num?,
-        participationFee: json['participation_fee'] as num?,
-        permitFeesNonVat: json['permit_fees_non_vat'] as num?,
-        insurance: json['insurance'] as num?,
-        valuation: json['valuation'] as num?,
+        waybillFee: _asNum(json['waybill_fee']),
+        bookingHandlingFee: _asNum(json['booking_handling_fee']),
+        documentationFee: _asNum(json['documentation_fee']),
+        participationFee: _asNum(json['participation_fee']),
+        permitFeesNonVat: _asNum(json['permit_fees_non_vat']),
+        insurance: _asNum(json['insurance']),
+        valuation: _asNum(json['valuation']),
         valuationType: json['valuation_type']?.toString(),
         pickupFee: json['pickup_fee'] is num ? json['pickup_fee'] as num : null,
-        deliveryFee: json['delivery_fee'] as num?,
-        cratingFee: json['crating_fee'] as num?,
-        packingFee: json['packing_fee'] as num?,
-        airThc: json['air_thc'] as num?,
-        seaThc: json['sea_thc'] as num?,
-        arrastre: json['arrastre'] as num?,
-        demurrageDetention: json['demurrage_detention'] as num?,
-        waitingTime: json['waiting_time'] as num?,
-        roadToll: json['road_toll'] as num?,
-        othersNonVat: json['others_non_vat'] as num?,
-        hazardousGoodsHandling: json['hazardous_goods_handling'] as num?,
+        deliveryFee: _asNum(json['delivery_fee']),
+        cratingFee: _asNum(json['crating_fee']),
+        packingFee: _asNum(json['packing_fee']),
+        airThc: _asNum(json['air_thc']),
+        seaThc: _asNum(json['sea_thc']),
+        arrastre: _asNum(json['arrastre']),
+        demurrageDetention: _asNum(json['demurrage_detention']),
+        waitingTime: _asNum(json['waiting_time']),
+        roadToll: _asNum(json['road_toll']),
+        othersNonVat: _asNum(json['others_non_vat']),
+        hazardousGoodsHandling: _asNum(json['hazardous_goods_handling']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -303,7 +320,7 @@ class RatrixRate {
         chargeCode: json['charge_code']?.toString(),
         rateType: (json['rate_type'] ?? 'publish').toString(),
         rateExpiry: DateTime.tryParse(json['rate_expiry']?.toString() ?? ''),
-        clientId: json['client_id'] as int?,
+        clientId: _asInt(json['client_id']),
         freightMode: json['freight_mode'] is Map<String, dynamic>
             ? RatrixLookupOption.fromJson(json['freight_mode'] as Map<String, dynamic>)
             : null,

@@ -306,6 +306,15 @@ class ConditionalBreakweightMaxChanged extends RateWizardEvent {
   List<Object?> get props => [index, value];
 }
 
+/// Submits the wizard's current state via create/update. When [stayOnPage]
+/// is true (the per-step "Save changes" button while editing), the wizard
+/// listener skips the post-success navigation back to the dashboard so the
+/// user stays on the step they were editing.
 class RateSubmitRequested extends RateWizardEvent {
-  const RateSubmitRequested();
+  const RateSubmitRequested({this.stayOnPage = false});
+
+  final bool stayOnPage;
+
+  @override
+  List<Object?> get props => [stayOnPage];
 }

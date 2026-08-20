@@ -24,7 +24,9 @@ class WizardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedClient = context.read<RatesShellBloc>().state.selectedClient;
+    final shellState = context.read<RatesShellBloc>().state;
+    final selectedClient = shellState.selectedClient;
+    final existingRate = shellState.existingRate;
 
     return BlocProvider(
       create: (_) => RateWizardBloc(
@@ -33,6 +35,7 @@ class WizardPage extends StatelessWidget {
         ratesRepository: getIt<RatesRepository>(),
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,
+        existingRate: existingRate,
       ),
       child: const _WizardView(),
     );
@@ -67,9 +70,15 @@ class _WizardView extends StatelessWidget {
                 ..hideCurrentSnackBar()
                 ..showSnackBar(SnackBar(content: Text(state.submitError!)));
             } else if (state.submitSucceeded) {
-              final shellBloc = context.read<RatesShellBloc>();
-              shellBloc.add(const RatesHomeRequested());
-              shellBloc.add(const RatesDataRequested());
+              if (state.lastSubmitStayedOnPage) {
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(const SnackBar(content: Text('Changes saved.')));
+              } else {
+                final shellBloc = context.read<RatesShellBloc>();
+                shellBloc.add(const RatesHomeRequested());
+                shellBloc.add(const RatesDataRequested());
+              }
             }
           },
         ),
@@ -189,6 +198,7 @@ class _WizardFooter extends StatelessWidget {
     final wizardBloc = context.read<RateWizardBloc>();
     final step = context.select((RateWizardBloc b) => b.state.step);
     final isSubmitting = context.select((RateWizardBloc b) => b.state.isSubmitting);
+    final isEditing = context.select((RateWizardBloc b) => b.state.editingRateId != null);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(48, 20, 48, 20),
@@ -209,6 +219,20 @@ class _WizardFooter extends StatelessWidget {
             const SizedBox.shrink(),
           Row(
             children: [
+              if (isEditing && step < 3) ...[
+                ShadButton.outline(
+                  leading: isSubmitting
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(CupertinoIcons.checkmark_alt, size: 15),
+                  onPressed: isSubmitting ? null : () => wizardBloc.add(const RateSubmitRequested(stayOnPage: true)),
+                  child: Text(isSubmitting ? 'Saving...' : 'Save changes'),
+                ),
+                const SizedBox(width: 12),
+              ],
               ShadButton(
                 gradient: step == 3 ? context.colors.accentButtonGradient : context.colors.primaryButtonGradient,
                 leading: step == 3 && isSubmitting

@@ -21,6 +21,8 @@ class RatesSidebar extends StatelessWidget {
     final isCustomActive = state.view == RatesView.customClients ||
         state.view == RatesView.customClientRates ||
         (state.view == RatesView.create && state.rateChoice == RateType.custom);
+    final isCalculatorActive =
+        state.view == RatesView.shippingCalculatorClients || state.view == RatesView.shippingCalculatorForm;
 
     return Container(
       width: 272,
@@ -69,20 +71,12 @@ class RatesSidebar extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            alignment: Alignment.centerLeft,
-            child: Row(
-              children: [
-                Icon(CupertinoIcons.cube_box, size: 15, color: Colors.white.withValues(alpha: 0.35)),
-                const SizedBox(width: 10),
-                Text(
-                  'Shipping Calculator',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 13, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
+          const SizedBox(height: 4),
+          _NavItem(
+            icon: Icons.local_shipping_rounded,
+            label: 'Shipping Calculator',
+            active: isCalculatorActive,
+            onTap: () => bloc.add(const ShippingCalculatorRequested()),
           ),
           const Spacer(),
           const _ThemeToggleRow(),
