@@ -20,7 +20,13 @@ enum ServiceMode {
 
 enum ChargeBasis {
   kilo('Kilo'),
-  cbm('CBM');
+  cbm('CBM'),
+  fullTruckLoad('Full Truck Load'),
+  ltlKilo('LTL (Kilo)'),
+  ltlCbm('LTL (CBM)'),
+  fullContainerLoad('Full Container Load'),
+  lclKilo('LCL (Kilo)'),
+  lclCbm('LCL (CBM)');
 
   const ChargeBasis(this.label);
   final String label;

@@ -44,10 +44,22 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
   final ClientsRepository _clientsRepository;
 
   Future<void> _onDataRequested(RatesDataRequested event, Emitter<RatesShellState> emit) async {
-    final stats = await _repository.fetchStats();
-    final recentRates = await _repository.fetchRecentRates();
     final clients = await _fetchClients();
-    final allClientRates = await _repository.fetchAllClientRates();
+    final clientNamesById = {for (final c in clients) c.id: c.name};
+
+    List<RateStat> stats = const [];
+    List<RecentRate> recentRates = const [];
+    List<ClientRate> allClientRates = const [];
+    try {
+      stats = await _repository.fetchStats();
+      recentRates = await _repository.fetchRecentRates(clientNamesById: clientNamesById);
+      allClientRates = await _repository.fetchAllClientRates();
+    } catch (_) {
+      // Leave stats/recentRates/allClientRates at their empty defaults —
+      // the dashboard renders an empty state rather than getting stuck
+      // on the loading skeleton.
+    }
+
     final counts = <String, int>{};
     for (final rate in allClientRates) {
       counts[rate.clientId] = (counts[rate.clientId] ?? 0) + 1;
@@ -91,7 +103,13 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
       clientRatesTab: RateStatus.active,
       clientRateSearch: '',
     ));
-    final rates = await _repository.fetchClientRates(event.clientId);
+    List<ClientRate> rates = const [];
+    try {
+      rates = await _repository.fetchClientRates(event.clientId);
+    } catch (_) {
+      // Fall through with an empty list — the view shows its own
+      // no-results state rather than getting stuck loading.
+    }
     emit(state.copyWith(
       selectedClientRates: rates,
       clientRatesLoading: false,

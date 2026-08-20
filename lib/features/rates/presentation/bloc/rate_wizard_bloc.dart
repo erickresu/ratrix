@@ -2,9 +2,12 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/services/ph_locations_service.dart';
+import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/breakweight.dart';
 import '../../domain/entities/matrix_row.dart';
+import '../../domain/entities/rate_wizard_payload_mapper.dart';
 import '../../domain/entities/rates_enums.dart';
+import '../../domain/entities/rates_fk_ids.dart';
 
 part 'rate_wizard_event.dart';
 part 'rate_wizard_state.dart';
@@ -13,9 +16,11 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
   RateWizardBloc({
     required bool isCustom,
     required PhLocationsService phLocationsService,
+    required RatesRepository ratesRepository,
     String? clientId,
     String? clientName,
   })  : _phLocationsService = phLocationsService,
+        _ratesRepository = ratesRepository,
         super(RateWizardState(isCustom: isCustom, clientId: clientId, clientName: clientName)) {
     on<WizardStepChanged>((event, emit) => emit(state.copyWith(step: event.step)));
     on<WizardNextStepRequested>((event, emit) {
@@ -25,7 +30,15 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       if (state.step > 0) emit(state.copyWith(step: state.step - 1));
     });
 
-    on<FreightModeChanged>((event, emit) => emit(state.copyWith(freightMode: event.mode)));
+    on<FreightModeChanged>((event, emit) {
+      final validServiceModes = RatesFkIds.serviceModeOptionsByFreightMode[event.mode]!;
+      final validChargeBases = RatesFkIds.chargeBasisOptionsByFreightMode[event.mode]!;
+      emit(state.copyWith(
+        freightMode: event.mode,
+        serviceMode: validServiceModes.contains(state.serviceMode) ? state.serviceMode : validServiceModes.first,
+        chargeBasis: validChargeBases.contains(state.chargeBasis) ? state.chargeBasis : validChargeBases.first,
+      ));
+    });
     on<ServiceModeChanged>((event, emit) => emit(state.copyWith(serviceMode: event.mode)));
     on<ChargeBasisChanged>((event, emit) => emit(state.copyWith(chargeBasis: event.basis)));
     on<PricingOptionChanged>((event, emit) => emit(state.copyWith(pricingOption: event.option)));
@@ -178,6 +191,8 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
 
     on<PhLocationsLoaded>((event, emit) => emit(state.copyWith(phCities: event.cities, phProvinces: event.provinces)));
 
+    on<RateSubmitRequested>(_onSubmitRequested);
+
     _phLocationsService.ensureLoaded().then((_) {
       if (isClosed) return;
       add(PhLocationsLoaded(_phLocationsService.cities, _phLocationsService.provinces));
@@ -185,4 +200,37 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
   }
 
   final PhLocationsService _phLocationsService;
+  final RatesRepository _ratesRepository;
+
+  Future<void> _onSubmitRequested(RateSubmitRequested event, Emitter<RateWizardState> emit) async {
+    emit(state.copyWith(isSubmitting: true, clearSubmitError: true, clearSubmitSucceeded: true));
+
+    final payload = RateWizardPayloadMapper.buildPayload(
+      isCustom: state.isCustom,
+      clientId: state.clientId,
+      freightMode: state.freightMode,
+      serviceMode: state.serviceMode,
+      chargeBasis: state.chargeBasis,
+      pricingOption: state.pricingOption,
+      fullChargeCode: state.fullChargeCode,
+      expiryDate: state.expiryDate,
+      rows: [
+        for (final row in state.matrixRows) (origin: row.origin, destination: row.destination, rates: row.rates),
+      ],
+      breakweightBounds: [
+        for (final bw in state.breakweights) (min: bw.min, max: bw.max),
+      ],
+      addonValues: state.addonValues,
+      addonModes: state.addonModes,
+    );
+
+    try {
+      await _ratesRepository.createRate(payload);
+      emit(state.copyWith(isSubmitting: false, submitSucceeded: true));
+    } on RatesApiException catch (e) {
+      emit(state.copyWith(isSubmitting: false, submitError: e.message));
+    } catch (e) {
+      emit(state.copyWith(isSubmitting: false, submitError: e.toString()));
+    }
+  }
 }

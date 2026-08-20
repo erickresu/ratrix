@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../domain/entities/rates_enums.dart';
+import '../../../domain/entities/rates_fk_ids.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../rates_colors.dart';
 
@@ -18,6 +19,13 @@ class Step0RateSetup extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<RateWizardBloc>();
     final state = context.watch<RateWizardBloc>().state;
+
+    final serviceModeOptions = state.freightMode == null
+        ? ServiceMode.values
+        : RatesFkIds.serviceModeOptionsByFreightMode[state.freightMode]!;
+    final chargeBasisOptions = state.freightMode == null
+        ? ChargeBasis.values
+        : RatesFkIds.chargeBasisOptionsByFreightMode[state.freightMode]!;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,12 +108,13 @@ class Step0RateSetup extends StatelessWidget {
                     width: double.infinity,
                     height: _fieldHeight,
                     child: ShadSelect<ServiceMode>(
+                      key: ValueKey('service-mode-${state.freightMode}'),
                       initialValue: state.serviceMode,
                       selectedOptionBuilder: (context, value) => Text(value.label),
                       onChanged: (value) {
                         if (value != null) bloc.add(ServiceModeChanged(value));
                       },
-                      options: [for (final m in ServiceMode.values) ShadOption(value: m, child: Text(m.label))],
+                      options: [for (final m in serviceModeOptions) ShadOption(value: m, child: Text(m.label))],
                     ),
                   ),
                 ],
@@ -122,12 +131,13 @@ class Step0RateSetup extends StatelessWidget {
                     width: double.infinity,
                     height: _fieldHeight,
                     child: ShadSelect<ChargeBasis>(
+                      key: ValueKey('charge-basis-${state.freightMode}'),
                       initialValue: state.chargeBasis,
                       selectedOptionBuilder: (context, value) => Text(value.label),
                       onChanged: (value) {
                         if (value != null) bloc.add(ChargeBasisChanged(value));
                       },
-                      options: [for (final b in ChargeBasis.values) ShadOption(value: b, child: Text(b.label))],
+                      options: [for (final b in chargeBasisOptions) ShadOption(value: b, child: Text(b.label))],
                     ),
                   ),
                 ],

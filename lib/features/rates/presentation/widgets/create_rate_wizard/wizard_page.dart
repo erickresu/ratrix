@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../../core/di/injection_container.dart';
 import '../../../../../core/services/ph_locations_service.dart';
+import '../../../data/repositories/rates_repository.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../bloc/rates_shell_bloc.dart';
 import '../../rates_colors.dart';
@@ -28,6 +30,7 @@ class WizardPage extends StatelessWidget {
       create: (_) => RateWizardBloc(
         isCustom: isCustom,
         phLocationsService: getIt<PhLocationsService>(),
+        ratesRepository: getIt<RatesRepository>(),
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,
       ),
@@ -41,18 +44,36 @@ class _WizardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<RateWizardBloc, RateWizardState>(
-      listenWhen: (prev, curr) => prev.removeRouteIndex != curr.removeRouteIndex && curr.removeRouteIndex != null,
-      listener: (context, state) async {
-        final bloc = context.read<RateWizardBloc>();
-        final confirmed = await showShadDialog<bool>(context: context, builder: (_) => const RemoveRouteDialog());
-        if (!context.mounted) return;
-        if (confirmed == true) {
-          bloc.add(const RouteRemoveConfirmed());
-        } else {
-          bloc.add(const RouteRemoveCancelled());
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<RateWizardBloc, RateWizardState>(
+          listenWhen: (prev, curr) => prev.removeRouteIndex != curr.removeRouteIndex && curr.removeRouteIndex != null,
+          listener: (context, state) async {
+            final bloc = context.read<RateWizardBloc>();
+            final confirmed = await showShadDialog<bool>(context: context, builder: (_) => const RemoveRouteDialog());
+            if (!context.mounted) return;
+            if (confirmed == true) {
+              bloc.add(const RouteRemoveConfirmed());
+            } else {
+              bloc.add(const RouteRemoveCancelled());
+            }
+          },
+        ),
+        BlocListener<RateWizardBloc, RateWizardState>(
+          listenWhen: (prev, curr) => prev.submitError != curr.submitError || prev.submitSucceeded != curr.submitSucceeded,
+          listener: (context, state) {
+            if (state.submitError != null) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(content: Text(state.submitError!)));
+            } else if (state.submitSucceeded) {
+              final shellBloc = context.read<RatesShellBloc>();
+              shellBloc.add(const RatesHomeRequested());
+              shellBloc.add(const RatesDataRequested());
+            }
+          },
+        ),
+      ],
       child: Column(
         children: [
           Expanded(
@@ -166,8 +187,8 @@ class _WizardFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wizardBloc = context.read<RateWizardBloc>();
-    final shellBloc = context.read<RatesShellBloc>();
     final step = context.select((RateWizardBloc b) => b.state.step);
+    final isSubmitting = context.select((RateWizardBloc b) => b.state.isSubmitting);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(48, 20, 48, 20),
@@ -190,16 +211,24 @@ class _WizardFooter extends StatelessWidget {
             children: [
               ShadButton(
                 gradient: step == 3 ? context.colors.accentButtonGradient : context.colors.primaryButtonGradient,
-                leading: Icon(step == 3 ? CupertinoIcons.paperplane_fill : null, size: 16),
+                leading: step == 3 && isSubmitting
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Icon(step == 3 ? CupertinoIcons.paperplane_fill : null, size: 16),
                 trailing: step == 3 ? null : const Icon(CupertinoIcons.arrow_right, size: 16),
-                onPressed: () {
-                  if (step < 3) {
-                    wizardBloc.add(const WizardNextStepRequested());
-                  } else {
-                    shellBloc.add(const RatesHomeRequested());
-                  }
-                },
-                child: Text(step == 3 ? 'Publish Rate' : 'Next'),
+                onPressed: (step == 3 && isSubmitting)
+                    ? null
+                    : () {
+                        if (step < 3) {
+                          wizardBloc.add(const WizardNextStepRequested());
+                        } else {
+                          wizardBloc.add(const RateSubmitRequested());
+                        }
+                      },
+                child: Text(step == 3 ? (isSubmitting ? 'Publishing...' : 'Publish Rate') : 'Next'),
               ),
             ],
           ),

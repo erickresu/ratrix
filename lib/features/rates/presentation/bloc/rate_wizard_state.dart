@@ -30,6 +30,10 @@ class RateWizardState extends Equatable {
   final List<MatrixRow> conditionalMatrixRows;
   final List<Breakweight> conditionalBreakweights;
 
+  final bool isSubmitting;
+  final String? submitError;
+  final bool submitSucceeded;
+
   const RateWizardState({
     required this.isCustom,
     this.clientId,
@@ -55,6 +59,9 @@ class RateWizardState extends Equatable {
     this.conditionalPricingOption = PricingOption.fixedBreakweight,
     this.conditionalMatrixRows = const [MatrixRow()],
     this.conditionalBreakweights = const [Breakweight()],
+    this.isSubmitting = false,
+    this.submitError,
+    this.submitSucceeded = false,
   });
 
   String get chargeCodePrefix => '${(freightMode?.name ?? '').toUpperCase()}_${serviceMode.abbreviation}';
@@ -96,6 +103,11 @@ class RateWizardState extends Equatable {
     PricingOption? conditionalPricingOption,
     List<MatrixRow>? conditionalMatrixRows,
     List<Breakweight>? conditionalBreakweights,
+    bool? isSubmitting,
+    String? submitError,
+    bool clearSubmitError = false,
+    bool? submitSucceeded,
+    bool clearSubmitSucceeded = false,
   }) {
     return RateWizardState(
       isCustom: isCustom,
@@ -122,6 +134,9 @@ class RateWizardState extends Equatable {
       conditionalPricingOption: conditionalPricingOption ?? this.conditionalPricingOption,
       conditionalMatrixRows: conditionalMatrixRows ?? this.conditionalMatrixRows,
       conditionalBreakweights: conditionalBreakweights ?? this.conditionalBreakweights,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+      submitError: clearSubmitError ? null : (submitError ?? this.submitError),
+      submitSucceeded: clearSubmitSucceeded ? false : (submitSucceeded ?? this.submitSucceeded),
     );
   }
 
@@ -151,5 +166,8 @@ class RateWizardState extends Equatable {
         conditionalPricingOption,
         conditionalMatrixRows,
         conditionalBreakweights,
+        isSubmitting,
+        submitError,
+        submitSucceeded,
       ];
 }

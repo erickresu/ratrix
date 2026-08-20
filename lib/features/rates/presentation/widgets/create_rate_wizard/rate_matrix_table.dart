@@ -295,30 +295,38 @@ class _LocationField extends StatelessWidget {
         );
       },
       optionsViewBuilder: (context, onSelected, resultOptions) {
-        return Align(
-          alignment: Alignment.topLeft,
-          child: Material(
-            elevation: 4,
-            borderRadius: BorderRadius.circular(8),
-            color: context.colors.surface,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 220, minWidth: 240),
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                shrinkWrap: true,
-                itemCount: resultOptions.length,
-                itemBuilder: (context, index) {
-                  final option = resultOptions.elementAt(index);
-                  return InkWell(
-                    onTap: () => onSelected(option),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      child: Text(option, style: TextStyle(fontSize: 13, color: context.colors.textBody)),
-                    ),
-                  );
-                },
-              ),
-            ),
+        // RawAutocomplete constrains this options view to a *tight* box —
+        // width forced to exactly the field's width, height forced to the
+        // available space (min _kMinUsableHeight, no upper cap from us). A
+        // `minWidth`/`maxHeight` here can't actually change those tight
+        // bounds; it only made the visible content wider than the real
+        // hit-test area, so clicks on the "overflow" past the field's width
+        // silently missed the actual (narrower) interactive widget. Let the
+        // options view fill the box the framework gives it instead of
+        // fighting it.
+        return Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(8),
+          color: context.colors.surface,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            shrinkWrap: true,
+            itemCount: resultOptions.length,
+            itemBuilder: (context, index) {
+              final option = resultOptions.elementAt(index);
+              return InkWell(
+                onTap: () => onSelected(option),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Text(
+                    option,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 13, color: context.colors.textBody),
+                  ),
+                ),
+              );
+            },
           ),
         );
       },

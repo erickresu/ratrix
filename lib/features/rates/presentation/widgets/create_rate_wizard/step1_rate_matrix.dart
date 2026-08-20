@@ -267,54 +267,6 @@ class _MatrixTab extends StatelessWidget {
   }
 }
 
-class _SegButton extends StatelessWidget {
-  const _SegButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(5),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: selected ? context.colors.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(5),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 2,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: selected
-                  ? context.colors.textBody
-                  : context.colors.textMuted,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _GhostButton extends StatelessWidget {
   const _GhostButton({required this.label, required this.onTap});
 

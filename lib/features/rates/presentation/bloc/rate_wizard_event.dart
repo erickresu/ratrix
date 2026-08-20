@@ -305,3 +305,7 @@ class ConditionalBreakweightMaxChanged extends RateWizardEvent {
   @override
   List<Object?> get props => [index, value];
 }
+
+class RateSubmitRequested extends RateWizardEvent {
+  const RateSubmitRequested();
+}
