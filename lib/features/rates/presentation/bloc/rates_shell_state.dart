@@ -69,9 +69,10 @@ class RatesShellState extends Equatable {
   static const clientRatesPerPage = 6;
 
   List<Client> get filteredClients {
-    if (clientSearch.isEmpty) return clients;
-    final q = clientSearch.toLowerCase();
-    return clients.where((c) => c.name.toLowerCase().contains(q)).toList();
+    final list = clientSearch.isEmpty
+        ? clients
+        : clients.where((c) => c.name.toLowerCase().contains(clientSearch.toLowerCase())).toList();
+    return [...list]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
   int get clientPageCount => (filteredClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);

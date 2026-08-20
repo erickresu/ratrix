@@ -13,12 +13,12 @@ import 'invoice_pdf.dart';
 /// Shows the freight-breakdown result in a blurred-backdrop dialog, mirroring
 /// the wizard's other modal (`NewRateModal`) but with its own barrier since
 /// this one needs a real blur behind it instead of a flat scrim.
-void showFreightBreakdownDialog(
+Future<void> showFreightBreakdownDialog(
   BuildContext context, {
   required ShippingCalculatorBloc calcBloc,
   required String clientName,
-}) {
-  showShadDialog<void>(
+}) async {
+  await showShadDialog<void>(
     context: context,
     barrierColor: Colors.transparent,
     builder: (dialogContext) => BlocProvider.value(
@@ -26,6 +26,10 @@ void showFreightBreakdownDialog(
       child: _BlurredBarrier(child: _FreightBreakdownDialog(clientName: clientName)),
     ),
   );
+  // Whichever way the dialog closed (X button, barrier tap, back button),
+  // clear the result so the next Calculate press is guaranteed to produce a
+  // null -> non-null transition and re-show the dialog.
+  calcBloc.add(const CalcResultDismissed());
 }
 
 class _BlurredBarrier extends StatelessWidget {

@@ -62,7 +62,7 @@ class _CalculatorView extends StatelessWidget {
           );
 
     return BlocListener<ShippingCalculatorBloc, ShippingCalculatorState>(
-      listenWhen: (prev, curr) => prev.calcResult == null && curr.calcResult != null,
+      listenWhen: (prev, curr) => curr.calcResult != null && prev.calcResult != curr.calcResult,
       listener: (context, state) {
         final calcBloc = context.read<ShippingCalculatorBloc>();
         showFreightBreakdownDialog(context, calcBloc: calcBloc, clientName: clientName);
