@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/theme_cubit.dart';
+import '../../../../core/widgets/animated_pressable.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
@@ -38,6 +39,7 @@ class RatesSidebar extends StatelessWidget {
       color: RatesColors.dark.sidebarBg,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           _Logo(),
           const SizedBox(height: 24),
@@ -118,41 +120,38 @@ class _ThemeToggleRow extends StatelessWidget {
     final mode = context.watch<ThemeCubit>().state;
     final isDark = mode == ThemeMode.dark;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: () => context.read<ThemeCubit>().toggle(),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Text('Theme', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-              ),
-              Switch(
-                value: isDark,
-                onChanged: (_) => context.read<ThemeCubit>().toggle(),
-                thumbIcon: WidgetStateProperty.resolveWith((states) {
-                  final on = states.contains(WidgetState.selected);
-                  return Icon(
-                    on ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max_fill,
-                    size: 14,
-                    color: on ? RatesColors.dark.primary : const Color(0xFFB45309),
-                  );
-                }),
-                activeTrackColor: RatesColors.dark.primarySoftBg,
-                activeThumbColor: Colors.white,
-                inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
-                inactiveThumbColor: Colors.white,
-                trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
-              ),
-            ],
-          ),
+    return AnimatedPressable(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => context.read<ThemeCubit>().toggle(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            const Expanded(
+              child: Text('Theme', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+            ),
+            Switch(
+              value: isDark,
+              onChanged: (_) => context.read<ThemeCubit>().toggle(),
+              thumbIcon: WidgetStateProperty.resolveWith((states) {
+                final on = states.contains(WidgetState.selected);
+                return Icon(
+                  on ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max_fill,
+                  size: 14,
+                  color: on ? RatesColors.dark.primary : const Color(0xFFB45309),
+                );
+              }),
+              activeTrackColor: RatesColors.dark.primarySoftBg,
+              activeThumbColor: Colors.white,
+              inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
+              inactiveThumbColor: Colors.white,
+              trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+            ),
+          ],
         ),
       ),
     );
@@ -162,32 +161,10 @@ class _ThemeToggleRow extends StatelessWidget {
 class _Logo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 26,
-          height: 14,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: RatesColors.dark.primary, width: 2),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'CERRO',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.4), letterSpacing: 0.8),
-            ),
-            const Text(
-              'RATRIX',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white, height: 1.1),
-            ),
-          ],
-        ),
-      ],
-    );
+    // The asset's own canvas is solid black (no alpha), so it only blends
+    // seamlessly against a black/near-black background — fine here since
+    // the sidebar is always `RatesColors.dark.sidebarBg` regardless of theme.
+    return Image.asset('assets/images/ratrix_logo.png', height: 72);
   }
 }
 
@@ -201,31 +178,29 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          decoration: BoxDecoration(
-            color: active ? RatesColors.dark.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 15, color: active ? Colors.white : Colors.white.withValues(alpha: 0.75)),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  color: active ? Colors.white : Colors.white.withValues(alpha: 0.75),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+    return AnimatedPressable(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: active ? RatesColors.dark.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 15, color: active ? Colors.white : Colors.white.withValues(alpha: 0.75)),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? Colors.white : Colors.white.withValues(alpha: 0.75),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -240,12 +215,10 @@ class _NavParent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onToggle,
-        child: Container(
+    return AnimatedPressable(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onToggle,
+      child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -265,7 +238,6 @@ class _NavParent extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -280,28 +252,25 @@ class _SubNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(7),
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          child: Row(
-            children: [
-              Icon(icon, size: 13, color: active ? RatesColors.dark.primary : Colors.white.withValues(alpha: 0.6)),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  color: active ? RatesColors.dark.primary : Colors.white.withValues(alpha: 0.6),
-                  fontSize: 13,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                ),
+    return AnimatedPressable(
+      borderRadius: BorderRadius.circular(7),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        child: Row(
+          children: [
+            Icon(icon, size: 13, color: active ? RatesColors.dark.primary : Colors.white.withValues(alpha: 0.6)),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? RatesColors.dark.primary : Colors.white.withValues(alpha: 0.6),
+                fontSize: 13,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Client {
 
- String get id; String get accountNumber; String get name; String get email; String get businessType; VatStatus get vatStatus;
+ String get id; String get accountNumber; String get name; String get email; String get businessType; VatStatus get vatStatus; String? get phoneNumber; String? get officeAddress;
 /// Create a copy of Client
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $ClientCopyWith<Client> get copyWith => _$ClientCopyWithImpl<Client>(this as Cli
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Client&&(identical(other.id, id) || other.id == id)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.businessType, businessType) || other.businessType == businessType)&&(identical(other.vatStatus, vatStatus) || other.vatStatus == vatStatus));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Client&&(identical(other.id, id) || other.id == id)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.businessType, businessType) || other.businessType == businessType)&&(identical(other.vatStatus, vatStatus) || other.vatStatus == vatStatus)&&(identical(other.phoneNumber, phoneNumber) || other.phoneNumber == phoneNumber)&&(identical(other.officeAddress, officeAddress) || other.officeAddress == officeAddress));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,accountNumber,name,email,businessType,vatStatus);
+int get hashCode => Object.hash(runtimeType,id,accountNumber,name,email,businessType,vatStatus,phoneNumber,officeAddress);
 
 @override
 String toString() {
-  return 'Client(id: $id, accountNumber: $accountNumber, name: $name, email: $email, businessType: $businessType, vatStatus: $vatStatus)';
+  return 'Client(id: $id, accountNumber: $accountNumber, name: $name, email: $email, businessType: $businessType, vatStatus: $vatStatus, phoneNumber: $phoneNumber, officeAddress: $officeAddress)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $ClientCopyWith<$Res>  {
   factory $ClientCopyWith(Client value, $Res Function(Client) _then) = _$ClientCopyWithImpl;
 @useResult
 $Res call({
- String id, String accountNumber, String name, String email, String businessType, VatStatus vatStatus
+ String id, String accountNumber, String name, String email, String businessType, VatStatus vatStatus, String? phoneNumber, String? officeAddress
 });
 
 
@@ -62,7 +62,7 @@ class _$ClientCopyWithImpl<$Res>
 
 /// Create a copy of Client
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? accountNumber = null,Object? name = null,Object? email = null,Object? businessType = null,Object? vatStatus = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? accountNumber = null,Object? name = null,Object? email = null,Object? businessType = null,Object? vatStatus = null,Object? phoneNumber = freezed,Object? officeAddress = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,accountNumber: null == accountNumber ? _self.accountNumber : accountNumber // ignore: cast_nullable_to_non_nullable
@@ -70,7 +70,9 @@ as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,businessType: null == businessType ? _self.businessType : businessType // ignore: cast_nullable_to_non_nullable
 as String,vatStatus: null == vatStatus ? _self.vatStatus : vatStatus // ignore: cast_nullable_to_non_nullable
-as VatStatus,
+as VatStatus,phoneNumber: freezed == phoneNumber ? _self.phoneNumber : phoneNumber // ignore: cast_nullable_to_non_nullable
+as String?,officeAddress: freezed == officeAddress ? _self.officeAddress : officeAddress // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -155,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String accountNumber,  String name,  String email,  String businessType,  VatStatus vatStatus)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String accountNumber,  String name,  String email,  String businessType,  VatStatus vatStatus,  String? phoneNumber,  String? officeAddress)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Client() when $default != null:
-return $default(_that.id,_that.accountNumber,_that.name,_that.email,_that.businessType,_that.vatStatus);case _:
+return $default(_that.id,_that.accountNumber,_that.name,_that.email,_that.businessType,_that.vatStatus,_that.phoneNumber,_that.officeAddress);case _:
   return orElse();
 
 }
@@ -176,10 +178,10 @@ return $default(_that.id,_that.accountNumber,_that.name,_that.email,_that.busine
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String accountNumber,  String name,  String email,  String businessType,  VatStatus vatStatus)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String accountNumber,  String name,  String email,  String businessType,  VatStatus vatStatus,  String? phoneNumber,  String? officeAddress)  $default,) {final _that = this;
 switch (_that) {
 case _Client():
-return $default(_that.id,_that.accountNumber,_that.name,_that.email,_that.businessType,_that.vatStatus);case _:
+return $default(_that.id,_that.accountNumber,_that.name,_that.email,_that.businessType,_that.vatStatus,_that.phoneNumber,_that.officeAddress);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +198,10 @@ return $default(_that.id,_that.accountNumber,_that.name,_that.email,_that.busine
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String accountNumber,  String name,  String email,  String businessType,  VatStatus vatStatus)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String accountNumber,  String name,  String email,  String businessType,  VatStatus vatStatus,  String? phoneNumber,  String? officeAddress)?  $default,) {final _that = this;
 switch (_that) {
 case _Client() when $default != null:
-return $default(_that.id,_that.accountNumber,_that.name,_that.email,_that.businessType,_that.vatStatus);case _:
+return $default(_that.id,_that.accountNumber,_that.name,_that.email,_that.businessType,_that.vatStatus,_that.phoneNumber,_that.officeAddress);case _:
   return null;
 
 }
@@ -211,7 +213,7 @@ return $default(_that.id,_that.accountNumber,_that.name,_that.email,_that.busine
 
 
 class _Client extends Client {
-  const _Client({required this.id, required this.accountNumber, required this.name, required this.email, required this.businessType, required this.vatStatus}): super._();
+  const _Client({required this.id, required this.accountNumber, required this.name, required this.email, required this.businessType, required this.vatStatus, this.phoneNumber, this.officeAddress}): super._();
   
 
 @override final  String id;
@@ -220,6 +222,8 @@ class _Client extends Client {
 @override final  String email;
 @override final  String businessType;
 @override final  VatStatus vatStatus;
+@override final  String? phoneNumber;
+@override final  String? officeAddress;
 
 /// Create a copy of Client
 /// with the given fields replaced by the non-null parameter values.
@@ -231,16 +235,16 @@ _$ClientCopyWith<_Client> get copyWith => __$ClientCopyWithImpl<_Client>(this, _
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Client&&(identical(other.id, id) || other.id == id)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.businessType, businessType) || other.businessType == businessType)&&(identical(other.vatStatus, vatStatus) || other.vatStatus == vatStatus));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Client&&(identical(other.id, id) || other.id == id)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.name, name) || other.name == name)&&(identical(other.email, email) || other.email == email)&&(identical(other.businessType, businessType) || other.businessType == businessType)&&(identical(other.vatStatus, vatStatus) || other.vatStatus == vatStatus)&&(identical(other.phoneNumber, phoneNumber) || other.phoneNumber == phoneNumber)&&(identical(other.officeAddress, officeAddress) || other.officeAddress == officeAddress));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,accountNumber,name,email,businessType,vatStatus);
+int get hashCode => Object.hash(runtimeType,id,accountNumber,name,email,businessType,vatStatus,phoneNumber,officeAddress);
 
 @override
 String toString() {
-  return 'Client(id: $id, accountNumber: $accountNumber, name: $name, email: $email, businessType: $businessType, vatStatus: $vatStatus)';
+  return 'Client(id: $id, accountNumber: $accountNumber, name: $name, email: $email, businessType: $businessType, vatStatus: $vatStatus, phoneNumber: $phoneNumber, officeAddress: $officeAddress)';
 }
 
 
@@ -251,7 +255,7 @@ abstract mixin class _$ClientCopyWith<$Res> implements $ClientCopyWith<$Res> {
   factory _$ClientCopyWith(_Client value, $Res Function(_Client) _then) = __$ClientCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String accountNumber, String name, String email, String businessType, VatStatus vatStatus
+ String id, String accountNumber, String name, String email, String businessType, VatStatus vatStatus, String? phoneNumber, String? officeAddress
 });
 
 
@@ -268,7 +272,7 @@ class __$ClientCopyWithImpl<$Res>
 
 /// Create a copy of Client
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? accountNumber = null,Object? name = null,Object? email = null,Object? businessType = null,Object? vatStatus = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? accountNumber = null,Object? name = null,Object? email = null,Object? businessType = null,Object? vatStatus = null,Object? phoneNumber = freezed,Object? officeAddress = freezed,}) {
   return _then(_Client(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,accountNumber: null == accountNumber ? _self.accountNumber : accountNumber // ignore: cast_nullable_to_non_nullable
@@ -276,7 +280,9 @@ as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,businessType: null == businessType ? _self.businessType : businessType // ignore: cast_nullable_to_non_nullable
 as String,vatStatus: null == vatStatus ? _self.vatStatus : vatStatus // ignore: cast_nullable_to_non_nullable
-as VatStatus,
+as VatStatus,phoneNumber: freezed == phoneNumber ? _self.phoneNumber : phoneNumber // ignore: cast_nullable_to_non_nullable
+as String?,officeAddress: freezed == officeAddress ? _self.officeAddress : officeAddress // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

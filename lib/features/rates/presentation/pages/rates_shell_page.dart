@@ -121,7 +121,19 @@ class _RatesShellViewState extends State<_RatesShellView> {
             ),
           ),
         ),
-        body: content,
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(begin: const Offset(0, 0.02), end: Offset.zero).animate(animation),
+              child: child,
+            ),
+          ),
+          child: content,
+        ),
       ),
     );
   }

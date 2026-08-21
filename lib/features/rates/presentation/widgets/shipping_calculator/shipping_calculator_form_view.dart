@@ -6,6 +6,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../../../core/di/injection_container.dart';
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../data/repositories/rates_repository.dart';
+import '../../../domain/entities/client.dart';
 import '../../../domain/entities/ratrix_rate.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rates_shell_bloc.dart';
@@ -27,15 +28,15 @@ class ShippingCalculatorFormView extends StatelessWidget {
 
     return BlocProvider(
       create: (_) => ShippingCalculatorBloc(getIt<RatesRepository>(), clientId: client.id),
-      child: _CalculatorView(clientName: client.name),
+      child: _CalculatorView(client: client),
     );
   }
 }
 
 class _CalculatorView extends StatelessWidget {
-  const _CalculatorView({required this.clientName});
+  const _CalculatorView({required this.client});
 
-  final String clientName;
+  final Client client;
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +71,7 @@ class _CalculatorView extends StatelessWidget {
       listener: (context, state) {
         final calcBloc = context.read<ShippingCalculatorBloc>();
         final shellBloc = context.read<RatesShellBloc>();
-        showFreightBreakdownDialog(context, calcBloc: calcBloc, shellBloc: shellBloc, clientName: clientName);
+        showFreightBreakdownDialog(context, calcBloc: calcBloc, shellBloc: shellBloc, client: client);
       },
       child: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 56),
@@ -91,7 +92,7 @@ class _CalculatorView extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
                     child: Text(
-                      clientName,
+                      client.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),

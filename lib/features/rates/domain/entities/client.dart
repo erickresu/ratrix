@@ -13,6 +13,8 @@ abstract class Client with _$Client {
     required String email,
     required String businessType,
     required VatStatus vatStatus,
+    String? phoneNumber,
+    String? officeAddress,
   }) = _Client;
 
   const Client._();

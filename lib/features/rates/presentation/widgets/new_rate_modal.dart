@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/utils/breakpoints.dart';
+import '../../../../core/widgets/animated_pressable.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 
@@ -82,33 +82,31 @@ class _OptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            border: Border.all(color: context.colors.border, width: 1.5),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: context.colors.primaryChipBg, shape: BoxShape.circle),
-                child: Icon(icon, size: 26, color: context.colors.primary),
-              ),
-              const SizedBox(height: 14),
-              Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.colors.textBody)),
-              const SizedBox(height: 6),
-              Text(description, style: TextStyle(fontSize: 13, color: context.colors.textMuted, height: 1.4)),
-            ],
-          ),
+    return AnimatedPressable(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: context.colors.border, width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: context.colors.primaryChipBg, shape: BoxShape.circle),
+              child: Icon(icon, size: 22, color: context.colors.primary),
+            ),
+            const SizedBox(height: 12),
+            Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.colors.textBody)),
+            const SizedBox(height: 4),
+            Text(description, style: TextStyle(fontSize: 13, color: context.colors.textMuted, height: 1.4)),
+          ],
         ),
       ),
     );

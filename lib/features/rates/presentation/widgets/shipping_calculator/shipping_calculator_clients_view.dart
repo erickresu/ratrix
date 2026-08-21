@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../../core/utils/breakpoints.dart';
+import '../../../../../core/widgets/animated_pressable.dart';
 import '../../../../../core/widgets/pagination_bar.dart';
 import '../../../../../core/widgets/shine_sweep.dart';
 import '../../../../../core/widgets/skeleton_box.dart';
@@ -137,22 +138,20 @@ class _CalcClientCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isInclusive = client.vatStatus == VatStatus.inclusive;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: context.colors.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(color: context.colors.shadowSoft, blurRadius: 28, offset: const Offset(0, 10)),
-              BoxShadow(color: context.colors.shadowSoft.withValues(alpha: 0.5), blurRadius: 4, offset: const Offset(0, 1)),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
+    return AnimatedPressable(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: context.colors.shadowSoft, blurRadius: 28, offset: const Offset(0, 10)),
+            BoxShadow(color: context.colors.shadowSoft.withValues(alpha: 0.5), blurRadius: 4, offset: const Offset(0, 1)),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
@@ -279,7 +278,6 @@ class _CalcClientCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }

@@ -1,37 +1,64 @@
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../../domain/entities/client.dart';
 import '../../../domain/entities/rates_fk_ids.dart';
 import '../../bloc/shipping_calculator_bloc.dart';
 
-const _teal = PdfColor.fromInt(0xFF2CC6A6);
 const _tealDeep = PdfColor.fromInt(0xFF1B7A65);
 const _textBody = PdfColor.fromInt(0xFF1A1F26);
 const _textMuted = PdfColor.fromInt(0xFF6B7280);
 const _border = PdfColor.fromInt(0xFFE2E5EA);
 const _sectionBg = PdfColor.fromInt(0xFFF4F6F8);
+const _white = PdfColor.fromInt(0xFFFFFFFF);
+// Matches `RatesColors.dark.sidebarBg` — the logo asset's own canvas is
+// solid black (no alpha), so the header band needs to be the same near-black
+// for it to blend in rather than showing as a box.
+const _brandBlack = PdfColor.fromInt(0xFF0B1210);
+
+/// One row of the charges item table.
+typedef _ChargeItem = ({String description, String rate, String qty, num total});
 
 /// Builds and opens the print/save dialog (`Printing.layoutPdf`) for a
-/// freight-breakdown invoice matching the reference design — logo header,
-/// client/date block, shipping/dimension/calculation sections, itemized
-/// charges, and the VAT/total footer. Pulls every figure from the same
-/// [ShippingCalculatorState]/[CalcResult] the on-screen dialog renders, so
-/// the PDF can never disagree with what the user saw before exporting.
+/// freight-breakdown invoice — colored header band, bill-to block, shipping
+/// details, an itemized charges table, and the VAT/total + signature footer.
+/// Pulls every figure from the same [ShippingCalculatorState]/[CalcResult]
+/// the on-screen dialog renders, so the PDF can never disagree with what the
+/// user saw before exporting. Anything the app has no real data for
+/// (a persisted invoice sequence, payment/bank details) is either left out
+/// or clearly labeled as a reference, not fabricated.
 Future<void> generateInvoicePdf({
   required ShippingCalculatorState state,
-  required String clientName,
+  required Client client,
 }) async {
   final result = state.calcResult;
   if (result == null || result.error != null) return;
+
+  final logoBytes = await rootBundle.load('assets/images/ratrix_logo.png');
+  final logo = pw.MemoryImage(logoBytes.buffer.asUint8List());
 
   final doc = pw.Document();
   final now = DateTime.now();
   final dateLabel = '${now.month}/${now.day}/${now.year}';
   final timeLabel = _formatTime(now);
+  final referenceNo = '${state.selectedChargeCode ?? 'NA'}-${_stamp(now)}';
 
   final pricingOptionId = state.selectedRate?.chargeOption?.id;
-  final pricingLabel = pricingOptionId != null ? RatesFkIds.pricingOptionFromId[pricingOptionId]?.label ?? '—' : '—';
+  final pricingLabel = pricingOptionId != null ? RatesFkIds.pricingOptionFromId[pricingOptionId]?.label ?? '-' : '-';
+
+  final items = <_ChargeItem>[
+    (
+      description: 'Base Freight',
+      rate: result.tierRate != null ? 'Php ${result.tierRate!.toStringAsFixed(2)}/kg' : '-',
+      qty: result.chargeableWeight != null ? '${result.chargeableWeight!.toStringAsFixed(2)} kg' : '-',
+      total: result.baseFreight ?? 0,
+    ),
+    if (result.fuelSurcharge != null && result.fuelSurcharge != 0)
+      (description: 'Fuel Surcharge', rate: '-', qty: '1', total: result.fuelSurcharge!),
+    for (final entry in result.flatFees.entries) (description: entry.key, rate: '-', qty: '1', total: entry.value),
+  ];
 
   doc.addPage(
     pw.Page(
@@ -41,60 +68,65 @@ Future<void> generateInvoicePdf({
         return pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            _header(dateLabel, timeLabel),
-            pw.SizedBox(height: 16),
-            _clientRow(clientName, state, dateLabel, timeLabel),
-            pw.SizedBox(height: 16),
+            _header(logo, referenceNo, dateLabel, timeLabel),
+            pw.SizedBox(height: 18),
+            _billTo(client, state),
+            pw.SizedBox(height: 14),
             _section('SHIPPING DETAILS', [
               _fieldPair('Category', state.freightMode.label.toUpperCase(), 'Service Mode', state.serviceMode.label),
               _fieldPair('Origin', state.origin, 'Destination', state.destination),
-            ]),
-            pw.SizedBox(height: 12),
-            _section('DIMENSIONS & WEIGHT', [
               _fieldPair(
                 'Dims',
                 '${state.length} × ${state.width} × ${state.height} cm',
-                'Vol Divisor',
-                state.divisor,
+                'Weight',
+                '${state.weight} kg',
               ),
-              _fieldPair('Weight', '${state.weight} kg', 'Charge Basis', state.chargeBasis.label),
+              _fieldPair('Pricing Model', pricingLabel, 'Rate Table', '${state.selectedChargeCode ?? '-'} (${state.rateType.label})'),
             ]),
-            pw.SizedBox(height: 12),
-            _section('CALCULATION BREAKDOWN', [
-              _fieldPair(
-                'Actual Weight',
-                '${result.actualWeight?.toStringAsFixed(0) ?? '—'} kg',
-                'Volumetric Wt',
-                '${result.volumetricWeight?.toStringAsFixed(2) ?? '—'} kg',
-              ),
-              _fieldPair('CBM', result.cbm?.toStringAsFixed(3) ?? '—', '', ''),
-              _fieldPair('Rate Table', '${state.selectedChargeCode ?? '—'} (${state.rateType.label})', '', ''),
-              _fieldPair('Pricing Model', pricingLabel, '', ''),
-            ]),
-            pw.SizedBox(height: 16),
-            _chargeRow('Base Freight:', result.baseFreight),
-            if (result.fuelSurcharge != null && result.fuelSurcharge != 0) _chargeRow('Fuel Surcharge:', result.fuelSurcharge),
-            for (final entry in result.flatFees.entries) _chargeRow('${entry.key}:', entry.value),
-            pw.Spacer(),
-            pw.Divider(color: _border, thickness: 1),
-            pw.SizedBox(height: 8),
-            _chargeRow(
-              state.vatInclusive ? 'VATable Subtotal:' : 'Sub-Total:',
-              result.subTotal,
-            ),
-            if (state.vatMode == VatMode.standard)
-              _chargeRow('VAT (${(ShippingCalculatorState.vatRate * 100).toStringAsFixed(0)}%):', state.vatAmount),
-            pw.SizedBox(height: 6),
+            pw.SizedBox(height: 18),
+            _itemTable(items),
+            pw.SizedBox(height: 14),
             pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: pw.MainAxisAlignment.end,
               children: [
-                pw.Text('TOTAL AMOUNT:', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: _textBody)),
-                pw.Text(
-                  'Php ${(state.roundedDisplay ? state.grandTotal.roundToDouble() : state.grandTotal).toStringAsFixed(2)}',
-                  style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: _tealDeep),
+                pw.SizedBox(
+                  width: 220,
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                    children: [
+                      _chargeRow(state.vatInclusive ? 'VATable Subtotal:' : 'Sub-Total:', result.subTotal),
+                      if (state.vatMode == VatMode.standard)
+                        _chargeRow('VAT (${(ShippingCalculatorState.vatRate * 100).toStringAsFixed(0)}%):', state.vatAmount),
+                      pw.SizedBox(height: 6),
+                      pw.Divider(color: _border, thickness: 1),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Text('TOTAL:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: _textBody)),
+                          pw.Text(
+                            'Php ${(state.roundedDisplay ? state.grandTotal.roundToDouble() : state.grandTotal).toStringAsFixed(2)}',
+                            style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: _tealDeep),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
+            pw.SizedBox(height: 24),
+            pw.Text('TERMS', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _textMuted, letterSpacing: 0.5)),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              'This is a computed freight breakdown, not a formal billing invoice - figures reflect the rate card and '
+              'cargo details entered above. Please confirm final charges and payment arrangements with your CERRO '
+              'RATRIX account handler before remitting payment.',
+              style: pw.TextStyle(fontSize: 8, color: _textMuted, lineSpacing: 2),
+            ),
+            pw.SizedBox(height: 40),
+            pw.Container(width: 180, height: 1, color: _border),
+            pw.SizedBox(height: 4),
+            pw.Text('Prepared by', style: pw.TextStyle(fontSize: 9, color: _textMuted)),
           ],
         );
       },
@@ -104,81 +136,121 @@ Future<void> generateInvoicePdf({
   await Printing.layoutPdf(onLayout: (_) => doc.save());
 }
 
-pw.Widget _header(String date, String time) {
-  return pw.Row(
-    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
-    children: [
-      pw.Row(
-        children: [
-          pw.Container(
-            width: 22,
-            height: 12,
-            decoration: pw.BoxDecoration(
-              borderRadius: pw.BorderRadius.circular(16),
-              border: pw.Border.all(color: _teal, width: 1.5),
-            ),
-          ),
-          pw.SizedBox(width: 8),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+pw.Widget _header(pw.ImageProvider logo, String referenceNo, String date, String time) {
+  return pw.Container(
+    padding: const pw.EdgeInsets.all(16),
+    decoration: pw.BoxDecoration(
+      color: _brandBlack,
+      borderRadius: pw.BorderRadius.circular(6),
+    ),
+    child: pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.SizedBox(width: 44, height: 44, child: pw.Image(logo, fit: pw.BoxFit.contain)),
+        pw.SizedBox(width: 12),
+        pw.Expanded(
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              pw.Text('CERRO', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _textMuted)),
-              pw.Text('RATRIX', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: _textBody)),
+              pw.Text('FREIGHT BREAKDOWN', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: _white)),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'Reference #: $referenceNo',
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(fontSize: 7, color: _white),
+              ),
+              pw.Text('Date: $date  $time', style: pw.TextStyle(fontSize: 8, color: _white)),
             ],
           ),
-        ],
-      ),
-      pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.end,
-        children: [
-          pw.Text('INVOICE', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: _textBody)),
-          pw.Text('Generated by Ratrix Shipping Management', style: pw.TextStyle(fontSize: 8, color: _textMuted)),
-        ],
-      ),
-    ],
+        ),
+      ],
+    ),
   );
 }
 
-pw.Widget _clientRow(String clientName, ShippingCalculatorState state, String date, String time) {
-  return pw.Column(
+pw.Widget _billTo(Client client, ShippingCalculatorState state) {
+  return pw.Container(
+    width: double.infinity,
+    padding: const pw.EdgeInsets.all(10),
+    decoration: pw.BoxDecoration(color: _sectionBg, borderRadius: pw.BorderRadius.circular(4)),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text('BILL TO', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _textMuted, letterSpacing: 0.5)),
+        pw.SizedBox(height: 6),
+        pw.Text(client.name, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: _textBody)),
+        pw.SizedBox(height: 6),
+        _fieldPair('Account #', client.accountNumber, 'Email', client.email.isEmpty ? '-' : client.email),
+        if ((client.phoneNumber != null && client.phoneNumber!.isNotEmpty) || client.officeAddress != null) ...[
+          pw.SizedBox(height: 6),
+          _fieldPair(
+            'Phone',
+            client.phoneNumber != null && client.phoneNumber!.isNotEmpty ? client.phoneNumber! : '-',
+            'VAT Status',
+            state.vatInclusive ? 'Inclusive' : 'Exclusive',
+          ),
+        ] else ...[
+          pw.SizedBox(height: 6),
+          _fieldPair('VAT Status', state.vatInclusive ? 'Inclusive' : 'Exclusive', '', ''),
+        ],
+        if (client.officeAddress != null && client.officeAddress!.isNotEmpty) ...[
+          pw.SizedBox(height: 6),
+          _field('Address', client.officeAddress!),
+        ],
+      ],
+    ),
+  );
+}
+
+pw.Widget _itemTable(List<_ChargeItem> items) {
+  pw.Widget headerCell(String text, {pw.TextAlign align = pw.TextAlign.left}) => pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: pw.Text(
+          text,
+          textAlign: align,
+          style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: _white, letterSpacing: 0.3),
+        ),
+      );
+
+  pw.Widget cell(String text, {pw.TextAlign align = pw.TextAlign.left, bool bold = false}) => pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: pw.Text(
+          text,
+          textAlign: align,
+          style: pw.TextStyle(fontSize: 9, color: _textBody, fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal),
+        ),
+      );
+
+  return pw.Table(
+    border: pw.TableBorder.all(color: _border, width: 0.5),
+    columnWidths: const {
+      0: pw.FlexColumnWidth(0.5),
+      1: pw.FlexColumnWidth(2.4),
+      2: pw.FlexColumnWidth(1.4),
+      3: pw.FlexColumnWidth(1.1),
+      4: pw.FlexColumnWidth(1.3),
+    },
     children: [
-      pw.Container(height: 2, color: _teal),
-      pw.SizedBox(height: 10),
-      pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
+      pw.TableRow(
+        decoration: pw.BoxDecoration(color: _tealDeep),
         children: [
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Row(children: [
-                pw.Text('Client: ', style: pw.TextStyle(fontSize: 9, color: _textMuted)),
-                pw.Text(clientName, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _textBody)),
-              ]),
-              pw.SizedBox(height: 2),
-              pw.Row(children: [
-                pw.Text('VAT Status: ', style: pw.TextStyle(fontSize: 9, color: _textMuted)),
-                pw.Text(state.vatInclusive ? 'Inclusive' : 'Exclusive', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _textBody)),
-              ]),
-            ],
-          ),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Row(children: [
-                pw.Text('Date: ', style: pw.TextStyle(fontSize: 9, color: _textMuted)),
-                pw.Text(date, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _textBody)),
-              ]),
-              pw.SizedBox(height: 2),
-              pw.Row(children: [
-                pw.Text('Time: ', style: pw.TextStyle(fontSize: 9, color: _textMuted)),
-                pw.Text(time, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _textBody)),
-              ]),
-            ],
-          ),
+          headerCell('SL'),
+          headerCell('DESCRIPTION'),
+          headerCell('RATE'),
+          headerCell('QTY'),
+          headerCell('TOTAL', align: pw.TextAlign.right),
         ],
       ),
+      for (var i = 0; i < items.length; i++)
+        pw.TableRow(
+          children: [
+            cell('${i + 1}'),
+            cell(items[i].description, bold: true),
+            cell(items[i].rate),
+            cell(items[i].qty),
+            cell('Php ${items[i].total.toStringAsFixed(2)}', align: pw.TextAlign.right),
+          ],
+        ),
     ],
   );
 }
@@ -204,19 +276,28 @@ pw.Widget _section(String title, List<pw.Widget> rows) {
 
 pw.Widget _fieldPair(String label1, String value1, String label2, String value2) {
   return pw.Row(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
       pw.Expanded(child: _field(label1, value1)),
-      if (label2.isNotEmpty) pw.Expanded(child: _field(label2, value2)),
+      pw.SizedBox(width: 8),
+      if (label2.isNotEmpty) pw.Expanded(child: _field(label2, value2)) else pw.Expanded(child: pw.SizedBox()),
     ],
   );
 }
 
+// The value can be arbitrarily long (rate/charge codes, addresses) — give it
+// its own `Expanded` so it wraps onto more lines within the column instead
+// of overflowing past it (a bare `Text` in a `Row` doesn't get clipped or
+// wrapped by its parent's width).
 pw.Widget _field(String label, String value) {
   if (label.isEmpty) return pw.SizedBox();
   return pw.Row(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
     children: [
       pw.Text('$label: ', style: pw.TextStyle(fontSize: 9, color: _textMuted)),
-      pw.Text(value, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _textBody)),
+      pw.Expanded(
+        child: pw.Text(value, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: _textBody)),
+      ),
     ],
   );
 }
@@ -229,7 +310,7 @@ pw.Widget _chargeRow(String label, num? value) {
       children: [
         pw.Text(label, style: pw.TextStyle(fontSize: 10, color: _textBody)),
         pw.Text(
-          value == null ? '—' : 'Php ${value.toStringAsFixed(2)}',
+          value == null ? '-' : 'Php ${value.toStringAsFixed(2)}',
           style: pw.TextStyle(fontSize: 10, color: _textBody),
         ),
       ],
@@ -243,4 +324,12 @@ String _formatTime(DateTime dt) {
   final second = dt.second.toString().padLeft(2, '0');
   final period = dt.hour >= 12 ? 'PM' : 'AM';
   return '$hour12:$minute:$second $period';
+}
+
+/// Compact `yyyyMMddHHmmss` timestamp for [referenceNo] — deterministic from
+/// the moment of generation, not a persisted/sequential invoice number (the
+/// calculator doesn't save records anywhere).
+String _stamp(DateTime dt) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${dt.year}${two(dt.month)}${two(dt.day)}${two(dt.hour)}${two(dt.minute)}${two(dt.second)}';
 }

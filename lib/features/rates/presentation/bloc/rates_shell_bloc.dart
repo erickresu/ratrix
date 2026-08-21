@@ -145,6 +145,8 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
       email: c.email ?? '',
       businessType: c.businessType ?? '',
       vatStatus: vatRaw == 'inclusive' ? VatStatus.inclusive : VatStatus.exclusive,
+      phoneNumber: c.phoneNumber,
+      officeAddress: c.officeAddress,
     );
   }
 

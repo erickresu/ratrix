@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../domain/entities/client.dart';
 import '../../../domain/entities/ratrix_rate.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rates_shell_bloc.dart';
@@ -19,7 +20,7 @@ Future<void> showFreightBreakdownDialog(
   BuildContext context, {
   required ShippingCalculatorBloc calcBloc,
   required RatesShellBloc shellBloc,
-  required String clientName,
+  required Client client,
 }) async {
   await showShadDialog<void>(
     context: context,
@@ -33,7 +34,7 @@ Future<void> showFreightBreakdownDialog(
         BlocProvider.value(value: calcBloc),
         BlocProvider.value(value: shellBloc),
       ],
-      child: _BlurredBarrier(child: _FreightBreakdownDialog(clientName: clientName)),
+      child: _BlurredBarrier(child: _FreightBreakdownDialog(client: client)),
     ),
   );
   // Whichever way the dialog closed (X button, barrier tap, back button),
@@ -64,9 +65,9 @@ class _BlurredBarrier extends StatelessWidget {
 }
 
 class _FreightBreakdownDialog extends StatelessWidget {
-  const _FreightBreakdownDialog({required this.clientName});
+  const _FreightBreakdownDialog({required this.client});
 
-  final String clientName;
+  final Client client;
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +130,7 @@ class _FreightBreakdownDialog extends StatelessWidget {
               child: ShadButton(
                 gradient: context.colors.primaryButtonGradient,
                 leading: const Icon(CupertinoIcons.arrow_down_doc, size: 16),
-                onPressed: () => generateInvoicePdf(state: state, clientName: clientName),
+                onPressed: () => generateInvoicePdf(state: state, client: client),
                 child: const Text('Generate Invoice PDF'),
               ),
             ),
