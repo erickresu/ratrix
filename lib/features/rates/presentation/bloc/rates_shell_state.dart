@@ -42,6 +42,15 @@ class RatesShellState extends Equatable {
   final int calcClientPage;
   final String? selectedCalcClientId;
 
+  final List<PublishedRate> publishedRates;
+  final bool publishedRatesLoading;
+  final String publishedRateSearch;
+  final RateStatus publishedRatesTab;
+  final int publishedRatePage;
+  final FreightMode? publishedRateFreightFilter;
+  final ServiceMode? publishedRateServiceFilter;
+  final bool publishedRateSortByExpiry;
+
   const RatesShellState({
     this.isLoading = true,
     this.view = RatesView.dashboard,
@@ -70,10 +79,19 @@ class RatesShellState extends Equatable {
     this.calcClientSearch = '',
     this.calcClientPage = 0,
     this.selectedCalcClientId,
+    this.publishedRates = const [],
+    this.publishedRatesLoading = false,
+    this.publishedRateSearch = '',
+    this.publishedRatesTab = RateStatus.active,
+    this.publishedRatePage = 0,
+    this.publishedRateFreightFilter,
+    this.publishedRateServiceFilter,
+    this.publishedRateSortByExpiry = false,
   });
 
   static const clientsPerPage = 9;
   static const clientRatesPerPage = 6;
+  static const publishedRatesPerPage = 6;
 
   List<Client> get filteredClients {
     final list = clientSearch.isEmpty
@@ -152,6 +170,37 @@ class RatesShellState extends Equatable {
     return filteredClientRates.sublist(start, end);
   }
 
+  List<PublishedRate> get filteredPublishedRates {
+    final q = publishedRateSearch.toLowerCase();
+    return publishedRates.where((r) {
+      if (r.status != publishedRatesTab) return false;
+      if (publishedRateFreightFilter != null && r.freightMode != publishedRateFreightFilter) return false;
+      if (publishedRateServiceFilter != null && r.serviceMode != publishedRateServiceFilter) return false;
+      if (q.isEmpty) return true;
+      return r.chargeCode.toLowerCase().contains(q) ||
+          r.freightMode.label.toLowerCase().contains(q) ||
+          r.routeLabel.toLowerCase().contains(q);
+    }).toList()
+      ..sort((a, b) {
+        if (!publishedRateSortByExpiry) return 0;
+        final ad = a.expiryDate;
+        final bd = b.expiryDate;
+        if (ad == null && bd == null) return 0;
+        if (ad == null) return 1;
+        if (bd == null) return -1;
+        return ad.compareTo(bd);
+      });
+  }
+
+  int get publishedRatePageCount => (filteredPublishedRates.length / publishedRatesPerPage).ceil().clamp(1, 1 << 30);
+
+  List<PublishedRate> get pagedPublishedRates {
+    final start = publishedRatePage * publishedRatesPerPage;
+    if (start >= filteredPublishedRates.length) return const [];
+    final end = (start + publishedRatesPerPage).clamp(0, filteredPublishedRates.length);
+    return filteredPublishedRates.sublist(start, end);
+  }
+
   RatesShellState copyWith({
     bool? isLoading,
     RatesView? view,
@@ -186,6 +235,16 @@ class RatesShellState extends Equatable {
     int? calcClientPage,
     String? selectedCalcClientId,
     bool clearSelectedCalcClientId = false,
+    List<PublishedRate>? publishedRates,
+    bool? publishedRatesLoading,
+    String? publishedRateSearch,
+    RateStatus? publishedRatesTab,
+    int? publishedRatePage,
+    FreightMode? publishedRateFreightFilter,
+    bool clearPublishedRateFreightFilter = false,
+    ServiceMode? publishedRateServiceFilter,
+    bool clearPublishedRateServiceFilter = false,
+    bool? publishedRateSortByExpiry,
   }) {
     return RatesShellState(
       isLoading: isLoading ?? this.isLoading,
@@ -215,6 +274,16 @@ class RatesShellState extends Equatable {
       calcClientSearch: calcClientSearch ?? this.calcClientSearch,
       calcClientPage: calcClientPage ?? this.calcClientPage,
       selectedCalcClientId: clearSelectedCalcClientId ? null : (selectedCalcClientId ?? this.selectedCalcClientId),
+      publishedRates: publishedRates ?? this.publishedRates,
+      publishedRatesLoading: publishedRatesLoading ?? this.publishedRatesLoading,
+      publishedRateSearch: publishedRateSearch ?? this.publishedRateSearch,
+      publishedRatesTab: publishedRatesTab ?? this.publishedRatesTab,
+      publishedRatePage: publishedRatePage ?? this.publishedRatePage,
+      publishedRateFreightFilter:
+          clearPublishedRateFreightFilter ? null : (publishedRateFreightFilter ?? this.publishedRateFreightFilter),
+      publishedRateServiceFilter:
+          clearPublishedRateServiceFilter ? null : (publishedRateServiceFilter ?? this.publishedRateServiceFilter),
+      publishedRateSortByExpiry: publishedRateSortByExpiry ?? this.publishedRateSortByExpiry,
     );
   }
 
@@ -247,5 +316,13 @@ class RatesShellState extends Equatable {
         calcClientSearch,
         calcClientPage,
         selectedCalcClientId,
+        publishedRates,
+        publishedRatesLoading,
+        publishedRateSearch,
+        publishedRatesTab,
+        publishedRatePage,
+        publishedRateFreightFilter,
+        publishedRateServiceFilter,
+        publishedRateSortByExpiry,
       ];
 }

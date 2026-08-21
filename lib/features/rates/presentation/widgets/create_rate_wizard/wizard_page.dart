@@ -78,7 +78,10 @@ class _WizardView extends StatelessWidget {
                   ..showSnackBar(const SnackBar(content: Text('Changes saved.')));
               } else {
                 final shellBloc = context.read<RatesShellBloc>();
-                shellBloc.add(const WizardExitRequested(fallback: RatesView.dashboard));
+                final wizardState = context.read<RateWizardBloc>().state;
+                shellBloc.add(WizardExitRequested(
+                  fallback: wizardState.isCustom ? RatesView.dashboard : RatesView.publishedRates,
+                ));
                 shellBloc.add(const RatesDataRequested());
               }
             }
@@ -137,10 +140,12 @@ class _WizardHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (wizardState.isCustom) ...[
-          BackPill(onTap: () => shellBloc.add(const WizardExitRequested(fallback: RatesView.customClientRates))),
-          const SizedBox(height: 12),
-        ],
+        BackPill(
+          onTap: () => shellBloc.add(WizardExitRequested(
+            fallback: wizardState.isCustom ? RatesView.customClientRates : RatesView.publishedRates,
+          )),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             Text(

@@ -152,6 +152,63 @@ class EditRateRequested extends RatesShellEvent {
   List<Object?> get props => [rateId];
 }
 
+class PublishedRatesRequested extends RatesShellEvent {
+  const PublishedRatesRequested();
+}
+
+class CreatePublishedRateRequested extends RatesShellEvent {
+  const CreatePublishedRateRequested();
+}
+
+class PublishedRateSearchChanged extends RatesShellEvent {
+  const PublishedRateSearchChanged(this.query);
+
+  final String query;
+
+  @override
+  List<Object?> get props => [query];
+}
+
+class PublishedRatesTabChanged extends RatesShellEvent {
+  const PublishedRatesTabChanged(this.tab);
+
+  final RateStatus tab;
+
+  @override
+  List<Object?> get props => [tab];
+}
+
+class PublishedRatePageChanged extends RatesShellEvent {
+  const PublishedRatePageChanged(this.page);
+
+  final int page;
+
+  @override
+  List<Object?> get props => [page];
+}
+
+class PublishedRateFreightFilterChanged extends RatesShellEvent {
+  const PublishedRateFreightFilterChanged(this.freightMode);
+
+  final FreightMode? freightMode;
+
+  @override
+  List<Object?> get props => [freightMode];
+}
+
+class PublishedRateServiceFilterChanged extends RatesShellEvent {
+  const PublishedRateServiceFilterChanged(this.serviceMode);
+
+  final ServiceMode? serviceMode;
+
+  @override
+  List<Object?> get props => [serviceMode];
+}
+
+class PublishedRateSortByExpiryToggled extends RatesShellEvent {
+  const PublishedRateSortByExpiryToggled();
+}
+
 class ShippingCalculatorRequested extends RatesShellEvent {
   const ShippingCalculatorRequested();
 }

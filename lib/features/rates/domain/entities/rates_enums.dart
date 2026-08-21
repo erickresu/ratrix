@@ -52,10 +52,6 @@ enum LocationBasis {
 
   const LocationBasis(this.label);
   final String label;
-
-  // Internal Code matching isn't implemented yet — hide it from the
-  // "Match by" control for now. Remove once it's wired up.
-  static const enabledValues = [LocationBasis.city, LocationBasis.province];
 }
 
 enum AddonMode { exact, percentage }
@@ -93,7 +89,7 @@ enum VatStatus {
   final String label;
 }
 
-enum RatesView { dashboard, customClients, customClientRates, create, shippingCalculatorClients, shippingCalculatorForm }
+enum RatesView { dashboard, customClients, customClientRates, publishedRates, create, shippingCalculatorClients, shippingCalculatorForm }
 
 enum ServiceLevel {
   regular('Regular'),

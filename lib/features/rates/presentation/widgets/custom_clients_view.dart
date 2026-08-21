@@ -14,8 +14,8 @@ import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 
 const _clientGridRows = 3;
-const _clientGridPadding = EdgeInsets.fromLTRB(48, 0, 48, 28);
-const _clientGridPaddingMobile = EdgeInsets.fromLTRB(16, 0, 16, 28);
+const _clientGridPadding = EdgeInsets.fromLTRB(64, 0, 64, 28);
+const _clientGridPaddingMobile = EdgeInsets.fromLTRB(20, 0, 20, 28);
 
 SliverGridDelegateWithFixedCrossAxisCount _clientGridDelegate(int crossAxisCount) {
   return SliverGridDelegateWithFixedCrossAxisCount(

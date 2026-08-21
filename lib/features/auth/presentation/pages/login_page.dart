@@ -34,8 +34,13 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Below 900px the brand panel (which carries the black background on
+    // desktop) is hidden entirely — carry that same black canvas onto the
+    // Scaffold itself for mobile, with the form floating in its own white
+    // card instead of sitting directly on light pageBg.
+    final isMobile = MediaQuery.sizeOf(context).width < 900;
     return Scaffold(
-      backgroundColor: context.colors.pageBg,
+      backgroundColor: isMobile ? context.colors.sidebarBg : context.colors.pageBg,
       body: BlocListener<AuthBloc, AuthState>(
         listenWhen: (prev, curr) =>
             prev.error != curr.error && curr.error != null,
@@ -65,14 +70,57 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 380),
-                        child: _LoginForm(
-                          email: _email,
-                          password: _password,
-                          obscurePassword: _obscurePassword,
-                          onToggleObscure: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                          ),
-                          onSubmit: () => _submit(context),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // The brand panel (with its own Lottie) is
+                            // hidden below 900px — show a smaller one here
+                            // instead of dropping the animation entirely on
+                            // mobile.
+                            if (!showBrandPanel) ...[
+                              Center(
+                                child: SizedBox(
+                                  width: 240,
+                                  child: Lottie.asset('assets/lottie/login_animation.json', repeat: true),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Center(
+                                child: Text(
+                                  'Cerro Ratrix',
+                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.2),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                            ],
+                            Builder(builder: (context) {
+                              final form = _LoginForm(
+                                email: _email,
+                                password: _password,
+                                obscurePassword: _obscurePassword,
+                                onToggleObscure: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                                onSubmit: () => _submit(context),
+                              );
+                              if (showBrandPanel) return form;
+                              // Mobile: float the fields in a white card on
+                              // top of the black Scaffold background instead
+                              // of sitting directly on it.
+                              return Container(
+                                padding: const EdgeInsets.all(28),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 24, offset: const Offset(0, 10)),
+                                  ],
+                                ),
+                                child: form,
+                              );
+                            }),
+                          ],
                         ),
                       ),
                     ),
@@ -131,7 +179,7 @@ class _BrandPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Rate management,built for freight teams.',
+                        'Cerro Ratrix',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w700,

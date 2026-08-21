@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../domain/entities/client_rate.dart';
+import '../../domain/entities/published_rate.dart';
 import '../../domain/entities/rate_stat.dart';
 import '../../domain/entities/ratrix_rate.dart';
 import '../../domain/entities/rates_enums.dart';
@@ -134,6 +135,33 @@ class RatesRepository {
   Future<List<ClientRate>> fetchAllClientRates() async {
     final rates = await _fetchAllRates(rateType: 'custom');
     return rates.where((r) => r.clientId != null).map((r) => _mapClientRate(r, r.clientId!.toString())).toList();
+  }
+
+  /// All standard (non-custom) rates, for the Published Rates list.
+  Future<List<PublishedRate>> fetchAllPublishedRates() async {
+    final rates = await _fetchRatesByType('publish');
+    return rates.map(_mapPublishedRate).toList();
+  }
+
+  PublishedRate _mapPublishedRate(RatrixRate rate) {
+    final freightMode = _freightModeFromCode(rate.freightMode?.code) ?? FreightMode.air;
+    final serviceMode = _serviceModeFromCode(rate.serviceMode?.code) ?? ServiceMode.doorToDoor;
+    final isExpired = rate.isExpired;
+    final expiryLabel = rate.rateExpiry == null
+        ? (isExpired ? 'Expired' : 'Active')
+        : (isExpired ? 'Expired ${_formatDate(rate.rateExpiry!)}' : 'Active until ${_formatDate(rate.rateExpiry!)}');
+
+    return PublishedRate(
+      id: rate.id,
+      chargeCode: rate.chargeCode ?? '—',
+      freightMode: freightMode,
+      serviceMode: serviceMode,
+      routeLabel: rate.routes.isNotEmpty ? rate.routes.first.routeLabel : '—',
+      routeCount: rate.routes.length,
+      status: isExpired ? RateStatus.expired : RateStatus.active,
+      expiryLabel: expiryLabel,
+      expiryDate: rate.rateExpiry,
+    );
   }
 
   ClientRate _mapClientRate(RatrixRate rate, String clientId) {

@@ -23,7 +23,8 @@ class RatesSidebar extends StatelessWidget {
     final state = context.watch<RatesShellBloc>().state;
 
     final isDashboard = state.view == RatesView.dashboard;
-    final isPublishActive = state.view == RatesView.create && state.rateChoice == RateType.published;
+    final isPublishActive = state.view == RatesView.publishedRates ||
+        (state.view == RatesView.create && state.rateChoice == RateType.published);
     final isCustomActive = state.view == RatesView.customClients ||
         state.view == RatesView.customClientRates ||
         (state.view == RatesView.create && state.rateChoice == RateType.custom);
@@ -69,7 +70,7 @@ class RatesSidebar extends StatelessWidget {
                       icon: CupertinoIcons.arrow_up,
                       label: 'Publish Rates',
                       active: isPublishActive,
-                      onTap: () => navigate(() => bloc.add(const PublishedRateChosen())),
+                      onTap: () => navigate(() => bloc.add(const PublishedRatesRequested())),
                     ),
                     _SubNavItem(
                       icon: CupertinoIcons.list_bullet,

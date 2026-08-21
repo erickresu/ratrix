@@ -7,6 +7,7 @@ import '../../../clients/domain/entities/client.dart' as clients_api;
 import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/client.dart';
 import '../../domain/entities/client_rate.dart';
+import '../../domain/entities/published_rate.dart';
 import '../../domain/entities/rate_stat.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../../domain/entities/ratrix_rate.dart';
@@ -72,6 +73,40 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
     on<WizardExitRequested>(
       (event, emit) => emit(state.copyWith(view: state.returnView ?? event.fallback, clearReturnView: true)),
     );
+    on<PublishedRatesRequested>((event, emit) => emit(state.copyWith(view: RatesView.publishedRates)));
+    on<CreatePublishedRateRequested>(
+      (event, emit) => emit(state.copyWith(
+        modalOpen: false,
+        rateChoice: RateType.published,
+        view: RatesView.create,
+        clearExistingRate: true,
+        clearReturnView: true,
+      )),
+    );
+    on<PublishedRateSearchChanged>(
+      (event, emit) => emit(state.copyWith(publishedRateSearch: event.query, publishedRatePage: 0)),
+    );
+    on<PublishedRatesTabChanged>(
+      (event, emit) => emit(state.copyWith(publishedRatesTab: event.tab, publishedRatePage: 0)),
+    );
+    on<PublishedRatePageChanged>((event, emit) => emit(state.copyWith(publishedRatePage: event.page)));
+    on<PublishedRateFreightFilterChanged>(
+      (event, emit) => emit(state.copyWith(
+        publishedRateFreightFilter: event.freightMode,
+        clearPublishedRateFreightFilter: event.freightMode == null,
+        publishedRatePage: 0,
+      )),
+    );
+    on<PublishedRateServiceFilterChanged>(
+      (event, emit) => emit(state.copyWith(
+        publishedRateServiceFilter: event.serviceMode,
+        clearPublishedRateServiceFilter: event.serviceMode == null,
+        publishedRatePage: 0,
+      )),
+    );
+    on<PublishedRateSortByExpiryToggled>(
+      (event, emit) => emit(state.copyWith(publishedRateSortByExpiry: !state.publishedRateSortByExpiry)),
+    );
     on<ShippingCalculatorRequested>(
       (event, emit) => emit(state.copyWith(view: RatesView.shippingCalculatorClients)),
     );
@@ -102,14 +137,16 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
     List<RateStat> stats = const [];
     List<RecentRate> recentRates = const [];
     List<ClientRate> allClientRates = const [];
+    List<PublishedRate> publishedRates = const [];
     try {
       stats = await _repository.fetchStats();
       recentRates = await _repository.fetchRecentRates(clientNamesById: clientNamesById);
       allClientRates = await _repository.fetchAllClientRates();
+      publishedRates = await _repository.fetchAllPublishedRates();
     } catch (e, st) {
-      // Leave stats/recentRates/allClientRates at their empty defaults —
-      // the dashboard renders an empty state rather than getting stuck
-      // on the loading skeleton.
+      // Leave stats/recentRates/allClientRates/publishedRates at their empty
+      // defaults — the dashboard renders an empty state rather than getting
+      // stuck on the loading skeleton.
       appLogger.e('Failed to load rates dashboard data', error: e, stackTrace: st);
     }
 
@@ -123,6 +160,7 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
       recentRates: recentRates,
       clients: clients,
       clientRateCounts: counts,
+      publishedRates: publishedRates,
     ));
   }
 

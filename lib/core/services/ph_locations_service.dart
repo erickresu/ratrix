@@ -1,11 +1,13 @@
-import 'package:ph_address_dropdowns/ph_address_dropdowns.dart';
+import 'package:dio/dio.dart';
 
-/// Flattens the region-scoped PSGC data from `ph_address_dropdowns` into two
-/// simple, nationwide name lists suitable for a free-text city/province
-/// autocomplete (the picker widget itself assumes a region-first cascade,
-/// which doesn't fit a single "search origin city" field).
+/// Nationwide city/province name lists for the origin/destination
+/// autocomplete, sourced from the CerroV5 backend's `locations/search`
+/// endpoint (`q=&all=1&type=city|province`, same Dio client/base URL as
+/// the rest of the app) rather than a bundled offline PSGC dataset.
 class PhLocationsService {
-  final _repository = PhLocationRepository();
+  PhLocationsService(this._dio);
+
+  final Dio _dio;
 
   List<String>? _cities;
   List<String>? _provinces;
@@ -17,19 +19,35 @@ class PhLocationsService {
   Future<void> ensureLoaded() async {
     if (isLoaded) return;
 
-    final regions = await _repository.getRegions();
-    final provinceLists = await Future.wait(regions.map((r) => _repository.getProvinces(r.regCode)));
-    final allProvinces = provinceLists.expand((list) => list).toList();
+    final results = await Future.wait([
+      _fetchNames(type: 'city', key: 'cities'),
+      _fetchNames(type: 'province', key: 'provinces'),
+    ]);
 
-    final cityFutures = <Future<List<CityMun>>>[
-      for (final p in allProvinces) _repository.getCityMuns(regCode: p.regCode, provCode: p.provCode),
-      // Regions without provinces (e.g. NCR) list their cities directly under the region.
-      for (final r in regions)
-        if (!allProvinces.any((p) => p.regCode == r.regCode)) _repository.getCityMuns(regCode: r.regCode),
-    ];
-    final cityLists = await Future.wait(cityFutures);
+    _cities = results[0];
+    _provinces = results[1];
+  }
 
-    _provinces = allProvinces.map((p) => p.provName).toSet().toList()..sort();
-    _cities = cityLists.expand((list) => list).map((c) => c.munCityName).toSet().toList()..sort();
+  Future<List<String>> _fetchNames({required String type, required String key}) async {
+    try {
+      final res = await _dio.get(
+        'api/locations/search',
+        queryParameters: {'q': '', 'all': 1, 'type': type},
+      );
+      final body = res.data;
+      final data = body is Map<String, dynamic> ? body['data'] as Map<String, dynamic>? : null;
+      final rows = data?[key] as List<dynamic>? ?? const [];
+      return rows
+          .whereType<Map<String, dynamic>>()
+          .map((row) => row['name']?.toString())
+          .whereType<String>()
+          .toSet()
+          .toList()
+        ..sort();
+    } catch (_) {
+      // Leave the list empty — the origin/destination fields just show no
+      // suggestions rather than getting stuck.
+      return const [];
+    }
   }
 }

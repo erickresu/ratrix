@@ -63,42 +63,31 @@ class Step0RateSetup extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () async {
-                      final now = DateTime.now();
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: state.expiryDate ?? now,
-                        firstDate: now,
-                        lastDate: now.add(const Duration(days: 3650)),
-                      );
+                Builder(builder: (context) {
+                  final today = DateTime.now();
+                  final startOfToday = DateTime(today.year, today.month, today.day);
+                  final maxDate = startOfToday.add(const Duration(days: 3650));
+                  return ShadDatePicker(
+                    selected: state.expiryDate,
+                    formatDate: DateFormat.yMMMd().format,
+                    placeholder: Text('Select date', style: TextStyle(fontSize: 14, color: context.colors.textMuted)),
+                    trailing: Icon(CupertinoIcons.calendar, size: 15, color: context.colors.textMuted),
+                    width: double.infinity,
+                    height: _fieldHeight,
+                    buttonPadding: const EdgeInsets.symmetric(horizontal: 14),
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    foregroundColor: context.colors.textBody,
+                    hoverForegroundColor: context.colors.textBody,
+                    pressedForegroundColor: context.colors.textBody,
+                    captionLayout: ShadCalendarCaptionLayout.dropdown,
+                    fromMonth: DateTime(startOfToday.year, startOfToday.month),
+                    toMonth: DateTime(maxDate.year, maxDate.month),
+                    selectableDayPredicate: (day) => !day.isBefore(startOfToday) && !day.isAfter(maxDate),
+                    onChanged: (picked) {
                       if (picked != null) bloc.add(ExpiryDateChanged(picked));
                     },
-                    child: Container(
-                      height: _fieldHeight,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      alignment: Alignment.centerLeft,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: context.colors.borderStrong),
-                        borderRadius: BorderRadius.circular(8),
-                        color: context.colors.surface,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            state.expiryDate == null ? 'Select date' : DateFormat.yMMMd().format(state.expiryDate!),
-                            style: TextStyle(fontSize: 14, color: state.expiryDate == null ? context.colors.textMuted : context.colors.textBody),
-                          ),
-                          Icon(CupertinoIcons.calendar, size: 15, color: context.colors.textMuted),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                  );
+                }),
               ],
             ),
           ),

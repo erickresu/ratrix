@@ -877,14 +877,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
-  ph_address_dropdowns:
-    dependency: "direct main"
-    description:
-      name: ph_address_dropdowns
-      sha256: c56888ea1587de26d5e3b5ceb91e2db64fb3beabd573c569ce293a3ae26db31d
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.1-beta.2"
   platform:
     dependency: transitive
     description:

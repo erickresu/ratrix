@@ -28,22 +28,24 @@ class _AnimatedPressableState extends State<AnimatedPressable> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : (_hovered && widget.onTap != null ? 1.015 : 1.0),
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: Material(
-          color: widget.color,
+    // A single InkWell drives both hover and press state natively (via
+    // onHover/onHighlightChanged) instead of a separate MouseRegion
+    // stacked on top of it — two independent pointer-tracking widgets
+    // layered like that can flake out in the gesture arena, which was
+    // making taps unreliable.
+    return AnimatedScale(
+      scale: _pressed ? 0.97 : (_hovered && widget.onTap != null ? 1.015 : 1.0),
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      child: Material(
+        color: widget.color,
+        borderRadius: widget.borderRadius,
+        child: InkWell(
           borderRadius: widget.borderRadius,
-          child: InkWell(
-            borderRadius: widget.borderRadius,
-            onTap: widget.onTap,
-            onHighlightChanged: (v) => setState(() => _pressed = v),
-            child: widget.child,
-          ),
+          onTap: widget.onTap,
+          onHover: (v) => setState(() => _hovered = v),
+          onHighlightChanged: (v) => setState(() => _pressed = v),
+          child: widget.child,
         ),
       ),
     );

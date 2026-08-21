@@ -35,8 +35,9 @@ class NewRateModal extends StatelessWidget {
       },
     );
 
-    return ShadDialog(
-      radius: BorderRadius.circular(16),
+    return Center(
+      child: ShadDialog(
+        radius: BorderRadius.circular(16),
       backgroundColor: context.colors.surface,
       padding: EdgeInsets.all(isMobile ? 24 : 40),
       title: Text('New rate', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: context.colors.textBody)),
@@ -67,6 +68,7 @@ class NewRateModal extends StatelessWidget {
                   Expanded(child: customCard),
                 ],
               ),
+      ),
       ),
     );
   }
