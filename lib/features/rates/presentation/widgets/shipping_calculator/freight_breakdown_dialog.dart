@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../domain/entities/ratrix_rate.dart';
 import '../../../domain/entities/rates_enums.dart';
+import '../../bloc/rates_shell_bloc.dart';
 import '../../bloc/shipping_calculator_bloc.dart';
 import '../../rates_colors.dart';
 import 'invoice_pdf.dart';
@@ -16,13 +18,21 @@ import 'invoice_pdf.dart';
 Future<void> showFreightBreakdownDialog(
   BuildContext context, {
   required ShippingCalculatorBloc calcBloc,
+  required RatesShellBloc shellBloc,
   required String clientName,
 }) async {
   await showShadDialog<void>(
     context: context,
     barrierColor: Colors.transparent,
-    builder: (dialogContext) => BlocProvider.value(
-      value: calcBloc,
+    // `showShadDialog` pushes onto the root Navigator, outside the
+    // RatesShellPage's `BlocProvider<RatesShellBloc>` subtree — re-provide
+    // both blocs explicitly rather than relying on ambient lookup (the
+    // "Edit this rate" button needs RatesShellBloc to navigate).
+    builder: (dialogContext) => MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: calcBloc),
+        BlocProvider.value(value: shellBloc),
+      ],
       child: _BlurredBarrier(child: _FreightBreakdownDialog(clientName: clientName)),
     ),
   );
@@ -91,7 +101,21 @@ class _FreightBreakdownDialog extends StatelessWidget {
                   Flexible(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                      child: result.error != null ? _ErrorBody(message: result.error!) : const _ResultBody(),
+                      child: result.error != null
+                          ? _ErrorBody(
+                              message: result.error!,
+                              origin: state.origin,
+                              destination: state.destination,
+                              tiers: result.routeTiers,
+                              onEditRate: state.selectedRate == null
+                                  ? null
+                                  : () {
+                                      final rateId = state.selectedRate!.id;
+                                      Navigator.of(context).pop();
+                                      context.read<RatesShellBloc>().add(EditRateRequested(rateId));
+                                    },
+                            )
+                          : const _ResultBody(),
                     ),
                   ),
                 ],
@@ -199,25 +223,148 @@ class _CloseButton extends StatelessWidget {
 }
 
 class _ErrorBody extends StatelessWidget {
-  const _ErrorBody({required this.message});
+  const _ErrorBody({
+    required this.message,
+    this.origin = '',
+    this.destination = '',
+    this.tiers = const [],
+    this.onEditRate,
+  });
 
   final String message;
+  final String origin;
+  final String destination;
+
+  /// The resolved route's breakweight brackets, if any — shown as a mini
+  /// table so a "no tier covers this weight" error is self-explanatory
+  /// without leaving the dialog to go check the rate.
+  final List<RatrixBreakweight> tiers;
+
+  /// Jumps straight to editing the selected rate in the wizard — shown for
+  /// any calc error, since every one of them boils down to something
+  /// missing/misconfigured on that specific rate.
+  final VoidCallback? onEditRate;
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.colors.destructive.withValues(alpha: 0.08),
+            border: Border.all(color: context.colors.destructive.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(CupertinoIcons.exclamationmark_triangle, size: 16, color: context.colors.destructive),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(message, style: TextStyle(fontSize: 13, color: context.colors.destructive))),
+                ],
+              ),
+            ],
+          ),
+        ),
+        if (tiers.isNotEmpty || onEditRate != null) ...[
+          const SizedBox(height: 12),
+          RouteTiersTable(origin: origin, destination: destination, tiers: tiers, onEdit: onEditRate),
+        ],
+      ],
+    );
+  }
+}
+
+/// Compact origin/destination + breakweight-bracket table, shown alongside
+/// a calc error so the user can see what's actually configured on the route
+/// without leaving the dialog.
+class RouteTiersTable extends StatelessWidget {
+  const RouteTiersTable({super.key, required this.origin, required this.destination, required this.tiers, this.onEdit});
+
+  final String origin;
+  final String destination;
+  final List<RatrixBreakweight> tiers;
+
+  /// Jumps to editing the rate this route belongs to — shown as a small
+  /// pencil icon next to the origin/destination line when set.
+  final VoidCallback? onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    TextStyle headerStyle(BuildContext context) =>
+        TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: context.colors.textMuted);
+    TextStyle cellStyle(BuildContext context) =>
+        TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textBody);
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: context.colors.destructive.withValues(alpha: 0.08),
-        border: Border.all(color: context.colors.destructive.withValues(alpha: 0.3)),
+        color: context.colors.surfaceSubtle,
+        border: Border.all(color: context.colors.border),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(CupertinoIcons.exclamationmark_triangle, size: 16, color: context.colors.destructive),
-          const SizedBox(width: 10),
-          Expanded(child: Text(message, style: TextStyle(fontSize: 13, color: context.colors.destructive))),
+          Row(
+            children: [
+              Icon(CupertinoIcons.arrow_right_arrow_left, size: 13, color: context.colors.textMuted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${origin.isEmpty ? '—' : origin} → ${destination.isEmpty ? '—' : destination}',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (onEdit != null)
+                Material(
+                  color: context.colors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: onEdit,
+                    child: const Padding(
+                      padding: EdgeInsets.all(7),
+                      child: Icon(CupertinoIcons.pencil, size: 18, color: Colors.white),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (tiers.isEmpty)
+            Text('No breakweight tiers found for this route.', style: cellStyle(context).copyWith(color: context.colors.textMuted))
+          else ...[
+            Row(
+              children: [
+                Expanded(flex: 2, child: Text('MIN (KG)', style: headerStyle(context))),
+                Expanded(flex: 2, child: Text('MAX (KG)', style: headerStyle(context))),
+                Expanded(flex: 3, child: Text('RATE', style: headerStyle(context), textAlign: TextAlign.right)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Divider(height: 1, color: context.colors.border),
+            for (final tier in tiers) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(flex: 2, child: Text(tier.min.toStringAsFixed(2), style: cellStyle(context))),
+                  Expanded(flex: 2, child: Text(tier.max.toStringAsFixed(2), style: cellStyle(context))),
+                  Expanded(
+                    flex: 3,
+                    child: Text('₱${tier.rate.toStringAsFixed(2)}', style: cellStyle(context), textAlign: TextAlign.right),
+                  ),
+                ],
+              ),
+            ],
+          ],
         ],
       ),
     );
@@ -263,7 +410,14 @@ class _ResultBody extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
+        Center(
+          child: _ChargeBasisSwitch(
+            value: state.chargeBasis,
+            onChanged: (basis) => bloc.add(CalcChargeBasisChanged(basis)),
+          ),
+        ),
+        const SizedBox(height: 16),
         Center(
           child: Text(
             'FINAL CHARGEABLE BASIS',
@@ -400,6 +554,42 @@ class _WeightStat extends StatelessWidget {
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),
         ),
       ],
+    );
+  }
+}
+
+/// 3-way switch for [CalcChargeBasis], live inside the dialog — picking a
+/// basis here recomputes the same result in place (see
+/// `ShippingCalculatorBloc`'s `CalcChargeBasisChanged` handler) rather than
+/// closing and reopening the dialog.
+class _ChargeBasisSwitch extends StatelessWidget {
+  const _ChargeBasisSwitch({required this.value, required this.onChanged});
+
+  final CalcChargeBasis value;
+  final ValueChanged<CalcChargeBasis> onChanged;
+
+  static const _shortLabels = {
+    CalcChargeBasis.actual: 'Actual',
+    CalcChargeBasis.volumetric: 'Volumetric',
+    CalcChargeBasis.higher: 'Higher',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final basis in CalcChargeBasis.values)
+            _SegmentButton(
+              label: _shortLabels[basis]!,
+              selected: value == basis,
+              onTap: () => onChanged(basis),
+            ),
+        ],
+      ),
     );
   }
 }

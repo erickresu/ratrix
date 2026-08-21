@@ -185,7 +185,7 @@ class CustomClientRatesView extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 40, isMobile ? 16 : 48, 32),
+          padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -237,7 +237,7 @@ class CustomClientRatesView extends StatelessWidget {
         ),
         Expanded(
           child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 0, isMobile ? 16 : 48, 48),
+            padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 0, isMobile ? 20 : 64, 56),
             child: state.clientRatesLoading
                 ? const SkeletonShimmer(
                     child: Column(

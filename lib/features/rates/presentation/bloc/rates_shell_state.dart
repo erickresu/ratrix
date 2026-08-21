@@ -32,6 +32,12 @@ class RatesShellState extends Equatable {
   final RatrixRate? existingRate;
   final bool editRateLoading;
 
+  /// The view to return to when the wizard exits (Back or a successful
+  /// save), captured from whatever view was active when `EditRateRequested`
+  /// fired. Null for a plain "create new rate" flow — those fall back to
+  /// `WizardExitRequested.fallback` instead.
+  final RatesView? returnView;
+
   final String calcClientSearch;
   final int calcClientPage;
   final String? selectedCalcClientId;
@@ -60,6 +66,7 @@ class RatesShellState extends Equatable {
     this.clientRateSortByExpiry = false,
     this.existingRate,
     this.editRateLoading = false,
+    this.returnView,
     this.calcClientSearch = '',
     this.calcClientPage = 0,
     this.selectedCalcClientId,
@@ -93,9 +100,10 @@ class RatesShellState extends Equatable {
   }
 
   List<Client> get filteredCalcClients {
-    if (calcClientSearch.isEmpty) return clients;
-    final q = calcClientSearch.toLowerCase();
-    return clients.where((c) => c.name.toLowerCase().contains(q)).toList();
+    final list = calcClientSearch.isEmpty
+        ? clients
+        : clients.where((c) => c.name.toLowerCase().contains(calcClientSearch.toLowerCase())).toList();
+    return [...list]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
   int get calcClientPageCount => (filteredCalcClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);
@@ -172,6 +180,8 @@ class RatesShellState extends Equatable {
     RatrixRate? existingRate,
     bool clearExistingRate = false,
     bool? editRateLoading,
+    RatesView? returnView,
+    bool clearReturnView = false,
     String? calcClientSearch,
     int? calcClientPage,
     String? selectedCalcClientId,
@@ -201,6 +211,7 @@ class RatesShellState extends Equatable {
       clientRateSortByExpiry: clientRateSortByExpiry ?? this.clientRateSortByExpiry,
       existingRate: clearExistingRate ? null : (existingRate ?? this.existingRate),
       editRateLoading: editRateLoading ?? this.editRateLoading,
+      returnView: clearReturnView ? null : (returnView ?? this.returnView),
       calcClientSearch: calcClientSearch ?? this.calcClientSearch,
       calcClientPage: calcClientPage ?? this.calcClientPage,
       selectedCalcClientId: clearSelectedCalcClientId ? null : (selectedCalcClientId ?? this.selectedCalcClientId),
@@ -225,6 +236,7 @@ class RatesShellState extends Equatable {
         selectedClientRates,
         existingRate,
         editRateLoading,
+        returnView,
         clientRatesLoading,
         clientRateSearch,
         clientRatesTab,

@@ -29,6 +29,7 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
         rateChoice: RateType.published,
         view: RatesView.create,
         clearExistingRate: true,
+        clearReturnView: true,
       )),
     );
     on<CustomRateChosen>(
@@ -39,7 +40,6 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
     on<ClientPageChanged>((event, emit) => emit(state.copyWith(clientPage: event.page)));
     on<ClientRatesRequested>(_onClientRatesRequested);
     on<ClientsBackRequested>((event, emit) => emit(state.copyWith(view: RatesView.customClients)));
-    on<ClientRatesBackRequested>((event, emit) => emit(state.copyWith(view: RatesView.customClientRates)));
     on<ClientRateSearchChanged>((event, emit) => emit(state.copyWith(clientRateSearch: event.query, clientRatePage: 0)));
     on<ClientRatesTabChanged>((event, emit) => emit(state.copyWith(clientRatesTab: event.tab, clientRatePage: 0)));
     on<ClientRatePageChanged>((event, emit) => emit(state.copyWith(clientRatePage: event.page)));
@@ -61,9 +61,17 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
       (event, emit) => emit(state.copyWith(clientRateSortByExpiry: !state.clientRateSortByExpiry)),
     );
     on<CreateCustomRateForSelectedClientRequested>(
-      (event, emit) => emit(state.copyWith(view: RatesView.create, rateChoice: RateType.custom, clearExistingRate: true)),
+      (event, emit) => emit(state.copyWith(
+        view: RatesView.create,
+        rateChoice: RateType.custom,
+        clearExistingRate: true,
+        clearReturnView: true,
+      )),
     );
     on<EditRateRequested>(_onEditRateRequested);
+    on<WizardExitRequested>(
+      (event, emit) => emit(state.copyWith(view: state.returnView ?? event.fallback, clearReturnView: true)),
+    );
     on<ShippingCalculatorRequested>(
       (event, emit) => emit(state.copyWith(view: RatesView.shippingCalculatorClients)),
     );
@@ -173,6 +181,10 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
   /// this fetch, so failing quietly (rather than navigating into a wizard
   /// with no data) is the safer default.
   Future<void> _onEditRateRequested(EditRateRequested event, Emitter<RatesShellState> emit) async {
+    // Remember where this edit was opened from (e.g. the shipping
+    // calculator's "Edit this rate") so `WizardExitRequested` can return
+    // here instead of always falling back to its default destination.
+    final returnView = state.view;
     emit(state.copyWith(editRateLoading: true));
     try {
       final rate = await _repository.fetchRateById(event.rateId);
@@ -181,6 +193,7 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
         existingRate: rate,
         view: RatesView.create,
         rateChoice: rate.isCustom ? RateType.custom : RateType.published,
+        returnView: returnView,
       ));
     } catch (e, st) {
       appLogger.e('Failed to load rate ${event.rateId} for edit', error: e, stackTrace: st);

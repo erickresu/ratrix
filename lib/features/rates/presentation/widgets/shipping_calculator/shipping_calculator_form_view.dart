@@ -6,6 +6,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../../../core/di/injection_container.dart';
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../data/repositories/rates_repository.dart';
+import '../../../domain/entities/ratrix_rate.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rates_shell_bloc.dart';
 import '../../bloc/shipping_calculator_bloc.dart';
@@ -62,13 +63,17 @@ class _CalculatorView extends StatelessWidget {
           );
 
     return BlocListener<ShippingCalculatorBloc, ShippingCalculatorState>(
-      listenWhen: (prev, curr) => curr.calcResult != null && prev.calcResult != curr.calcResult,
+      // Only when a result newly appears — not on every recompute (e.g. the
+      // charge-basis switch inside the already-open dialog), which must
+      // update the same dialog in place rather than opening a new one.
+      listenWhen: (prev, curr) => prev.calcResult == null && curr.calcResult != null,
       listener: (context, state) {
         final calcBloc = context.read<ShippingCalculatorBloc>();
-        showFreightBreakdownDialog(context, calcBloc: calcBloc, clientName: clientName);
+        final shellBloc = context.read<RatesShellBloc>();
+        showFreightBreakdownDialog(context, calcBloc: calcBloc, shellBloc: shellBloc, clientName: clientName);
       },
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 40, isMobile ? 16 : 48, 48),
+        padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 56),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -114,11 +119,12 @@ class _CalculatorView extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.icon, required this.title, required this.child});
+  const _SectionCard({required this.icon, required this.title, required this.child, this.trailing});
 
   final IconData icon;
   final String title;
   final Widget child;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +143,10 @@ class _SectionCard extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: context.colors.primaryDeep),
               const SizedBox(width: 8),
-              Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textBody)),
+              Expanded(
+                child: Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textBody)),
+              ),
+              ?trailing,
             ],
           ),
           const SizedBox(height: 20),
@@ -452,45 +461,45 @@ class _CargoDetailsCard extends StatelessWidget {
       ],
     );
 
-    final chargeBasisField = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _FieldLabel('Charge Basis'),
-        SizedBox(
-          width: double.infinity,
-          height: _fieldHeight,
-          child: ShadSelect<CalcChargeBasis>(
-            initialValue: state.chargeBasis,
-            selectedOptionBuilder: (context, value) => Text(value.label),
-            onChanged: (value) {
-              if (value != null) bloc.add(CalcChargeBasisChanged(value));
-            },
-            options: [for (final b in CalcChargeBasis.values) ShadOption(value: b, child: Text(b.label))],
-          ),
-        ),
-      ],
-    );
-
-    Widget fieldRow(Widget left, Widget right) {
+    Widget fieldRow3(Widget a, Widget b, Widget c) {
       if (isMobile) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [left, const SizedBox(height: 20), right],
+          children: [a, const SizedBox(height: 20), b, const SizedBox(height: 20), c],
         );
       }
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: left),
+          Expanded(child: a),
           const SizedBox(width: 20),
-          Expanded(child: right),
+          Expanded(child: b),
+          const SizedBox(width: 20),
+          Expanded(child: c),
         ],
       );
     }
 
+    // Live actual-vs-volumetric comparison so the user can see which basis
+    // will bite before they even submit — independent of `chargeBasis`
+    // itself (that's now picked inside the result popup).
+    final length = num.tryParse(state.length.trim()) ?? 0;
+    final width = num.tryParse(state.width.trim()) ?? 0;
+    final height = num.tryParse(state.height.trim()) ?? 0;
+    final divisorValue = num.tryParse(state.divisor.trim());
+    final actualWeight = num.tryParse(state.weight.trim());
+    final volumetricWeight = (divisorValue != null && divisorValue > 0) ? (length * width * height) / divisorValue : null;
+
     return _SectionCard(
       icon: Icons.inventory_2_outlined,
       title: 'Cargo Details',
+      trailing: state.selectedRouteTiers.isEmpty
+          ? null
+          : _RouteTiersInfoButton(
+              origin: state.origin,
+              destination: state.destination,
+              tiers: state.selectedRouteTiers,
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -526,11 +535,94 @@ class _CargoDetailsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          fieldRow(divisorField, weightField),
-          const SizedBox(height: 20),
-          fieldRow(declaredValueField, chargeBasisField),
+          fieldRow3(divisorField, weightField, declaredValueField),
+          if (actualWeight != null && volumetricWeight != null) ...[
+            const SizedBox(height: 12),
+            _HigherWeightIndicator(actualWeight: actualWeight, volumetricWeight: volumetricWeight),
+          ],
+          if (state.requiresMinimumCharge) ...[
+            const SizedBox(height: 20),
+            Text(
+              'This rate charges a flat fee for the first breakweight bracket '
+              '(no per-kg multiplication) and per-kg rates beyond it.',
+              style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// Live actual-vs-volumetric comparison, shown outside the freight-breakdown
+/// popup (right under the fields it depends on) so the user can see which
+/// basis will bite before they even submit.
+class _HigherWeightIndicator extends StatelessWidget {
+  const _HigherWeightIndicator({required this.actualWeight, required this.volumetricWeight});
+
+  final num actualWeight;
+  final num volumetricWeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final volHigher = volumetricWeight > actualWeight;
+    final label = volHigher
+        ? 'Volumetric weight is higher (${volumetricWeight.toStringAsFixed(1)}kg vs ${actualWeight.toStringAsFixed(1)}kg actual)'
+        : 'Actual weight is higher (${actualWeight.toStringAsFixed(1)}kg vs ${volumetricWeight.toStringAsFixed(1)}kg volumetric)';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: context.colors.primarySoftBg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(CupertinoIcons.arrow_up_right, size: 13, color: context.colors.primaryDeep),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.primaryDeep),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Info icon on the Cargo Details header — pops up the selected route's
+/// origin/destination and breakweight brackets so the user can check what's
+/// actually configured before hitting Calculate, not just after it errors.
+class _RouteTiersInfoButton extends StatelessWidget {
+  const _RouteTiersInfoButton({required this.origin, required this.destination, required this.tiers});
+
+  final String origin;
+  final String destination;
+  final List<RatrixBreakweight> tiers;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: () => showShadDialog<void>(
+        context: context,
+        builder: (dialogContext) => ShadDialog(
+          radius: BorderRadius.circular(16),
+          backgroundColor: dialogContext.colors.surface,
+          title: const Text('Route Breakweights'),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: RouteTiersTable(origin: origin, destination: destination, tiers: tiers),
+          ),
+        ),
+      ),
+      icon: Icon(CupertinoIcons.info_circle, size: 18, color: context.colors.textMuted),
+      tooltip: 'View breakweight brackets for this route',
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
     );
   }
 }
@@ -550,13 +642,24 @@ class _SubmitButton extends StatelessWidget {
           Text(submitError, style: TextStyle(fontSize: 13, color: context.colors.destructive)),
           const SizedBox(height: 12),
         ],
-        SizedBox(
-          width: double.infinity,
-          child: ShadButton(
-            gradient: context.colors.primaryButtonGradient,
-            leading: const Icon(Icons.calculate_outlined, size: 17),
-            onPressed: () => bloc.add(const CalcSubmitRequested()),
-            child: const Text('Calculate Freight Breakdown'),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ShadButton.outline(
+                leading: const Icon(CupertinoIcons.refresh, size: 15),
+                onPressed: () => bloc.add(const CalcFormReset()),
+                child: const Text('Reset All'),
+              ),
+              const SizedBox(width: 12),
+              ShadButton(
+                gradient: context.colors.primaryButtonGradient,
+                leading: const Icon(Icons.calculate_outlined, size: 17),
+                onPressed: () => bloc.add(const CalcSubmitRequested()),
+                child: const Text('Calculate Freight Breakdown'),
+              ),
+            ],
           ),
         ),
       ],

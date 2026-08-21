@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_advanced_drawer/flutter_advanced_drawer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/di/injection_container.dart';
-import '../../../../core/utils/breakpoints.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
 import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/rates_enums.dart';
@@ -30,8 +30,21 @@ class RatesShellPage extends StatelessWidget {
   }
 }
 
-class _RatesShellView extends StatelessWidget {
+class _RatesShellView extends StatefulWidget {
   const _RatesShellView();
+
+  @override
+  State<_RatesShellView> createState() => _RatesShellViewState();
+}
+
+class _RatesShellViewState extends State<_RatesShellView> {
+  final _drawerController = AdvancedDrawerController(AdvancedDrawerValue.visible());
+
+  @override
+  void dispose() {
+    _drawerController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +65,6 @@ class _RatesShellView extends StatelessWidget {
       });
     }
 
-    final isMobile = Breakpoints.isMobile(context);
     final content = switch (state.view) {
       RatesView.dashboard => const DashboardView(),
       RatesView.customClients => const CustomClientsView(),
@@ -67,26 +79,49 @@ class _RatesShellView extends StatelessWidget {
         ),
     };
 
-    if (isMobile) {
-      return Scaffold(
+    // Same collapsible `AdvancedDrawer` at every width now (previously
+    // desktop skipped it entirely for an always-visible inline `Row`
+    // sidebar). `openRatio` is derived from the viewport so the revealed
+    // drawer is always ~272px regardless of how wide the window is — a flat
+    // ratio works for phones but would blow out to 600px+ on desktop.
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final openRatio = (272 / screenWidth).clamp(0.05, 0.95);
+
+    return AdvancedDrawer(
+      controller: _drawerController,
+      backdropColor: RatesColors.dark.sidebarBg,
+      openRatio: openRatio,
+      animationDuration: const Duration(milliseconds: 250),
+      // No `onNavigated` — the drawer stays open across page navigation now,
+      // only closing when the user taps the toggle button themselves.
+      drawer: const SafeArea(child: RatesSidebar()),
+      child: Scaffold(
         backgroundColor: context.colors.pageBg,
-        drawer: const Drawer(width: 272, child: RatesSidebar()),
         appBar: AppBar(
           backgroundColor: RatesColors.dark.sidebarBg,
           foregroundColor: Colors.white,
-          title: const Text('CERRO RATRIX', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+          // FlexColorScheme's generated `appBarTheme.iconTheme` outranks a
+          // local `foregroundColor` (widget.iconTheme ?? appBarTheme.iconTheme
+          // is resolved before foregroundColor is even considered) — in
+          // light mode that computes a dark icon, invisible against this
+          // bar's always-dark background. Set iconTheme directly here so it
+          // wins over both.
+          iconTheme: const IconThemeData(color: Colors.white),
+          leading: IconButton(
+            onPressed: _drawerController.toggleDrawer,
+            icon: ValueListenableBuilder<AdvancedDrawerValue>(
+              valueListenable: _drawerController,
+              builder: (_, value, _) => AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  value.visible ? Icons.clear : Icons.menu,
+                  key: ValueKey(value.visible),
+                ),
+              ),
+            ),
+          ),
         ),
         body: content,
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: context.colors.pageBg,
-      body: Row(
-        children: [
-          const RatesSidebar(),
-          Expanded(child: content),
-        ],
       ),
     );
   }

@@ -9,7 +9,12 @@ import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 
 class RatesSidebar extends StatelessWidget {
-  const RatesSidebar({super.key});
+  const RatesSidebar({super.key, this.onNavigated});
+
+  /// Called after a nav tap dispatches its event — closes the
+  /// `AdvancedDrawer` on the compact layout. Left null on desktop, where the
+  /// sidebar is inline and there's nothing to close.
+  final VoidCallback? onNavigated;
 
   @override
   Widget build(BuildContext context) {
@@ -24,17 +29,12 @@ class RatesSidebar extends StatelessWidget {
     final isCalculatorActive =
         state.view == RatesView.shippingCalculatorClients || state.view == RatesView.shippingCalculatorForm;
 
-    // On mobile the sidebar renders inside a Scaffold `Drawer`; closing it
-    // after a navigation tap matches standard drawer UX. `maybePop` is a
-    // no-op when there's no drawer route to pop (desktop's inline sidebar),
-    // so this is safe to call unconditionally.
     void navigate(void Function() dispatch) {
       dispatch();
-      Navigator.maybePop(context);
+      onNavigated?.call();
     }
 
     return Container(
-      width: 272,
       color: RatesColors.dark.sidebarBg,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       child: Column(

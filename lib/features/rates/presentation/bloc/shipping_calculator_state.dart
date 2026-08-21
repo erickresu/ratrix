@@ -3,9 +3,10 @@ part of 'shipping_calculator_bloc.dart';
 /// Distinct origin/destination pair pulled from a rate's routes.
 typedef RouteChoice = ({String origin, String destination});
 
-/// Result of a Fixed Breakweight Pricing calculation — the only pricing
-/// option this calculator can compute without a live backend endpoint (the
-/// other 6 bracket-pricing formulas aren't modeled; see [CalcResult.error]).
+/// Result of a breakweight pricing calculation — covers all 7 bracket-pricing
+/// options (Fixed/Flat/Cumulative/Excess, each with a "Minimum …" floor
+/// variant). [tierRate] is null for Cumulative variants, which span multiple
+/// tiers rather than pricing off a single one.
 class CalcResult extends Equatable {
   const CalcResult({
     this.actualWeight,
@@ -20,6 +21,7 @@ class CalcResult extends Equatable {
     this.flatFees = const {},
     this.subTotal,
     this.error,
+    this.routeTiers = const [],
   });
 
   final num? actualWeight;
@@ -32,6 +34,11 @@ class CalcResult extends Equatable {
   final num? baseFreight;
   final num? fuelSurcharge;
   final Map<String, num> flatFees;
+
+  /// The resolved route's breakweight brackets — populated whenever a route
+  /// was found for the origin/destination, even on error (e.g. "no tier
+  /// covers X kg"), so the error UI can show what brackets actually exist.
+  final List<RatrixBreakweight> routeTiers;
 
   /// Base freight + fuel surcharge + flat fees, before VAT. VAT and rounding
   /// are applied on top of this at render time from the current toggle
@@ -57,6 +64,7 @@ class CalcResult extends Equatable {
         flatFees,
         subTotal,
         error,
+        routeTiers,
       ];
 }
 
@@ -152,11 +160,38 @@ class ShippingCalculatorState extends Equatable {
     return choices;
   }
 
+  /// Breakweight brackets for the currently selected origin/destination
+  /// route, sorted ascending by `min` — `[]` if no route is selected yet or
+  /// none matches. Shared by the calc-error mini table and the Cargo
+  /// Details "preview brackets" popup, so both read the same route.
+  List<RatrixBreakweight> get selectedRouteTiers {
+    for (final route in selectedRate?.routes ?? const <RatrixRoute>[]) {
+      if (route.origin?.displayLabel == origin && route.destination?.displayLabel == destination) {
+        return [...route.breakweights]..sort((a, b) => a.min.compareTo(b.min));
+      }
+    }
+    return const [];
+  }
+
   List<String> get availableOrigins => {for (final c in routeChoices) c.origin}.toList();
 
   List<String> get availableDestinations {
     if (origin.isEmpty) return {for (final c in routeChoices) c.destination}.toList();
     return {for (final c in routeChoices) if (c.origin == origin) c.destination}.toList();
+  }
+
+  /// True when the selected rate's pricing option is one of the 3 "Minimum
+  /// …" breakweight variants — the first bracket's rate is a flat fee
+  /// instead of per-kg for these (see `ShippingCalculatorBloc._freightFor`).
+  bool get requiresMinimumCharge {
+    final chargeOptionId = selectedRate?.chargeOption?.id;
+    if (chargeOptionId == null) return false;
+    final pricingOption = RatesFkIds.pricingOptionFromId[chargeOptionId];
+    return const {
+      PricingOption.minimumFixedBreakweight,
+      PricingOption.minimumCummulativeBreakweight,
+      PricingOption.minimumExcessBreakweight,
+    }.contains(pricingOption);
   }
 
   static const vatRate = 0.12;

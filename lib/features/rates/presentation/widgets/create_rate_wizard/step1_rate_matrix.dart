@@ -236,6 +236,14 @@ class Step1RateMatrix extends StatelessWidget {
             ),
           ],
         ),
+        if (state.requiresMinimumCharge) ...[
+          const SizedBox(height: 12),
+          Text(
+            'For ${state.pricingOption.label}, enter the first breakweight bracket\'s rate above as a '
+            'flat peso amount, not per-kg — it\'s charged as-is whenever the shipment falls within that bracket.',
+            style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+          ),
+        ],
       ],
     );
   }

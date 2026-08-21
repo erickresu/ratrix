@@ -7,6 +7,7 @@ import '../../../../../core/di/injection_container.dart';
 import '../../../../../core/services/ph_locations_service.dart';
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../data/repositories/rates_repository.dart';
+import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../bloc/rates_shell_bloc.dart';
 import '../../rates_colors.dart';
@@ -77,7 +78,7 @@ class _WizardView extends StatelessWidget {
                   ..showSnackBar(const SnackBar(content: Text('Changes saved.')));
               } else {
                 final shellBloc = context.read<RatesShellBloc>();
-                shellBloc.add(const RatesHomeRequested());
+                shellBloc.add(const WizardExitRequested(fallback: RatesView.dashboard));
                 shellBloc.add(const RatesDataRequested());
               }
             }
@@ -92,7 +93,7 @@ class _WizardView extends StatelessWidget {
               child: Builder(builder: (context) {
                 final isMobile = Breakpoints.isMobile(context);
                 return SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 40, isMobile ? 16 : 48, 32),
+                  padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 40),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -137,7 +138,7 @@ class _WizardHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (wizardState.isCustom) ...[
-          BackPill(onTap: () => shellBloc.add(const ClientRatesBackRequested())),
+          BackPill(onTap: () => shellBloc.add(const WizardExitRequested(fallback: RatesView.customClientRates))),
           const SizedBox(height: 12),
         ],
         Row(
@@ -246,7 +247,7 @@ class _WizardFooter extends StatelessWidget {
         : [nextButton];
 
     return Container(
-      padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 20, isMobile ? 16 : 48, 20),
+      padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 24, isMobile ? 20 : 64, 24),
       decoration: BoxDecoration(
         color: context.colors.surface,
         border: Border(top: BorderSide(color: context.colors.border)),

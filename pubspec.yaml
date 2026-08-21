@@ -24,6 +24,7 @@ dependencies:
   # ui
   google_fonts: ^6.2.1
   shimmer: ^3.0.0
+  flutter_advanced_drawer: ^1.4.0
 
   # utils
   logger: ^2.6.1

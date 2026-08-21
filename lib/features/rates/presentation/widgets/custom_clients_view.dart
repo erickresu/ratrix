@@ -82,7 +82,7 @@ class CustomClientsView extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(isMobile ? 16 : 48, 40, isMobile ? 16 : 48, 32),
+          padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 40),
           child: isMobile
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

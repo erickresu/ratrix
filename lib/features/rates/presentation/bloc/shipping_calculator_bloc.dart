@@ -34,14 +34,19 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
     on<CalcDeclaredValueChanged>(
       (event, emit) => emit(state.copyWith(declaredValue: event.value, clearCalcResult: true)),
     );
-    on<CalcChargeBasisChanged>(
-      (event, emit) => emit(state.copyWith(chargeBasis: event.basis, clearCalcResult: true)),
-    );
+    on<CalcChargeBasisChanged>((event, emit) {
+      // Recompute in place rather than clearing the result — the breakdown
+      // popup keeps this switch live, so toggling it shouldn't dismiss the
+      // dialog the user is looking at.
+      emit(state.copyWith(chargeBasis: event.basis));
+      if (state.calcResult != null) emit(state.copyWith(calcResult: _calculate()));
+    });
     on<CalcSubmitRequested>(_onSubmitRequested);
     on<CalcRoundedDisplayToggled>((event, emit) => emit(state.copyWith(roundedDisplay: event.rounded)));
     on<CalcVatModeChanged>((event, emit) => emit(state.copyWith(vatMode: event.mode)));
     on<CalcVatInclusiveToggled>((event, emit) => emit(state.copyWith(vatInclusive: event.inclusive)));
     on<CalcResultDismissed>((event, emit) => emit(state.copyWith(clearCalcResult: true)));
+    on<CalcFormReset>((event, emit) => emit(ShippingCalculatorState(clientRates: state.clientRates)));
 
     add(const CalcRatesRequested());
   }
@@ -89,19 +94,17 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
     emit(state.copyWith(clearSubmitError: true, calcResult: _calculate()));
   }
 
-  /// Fixed Breakweight Pricing: chargeable weight × the breakweight tier
-  /// whose [min, max] range contains it, plus a flat sum of the rate's
-  /// addons (fuel surcharge applied as % of base freight if the rate's
-  /// `fuel_surcharge_type` is percentage, otherwise as a flat add). Other
-  /// pricing options aren't modeled — see `CalcResult.error`.
+  /// Computes freight for whichever of the 7 breakweight pricing options the
+  /// selected rate uses, then adds the rate's addons on top. Chargeable
+  /// weight and tier lookup are shared; only the tier(s)-to-freight formula
+  /// differs per option — see `_freightFor`.
   CalcResult _calculate() {
     final rate = state.selectedRate;
     if (rate == null) return const CalcResult(error: 'Rate details not loaded — try reselecting the rate table.');
 
     final pricingOption = rate.chargeOption?.id != null ? RatesFkIds.pricingOptionFromId[rate.chargeOption!.id] : null;
-    if (pricingOption != PricingOption.fixedBreakweight) {
-      final label = pricingOption?.label ?? 'this rate\'s pricing option';
-      return CalcResult(error: '$label isn\'t supported by the calculator yet — only Fixed Breakweight Pricing is.');
+    if (pricingOption == null) {
+      return const CalcResult(error: 'This rate has no recognized pricing option configured.');
     }
 
     RatrixRoute? route;
@@ -131,24 +134,21 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
       CalcChargeBasis.higher => actualWeight > volumetricWeight ? actualWeight : volumetricWeight,
     };
 
-    RatrixBreakweight? tier;
-    for (final bw in route.breakweights) {
-      if (chargeableWeight >= bw.min && chargeableWeight <= bw.max) {
-        tier = bw;
-        break;
-      }
-    }
-    if (tier == null) {
+    final tiers = [...route.breakweights]..sort((a, b) => a.min.compareTo(b.min));
+
+    final freight = _freightFor(pricingOption, tiers, route, chargeableWeight);
+    if (freight.error != null) {
       return CalcResult(
         actualWeight: actualWeight,
         volumetricWeight: volumetricWeight,
         cbm: cbm,
         chargeableWeight: chargeableWeight,
-        error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
+        error: freight.error,
+        routeTiers: tiers,
       );
     }
 
-    final baseFreight = chargeableWeight * tier.rate;
+    final baseFreight = freight.amount!;
 
     final addons = rate.addons;
     num fuelSurcharge = 0;
@@ -185,13 +185,117 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
       volumetricWeight: volumetricWeight,
       cbm: cbm,
       chargeableWeight: chargeableWeight,
-      matchedTierMin: tier.min,
-      matchedTierMax: tier.max,
-      tierRate: tier.rate,
+      matchedTierMin: freight.tierMin,
+      matchedTierMax: freight.tierMax,
+      tierRate: freight.tierRate,
       baseFreight: baseFreight,
       fuelSurcharge: fuelSurcharge,
       flatFees: flatFees,
       subTotal: subTotal,
     );
   }
+
+  /// Resolves one of the 7 breakweight pricing formulas against
+  /// [chargeableWeight]. [tiers] must be sorted ascending by `min`. The 3
+  /// For the 3 "Minimum …" variants, the first (lowest) breakweight
+  /// bracket's `rate` is authored as a flat peso amount rather than a
+  /// per-kg rate — it's a direct formula swap for that one bracket, not a
+  /// floor/max comparison against the whole calculation. Every other
+  /// bracket keeps its normal per-kg meaning.
+  _FreightResult _freightFor(
+    PricingOption pricingOption,
+    List<RatrixBreakweight> tiers,
+    RatrixRoute route,
+    num chargeableWeight,
+  ) {
+    RatrixBreakweight? matchTier() {
+      for (final bw in tiers) {
+        if (chargeableWeight >= bw.min && chargeableWeight <= bw.max) return bw;
+      }
+      return null;
+    }
+
+    switch (pricingOption) {
+      case PricingOption.fixedBreakweight:
+        final tier = matchTier();
+        if (tier == null) {
+          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+        }
+        return _FreightResult(amount: chargeableWeight * tier.rate, tierMin: tier.min, tierMax: tier.max, tierRate: tier.rate);
+
+      case PricingOption.minimumFixedBreakweight:
+        final tier = matchTier();
+        if (tier == null) {
+          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+        }
+        // Within the first bracket: flat fee, no matter how light. Beyond
+        // it: normal per-kg fixed pricing, same as the non-minimum variant.
+        final amount = identical(tier, tiers.first) ? tier.rate : chargeableWeight * tier.rate;
+        return _FreightResult(amount: amount, tierMin: tier.min, tierMax: tier.max, tierRate: tier.rate);
+
+      case PricingOption.flatBreakweight:
+        final tier = matchTier();
+        if (tier == null) {
+          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+        }
+        return _FreightResult(amount: tier.rate, tierMin: tier.min, tierMax: tier.max, tierRate: tier.rate);
+
+      case PricingOption.cummulativeBreakweight:
+        if (tiers.isEmpty || chargeableWeight > tiers.last.max) {
+          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+        }
+        num total = 0;
+        for (final tier in tiers) {
+          if (chargeableWeight <= tier.min) break;
+          final portion = (chargeableWeight < tier.max ? chargeableWeight : tier.max) - tier.min;
+          total += portion * tier.rate;
+        }
+        return _FreightResult(amount: total, tierMin: tiers.first.min, tierMax: chargeableWeight, tierRate: null);
+
+      case PricingOption.minimumCummulativeBreakweight:
+        if (tiers.isEmpty || chargeableWeight > tiers.last.max) {
+          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+        }
+        num total = 0;
+        for (var i = 0; i < tiers.length; i++) {
+          final tier = tiers[i];
+          if (chargeableWeight <= tier.min) break;
+          if (i == 0) {
+            total += tier.rate; // flat entrance fee for the first bracket
+          } else {
+            final portion = (chargeableWeight < tier.max ? chargeableWeight : tier.max) - tier.min;
+            total += portion * tier.rate;
+          }
+        }
+        return _FreightResult(amount: total, tierMin: tiers.first.min, tierMax: chargeableWeight, tierRate: null);
+
+      // Excess and Minimum Excess compute identically — the base bracket's
+      // rate is already a flat amount in both, so there's nothing for
+      // "minimum" to change.
+      case PricingOption.excessBreakweight:
+      case PricingOption.minimumExcessBreakweight:
+        final base = tiers.first;
+        final excessRate = route.excessRate;
+        num amount = base.rate;
+        if (chargeableWeight > base.max) {
+          if (excessRate == null) {
+            return const _FreightResult(error: 'Route has no excess rate configured for this pricing option.');
+          }
+          amount += (chargeableWeight - base.max) * excessRate;
+        }
+        return _FreightResult(amount: amount, tierMin: base.min, tierMax: base.max, tierRate: excessRate);
+    }
+  }
+}
+
+/// Internal result of one breakweight pricing formula — either an [amount]
+/// (plus the tier bounds/rate to surface in [CalcResult]) or an [error].
+class _FreightResult {
+  const _FreightResult({this.amount, this.tierMin, this.tierMax, this.tierRate, this.error});
+
+  final num? amount;
+  final num? tierMin;
+  final num? tierMax;
+  final num? tierRate;
+  final String? error;
 }

@@ -82,6 +82,15 @@ class RateWizardState extends Equatable {
 
   bool get isValid => !isCustom || expiryDate != null;
 
+  /// True when [pricingOption] is one of the 3 "Minimum …" breakweight
+  /// variants — just informational here, a reminder that the first
+  /// breakweight bracket's rate should be entered as a flat fee for these.
+  bool get requiresMinimumCharge => const {
+        PricingOption.minimumFixedBreakweight,
+        PricingOption.minimumCummulativeBreakweight,
+        PricingOption.minimumExcessBreakweight,
+      }.contains(pricingOption);
+
   List<String> get locationSuggestions => switch (locationBasis) {
         LocationBasis.city => phCities,
         LocationBasis.province => phProvinces,

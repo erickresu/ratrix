@@ -74,8 +74,18 @@ class ClientsBackRequested extends RatesShellEvent {
   const ClientsBackRequested();
 }
 
-class ClientRatesBackRequested extends RatesShellEvent {
-  const ClientRatesBackRequested();
+/// Exits the wizard — Back button or a successful save. Goes to
+/// `RatesShellState.returnView` if the wizard was opened via `EditRateRequested`
+/// from a specific screen (e.g. the shipping calculator's "Edit this rate"),
+/// otherwise falls back to [fallback] (the wizard's normal default: the
+/// custom-client-rates list for Back, dashboard for a plain create's save).
+class WizardExitRequested extends RatesShellEvent {
+  const WizardExitRequested({required this.fallback});
+
+  final RatesView fallback;
+
+  @override
+  List<Object?> get props => [fallback];
 }
 
 class ClientRateSearchChanged extends RatesShellEvent {

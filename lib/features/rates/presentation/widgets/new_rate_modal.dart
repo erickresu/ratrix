@@ -38,7 +38,7 @@ class NewRateModal extends StatelessWidget {
     return ShadDialog(
       radius: BorderRadius.circular(16),
       backgroundColor: context.colors.surface,
-      padding: EdgeInsets.all(isMobile ? 20 : 32),
+      padding: EdgeInsets.all(isMobile ? 24 : 40),
       title: Text('New rate', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: context.colors.textBody)),
       description: Padding(
         padding: const EdgeInsets.only(top: 4),

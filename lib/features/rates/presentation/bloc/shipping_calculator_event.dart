@@ -171,3 +171,7 @@ class CalcVatInclusiveToggled extends ShippingCalculatorEvent {
 class CalcResultDismissed extends ShippingCalculatorEvent {
   const CalcResultDismissed();
 }
+
+class CalcFormReset extends ShippingCalculatorEvent {
+  const CalcFormReset();
+}
