@@ -1,53 +1,39 @@
-class ClientCompliance {
-  const ClientCompliance({this.vatStatus, this.tinNo});
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String? vatStatus;
-  final String? tinNo;
+part 'client.freezed.dart';
 
-  factory ClientCompliance.fromJson(Map<String, dynamic> json) => ClientCompliance(
+@freezed
+abstract class ClientCompliance with _$ClientCompliance {
+  const factory ClientCompliance({String? vatStatus, String? tinNo}) = _ClientCompliance;
+
+  static ClientCompliance fromJson(Map<String, dynamic> json) => ClientCompliance(
         vatStatus: json['vat_status']?.toString(),
         tinNo: json['tin_no']?.toString(),
       );
 }
 
-class Client {
-  const Client({
-    required this.id,
-    required this.accountNo,
-    required this.name,
-    this.tradeName,
-    this.email,
-    this.phoneNumber,
-    this.businessType,
-    this.organizationType,
-    this.officeAddress,
-    this.billingAddress,
-    this.paymentTerms = 0,
-    this.thresholdLimit = 0,
-    this.creditLimit = 0,
-    this.compliance,
-    this.createdAt,
-    this.updatedAt,
-  });
+@freezed
+abstract class Client with _$Client {
+  const factory Client({
+    required int id,
+    required String accountNo,
+    required String name,
+    String? tradeName,
+    String? email,
+    String? phoneNumber,
+    String? businessType,
+    String? organizationType,
+    String? officeAddress,
+    String? billingAddress,
+    @Default(0) num paymentTerms,
+    @Default(0) num thresholdLimit,
+    @Default(0) num creditLimit,
+    ClientCompliance? compliance,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) = _Client;
 
-  final int id;
-  final String accountNo;
-  final String name;
-  final String? tradeName;
-  final String? email;
-  final String? phoneNumber;
-  final String? businessType;
-  final String? organizationType;
-  final String? officeAddress;
-  final String? billingAddress;
-  final num paymentTerms;
-  final num thresholdLimit;
-  final num creditLimit;
-  final ClientCompliance? compliance;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-
-  factory Client.fromJson(Map<String, dynamic> json) => Client(
+  static Client fromJson(Map<String, dynamic> json) => Client(
         id: json['id'] as int,
         accountNo: (json['account_no'] ?? '').toString(),
         name: (json['name'] ?? '').toString(),

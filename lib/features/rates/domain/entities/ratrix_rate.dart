@@ -1,7 +1,12 @@
 // Domain entities mirroring the real `api/rates` JSON shape from the
 // CerroV5 backend (see `ratrix_rates`/`ratrix_routes`/`ratrix_addons`
-// tables). Plain classes with `fromJson`/`toJson`, matching the style of
-// `lib/features/clients/domain/entities/client.dart`.
+// tables). Freezed classes with hand-written `fromJson`/`toJson` (no
+// json_serializable codegen — these need the same defensive Laravel
+// decimal-string parsing `client.dart` doesn't).
+
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'ratrix_rate.freezed.dart';
 
 /// Laravel decimal-cast columns (all the `ratrix_addons` money fields,
 /// breakweight rates, etc) serialize as JSON strings (e.g. `"10.00"`), not
@@ -17,44 +22,34 @@ num? _asNum(dynamic value) {
 
 int? _asInt(dynamic value) => _asNum(value)?.toInt();
 
-class RatrixLookupOption {
-  const RatrixLookupOption({required this.id, required this.name, this.code});
+@freezed
+abstract class RatrixLookupOption with _$RatrixLookupOption {
+  const factory RatrixLookupOption({required int id, required String name, String? code}) = _RatrixLookupOption;
 
-  final int id;
-  final String name;
-  final String? code;
-
-  factory RatrixLookupOption.fromJson(Map<String, dynamic> json) => RatrixLookupOption(
+  static RatrixLookupOption fromJson(Map<String, dynamic> json) => RatrixLookupOption(
         id: _asInt(json['id'])!,
         name: (json['name'] ?? '').toString(),
         code: json['code']?.toString(),
       );
 }
 
-class RatrixAddress {
-  const RatrixAddress({
-    this.id,
-    this.cityId,
-    this.provinceId,
-    this.regionId,
-    this.islandId,
-    this.barangayId,
-    this.zipcode,
-    this.label,
-    this.address1,
-  });
+@freezed
+abstract class RatrixAddress with _$RatrixAddress {
+  const factory RatrixAddress({
+    int? id,
+    int? cityId,
+    int? provinceId,
+    int? regionId,
+    int? islandId,
+    int? barangayId,
+    String? zipcode,
+    String? label,
+    String? address1,
+  }) = _RatrixAddress;
 
-  final int? id;
-  final int? cityId;
-  final int? provinceId;
-  final int? regionId;
-  final int? islandId;
-  final int? barangayId;
-  final String? zipcode;
-  final String? label;
-  final String? address1;
+  const RatrixAddress._();
 
-  factory RatrixAddress.fromJson(Map<String, dynamic> json) => RatrixAddress(
+  static RatrixAddress fromJson(Map<String, dynamic> json) => RatrixAddress(
         id: _asInt(json['id']),
         cityId: _asInt(json['city_id']),
         provinceId: _asInt(json['province_id']),
@@ -81,14 +76,13 @@ class RatrixAddress {
   String get displayLabel => label ?? address1 ?? zipcode ?? '—';
 }
 
-class RatrixBreakweight {
-  const RatrixBreakweight({required this.min, required this.max, required this.rate});
+@freezed
+abstract class RatrixBreakweight with _$RatrixBreakweight {
+  const factory RatrixBreakweight({required num min, required num max, required num rate}) = _RatrixBreakweight;
 
-  final num min;
-  final num max;
-  final num rate;
+  const RatrixBreakweight._();
 
-  factory RatrixBreakweight.fromJson(Map<String, dynamic> json) => RatrixBreakweight(
+  static RatrixBreakweight fromJson(Map<String, dynamic> json) => RatrixBreakweight(
         min: (_asNum(json['breakweight_min'])) ?? 0,
         max: (_asNum(json['breakweight_max'])) ?? 0,
         rate: (_asNum(json['rate'])) ?? 0,
@@ -101,38 +95,27 @@ class RatrixBreakweight {
       };
 }
 
-class RatrixRoute {
-  const RatrixRoute({
-    this.id,
-    this.vehicleTypeId,
-    this.containerSizeId,
-    this.frequencyBasisId,
-    this.minDistance,
-    this.maxDistance,
-    this.numberOfTrips,
-    this.excessRate,
-    this.timeInHours,
-    this.rate,
-    this.breakweights = const [],
-    this.origin,
-    this.destination,
-  });
+@freezed
+abstract class RatrixRoute with _$RatrixRoute {
+  const factory RatrixRoute({
+    String? id,
+    int? vehicleTypeId,
+    int? containerSizeId,
+    int? frequencyBasisId,
+    num? minDistance,
+    num? maxDistance,
+    int? numberOfTrips,
+    num? excessRate,
+    num? timeInHours,
+    num? rate,
+    @Default(<RatrixBreakweight>[]) List<RatrixBreakweight> breakweights,
+    RatrixAddress? origin,
+    RatrixAddress? destination,
+  }) = _RatrixRoute;
 
-  final String? id;
-  final int? vehicleTypeId;
-  final int? containerSizeId;
-  final int? frequencyBasisId;
-  final num? minDistance;
-  final num? maxDistance;
-  final int? numberOfTrips;
-  final num? excessRate;
-  final num? timeInHours;
-  final num? rate;
-  final List<RatrixBreakweight> breakweights;
-  final RatrixAddress? origin;
-  final RatrixAddress? destination;
+  const RatrixRoute._();
 
-  factory RatrixRoute.fromJson(Map<String, dynamic> json) => RatrixRoute(
+  static RatrixRoute fromJson(Map<String, dynamic> json) => RatrixRoute(
         id: json['id']?.toString(),
         vehicleTypeId: _asInt(json['vehicle_type_id']),
         containerSizeId: _asInt(json['container_size_id']),
@@ -170,62 +153,39 @@ class RatrixRoute {
   String get routeLabel => '${origin?.displayLabel ?? '—'} → ${destination?.displayLabel ?? '—'}';
 }
 
-class RatrixAddons {
-  const RatrixAddons({
-    this.baseFreightRate,
-    this.fuelSurcharge,
-    this.fuelSurchargeType,
-    this.securitySurcharge,
-    this.oda,
-    this.waybillFee,
-    this.bookingHandlingFee,
-    this.documentationFee,
-    this.participationFee,
-    this.permitFeesNonVat,
-    this.insurance,
-    this.valuation,
-    this.valuationType,
-    this.pickupFee,
-    this.deliveryFee,
-    this.cratingFee,
-    this.packingFee,
-    this.airThc,
-    this.seaThc,
-    this.arrastre,
-    this.demurrageDetention,
-    this.waitingTime,
-    this.roadToll,
-    this.othersNonVat,
-    this.hazardousGoodsHandling,
-  });
+@freezed
+abstract class RatrixAddons with _$RatrixAddons {
+  const factory RatrixAddons({
+    num? baseFreightRate,
+    num? fuelSurcharge,
+    String? fuelSurchargeType,
+    num? securitySurcharge,
+    num? oda,
+    num? waybillFee,
+    num? bookingHandlingFee,
+    num? documentationFee,
+    num? participationFee,
+    num? permitFeesNonVat,
+    num? insurance,
+    num? valuation,
+    String? valuationType,
+    num? pickupFee,
+    num? deliveryFee,
+    num? cratingFee,
+    num? packingFee,
+    num? airThc,
+    num? seaThc,
+    num? arrastre,
+    num? demurrageDetention,
+    num? waitingTime,
+    num? roadToll,
+    num? othersNonVat,
+    num? hazardousGoodsHandling,
+  }) = _RatrixAddons;
 
-  final num? baseFreightRate;
-  final num? fuelSurcharge;
-  final String? fuelSurchargeType;
-  final num? securitySurcharge;
-  final num? oda;
-  final num? waybillFee;
-  final num? bookingHandlingFee;
-  final num? documentationFee;
-  final num? participationFee;
-  final num? permitFeesNonVat;
-  final num? insurance;
-  final num? valuation;
-  final String? valuationType;
-  final num? pickupFee;
-  final num? deliveryFee;
-  final num? cratingFee;
-  final num? packingFee;
-  final num? airThc;
-  final num? seaThc;
-  final num? arrastre;
-  final num? demurrageDetention;
-  final num? waitingTime;
-  final num? roadToll;
-  final num? othersNonVat;
-  final num? hazardousGoodsHandling;
+  const RatrixAddons._();
 
-  factory RatrixAddons.fromJson(Map<String, dynamic> json) => RatrixAddons(
+  static RatrixAddons fromJson(Map<String, dynamic> json) => RatrixAddons(
         baseFreightRate: _asNum(json['base_freight_rate']),
         fuelSurcharge: _asNum(json['fuel_surcharge']),
         fuelSurchargeType: json['fuel_surcharge_type']?.toString(),
@@ -284,38 +244,27 @@ class RatrixAddons {
       };
 }
 
-class RatrixRate {
-  const RatrixRate({
-    required this.id,
-    this.chargeCode,
-    required this.rateType,
-    this.rateExpiry,
-    this.clientId,
-    this.freightMode,
-    this.serviceMode,
-    this.chargeOption,
-    this.chargeBasis,
-    this.routes = const [],
-    this.addons,
-    this.createdAt,
-    this.updatedAt,
-  });
+@freezed
+abstract class RatrixRate with _$RatrixRate {
+  const factory RatrixRate({
+    required String id,
+    String? chargeCode,
+    required String rateType, // 'publish' | 'custom'
+    DateTime? rateExpiry,
+    int? clientId,
+    RatrixLookupOption? freightMode,
+    RatrixLookupOption? serviceMode,
+    RatrixLookupOption? chargeOption,
+    RatrixLookupOption? chargeBasis,
+    @Default(<RatrixRoute>[]) List<RatrixRoute> routes,
+    RatrixAddons? addons,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) = _RatrixRate;
 
-  final String id;
-  final String? chargeCode;
-  final String rateType; // 'publish' | 'custom'
-  final DateTime? rateExpiry;
-  final int? clientId;
-  final RatrixLookupOption? freightMode;
-  final RatrixLookupOption? serviceMode;
-  final RatrixLookupOption? chargeOption;
-  final RatrixLookupOption? chargeBasis;
-  final List<RatrixRoute> routes;
-  final RatrixAddons? addons;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  const RatrixRate._();
 
-  factory RatrixRate.fromJson(Map<String, dynamic> json) => RatrixRate(
+  static RatrixRate fromJson(Map<String, dynamic> json) => RatrixRate(
         id: json['id'].toString(),
         chargeCode: json['charge_code']?.toString(),
         rateType: (json['rate_type'] ?? 'publish').toString(),

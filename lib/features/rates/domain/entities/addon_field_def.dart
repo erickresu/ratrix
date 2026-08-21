@@ -1,20 +1,19 @@
-class AddonFieldDef {
-  const AddonFieldDef({
-    required this.key,
-    required this.label,
-    this.hasToggle = false,
-  });
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String key;
-  final String label;
-  final bool hasToggle;
+part 'addon_field_def.freezed.dart';
+
+@freezed
+abstract class AddonFieldDef with _$AddonFieldDef {
+  const factory AddonFieldDef({
+    required String key,
+    required String label,
+    @Default(false) bool hasToggle,
+  }) = _AddonFieldDef;
 }
 
-class AddonGroupDef {
-  const AddonGroupDef({required this.title, required this.fields});
-
-  final String title;
-  final List<AddonFieldDef> fields;
+@freezed
+abstract class AddonGroupDef with _$AddonGroupDef {
+  const factory AddonGroupDef({required String title, required List<AddonFieldDef> fields}) = _AddonGroupDef;
 }
 
 const addonGroupDefs = <AddonGroupDef>[
