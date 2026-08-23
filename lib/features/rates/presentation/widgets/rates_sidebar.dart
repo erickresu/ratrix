@@ -8,6 +8,7 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
+import 'sidebar_tour_keys.dart';
 
 class RatesSidebar extends StatelessWidget {
   const RatesSidebar({super.key, this.onNavigated});
@@ -50,6 +51,7 @@ class RatesSidebar extends StatelessWidget {
           _Logo(),
           const SizedBox(height: 24),
           _NavItem(
+            key: SidebarTourKeys.homeNav,
             icon: CupertinoIcons.house,
             label: 'Home',
             active: isDashboard,
@@ -72,6 +74,7 @@ class RatesSidebar extends StatelessWidget {
                 child: Column(
                   children: [
                     _SubNavItem(
+                      key: SidebarTourKeys.publishedRatesNav,
                       icon: CupertinoIcons.arrow_up,
                       label: 'Publish Rates',
                       active: isPublishActive,
@@ -80,6 +83,7 @@ class RatesSidebar extends StatelessWidget {
                       ),
                     ),
                     _SubNavItem(
+                      key: SidebarTourKeys.customRatesNav,
                       icon: CupertinoIcons.list_bullet,
                       label: 'Custom Rates',
                       active: isCustomActive,
@@ -94,6 +98,7 @@ class RatesSidebar extends StatelessWidget {
           ],
           const SizedBox(height: 4),
           _NavItem(
+            key: SidebarTourKeys.shippingCalculatorNav,
             icon: Icons.local_shipping_rounded,
             label: 'Shipping Calculator',
             active: isCalculatorActive,
@@ -102,6 +107,7 @@ class RatesSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           _NavItem(
+            key: SidebarTourKeys.auditTrailNav,
             icon: CupertinoIcons.clock,
             label: 'Audit Trail',
             active: isAuditTrailActive,
@@ -199,6 +205,7 @@ class _Logo extends StatelessWidget {
 
 class _NavItem extends StatelessWidget {
   const _NavItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.active,
@@ -301,6 +308,7 @@ class _NavParent extends StatelessWidget {
 
 class _SubNavItem extends StatelessWidget {
   const _SubNavItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.active,

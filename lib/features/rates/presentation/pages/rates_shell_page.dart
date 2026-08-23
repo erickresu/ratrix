@@ -3,6 +3,7 @@ import 'package:flutter_advanced_drawer/flutter_advanced_drawer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../core/api/local_storage_service.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../clients/data/repositories/clients_repository.dart';
 import '../../data/repositories/rates_repository.dart';
@@ -14,6 +15,7 @@ import '../widgets/custom_client_rates_view.dart';
 import '../widgets/custom_clients_view.dart';
 import '../widgets/dashboard_view.dart';
 import '../widgets/new_rate_modal.dart';
+import '../widgets/onboarding_tour.dart';
 import '../widgets/published_rates_view.dart';
 import '../widgets/rates_sidebar.dart';
 import '../widgets/shipping_calculator/shipping_calculator_clients_view.dart';
@@ -45,6 +47,19 @@ class _RatesShellViewState extends State<_RatesShellView> {
   final _drawerController = AdvancedDrawerController(
     AdvancedDrawerValue.visible(),
   );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowOnboarding());
+  }
+
+  Future<void> _maybeShowOnboarding() async {
+    final storage = getIt<LocalStorageService>();
+    final seen = await storage.readOnboardingSeen();
+    if (seen || !mounted) return;
+    await showOnboarding(context, onFinish: storage.writeOnboardingSeen);
+  }
 
   @override
   void dispose() {

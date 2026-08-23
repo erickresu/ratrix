@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/utils/breakpoints.dart';
+import '../../../../core/widgets/mr_ratrix.dart';
 import '../../../../core/widgets/shine_sweep.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import '../../../../core/widgets/soft_card.dart';
@@ -12,6 +13,8 @@ import '../../domain/entities/rates_enums.dart';
 import '../../domain/entities/recent_rate.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
+import 'onboarding_tour.dart';
+import 'sidebar_tour_keys.dart';
 
 class DashboardView extends StatelessWidget {
   const DashboardView({super.key});
@@ -41,14 +44,38 @@ class DashboardView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Dashboard',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
-                        color: context.colors.textBody,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          'Dashboard',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                            color: context.colors.textBody,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Tooltip(
+                          message: 'Replay the welcome tour',
+                          child: Material(
+                            color: Colors.transparent,
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () => showOnboarding(context),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  CupertinoIcons.info_circle,
+                                  size: 18,
+                                  color: context.colors.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -62,6 +89,7 @@ class DashboardView extends StatelessWidget {
                 ),
               ),
               Container(
+                key: SidebarTourKeys.createRateNav,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
@@ -449,9 +477,16 @@ class _RecentRatesTable extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
         child: Center(
-          child: Text(
-            'No recent rates yet.',
-            style: TextStyle(fontSize: 14, color: context.colors.textMuted),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const MrRatrix(size: 96),
+              const SizedBox(height: 8),
+              Text(
+                'No recent rates yet.',
+                style: TextStyle(fontSize: 14, color: context.colors.textMuted),
+              ),
+            ],
           ),
         ),
       );

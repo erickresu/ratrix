@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/utils/breakpoints.dart';
+import '../../../../core/widgets/mr_ratrix.dart';
 import '../../../../core/widgets/pagination_bar.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/published_rate.dart';
@@ -247,12 +248,8 @@ class PublishedRatesView extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            CupertinoIcons.tray,
-                            size: 26,
-                            color: context.colors.textFaint,
-                          ),
-                          const SizedBox(height: 12),
+                          const MrRatrix(size: 96),
+                          const SizedBox(height: 4),
                           Text(
                             'No ${state.publishedRatesTab.label.toLowerCase()} published rates.',
                             style: TextStyle(

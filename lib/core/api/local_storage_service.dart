@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Token in secure storage, identity in SharedPreferences.
 class LocalStorageService {
   LocalStorageService([FlutterSecureStorage? storage])
-      : _secure = storage ?? const FlutterSecureStorage();
+    : _secure = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _secure;
 
@@ -12,14 +12,15 @@ class LocalStorageService {
   static const _nameKey = 'auth_name';
   static const _emailKey = 'auth_email';
   static const _userIdKey = 'auth_user_id';
+  static const _onboardingSeenKey = 'onboarding_seen';
 
   // --- token (secure) ---
 
   Future<String?> readToken() => _secure.read(
-        key: _tokenKey,
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
-      );
+    key: _tokenKey,
+    aOptions: _androidOptions,
+    iOptions: _iosOptions,
+  );
 
   // --- identity (shared preferences) ---
 
@@ -31,6 +32,17 @@ class LocalStorageService {
 
   Future<String?> readUserId() async =>
       (await SharedPreferences.getInstance()).getString(_userIdKey);
+
+  // --- onboarding (shared preferences) ---
+
+  Future<bool> readOnboardingSeen() async =>
+      (await SharedPreferences.getInstance()).getBool(_onboardingSeenKey) ??
+      false;
+
+  Future<void> writeOnboardingSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_onboardingSeenKey, true);
+  }
 
   Future<void> writeSession({
     required String token,
@@ -71,6 +83,7 @@ class LocalStorageService {
         KeyCipherAlgorithm.RSA_ECB_OAEPwithSHA_256andMGF1Padding,
   );
 
-  static const _iosOptions =
-      IOSOptions(accessibility: KeychainAccessibility.first_unlock);
+  static const _iosOptions = IOSOptions(
+    accessibility: KeychainAccessibility.first_unlock,
+  );
 }
