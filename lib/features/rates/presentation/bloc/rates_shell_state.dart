@@ -51,6 +51,22 @@ class RatesShellState extends Equatable {
   final ServiceMode? publishedRateServiceFilter;
   final bool publishedRateSortByExpiry;
 
+  /// Id of the rate currently being deleted, so its row can show a spinner
+  /// and disable further taps. Null once the delete settles either way.
+  final String? deletingRateId;
+
+  /// Set on a failed delete; a `BlocListener` shows it once (a SnackBar)
+  /// then fires `DeleteRateErrorDismissed` to clear it.
+  final String? deleteRateError;
+
+  final List<AuditLog> auditLogs;
+  final bool auditLogsLoading;
+  final String auditLogSearch;
+
+  /// One of `'create' | 'update' | 'delete'`, or null for "all actions".
+  final String? auditLogActionFilter;
+  final int auditLogPage;
+
   const RatesShellState({
     this.isLoading = true,
     this.view = RatesView.dashboard,
@@ -87,20 +103,35 @@ class RatesShellState extends Equatable {
     this.publishedRateFreightFilter,
     this.publishedRateServiceFilter,
     this.publishedRateSortByExpiry = false,
+    this.deletingRateId,
+    this.deleteRateError,
+    this.auditLogs = const [],
+    this.auditLogsLoading = false,
+    this.auditLogSearch = '',
+    this.auditLogActionFilter,
+    this.auditLogPage = 0,
   });
 
   static const clientsPerPage = 9;
-  static const clientRatesPerPage = 6;
-  static const publishedRatesPerPage = 6;
+  static const clientRatesPerPage = 5;
+  static const publishedRatesPerPage = 5;
+  static const auditLogsPerPage = 8;
 
   List<Client> get filteredClients {
     final list = clientSearch.isEmpty
         ? clients
-        : clients.where((c) => c.name.toLowerCase().contains(clientSearch.toLowerCase())).toList();
-    return [...list]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        : clients
+              .where(
+                (c) =>
+                    c.name.toLowerCase().contains(clientSearch.toLowerCase()),
+              )
+              .toList();
+    return [...list]
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
-  int get clientPageCount => (filteredClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);
+  int get clientPageCount =>
+      (filteredClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);
 
   List<Client> get pagedClients {
     final start = clientPage * clientsPerPage;
@@ -120,11 +151,19 @@ class RatesShellState extends Equatable {
   List<Client> get filteredCalcClients {
     final list = calcClientSearch.isEmpty
         ? clients
-        : clients.where((c) => c.name.toLowerCase().contains(calcClientSearch.toLowerCase())).toList();
-    return [...list]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        : clients
+              .where(
+                (c) => c.name.toLowerCase().contains(
+                  calcClientSearch.toLowerCase(),
+                ),
+              )
+              .toList();
+    return [...list]
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
-  int get calcClientPageCount => (filteredCalcClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);
+  int get calcClientPageCount =>
+      (filteredCalcClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);
 
   List<Client> get pagedCalcClients {
     final start = calcClientPage * clientsPerPage;
@@ -145,28 +184,39 @@ class RatesShellState extends Equatable {
     final q = clientRateSearch.toLowerCase();
     return selectedClientRates.where((r) {
       if (r.status != clientRatesTab) return false;
-      if (clientRateFreightFilter != null && r.freightMode != clientRateFreightFilter) return false;
-      if (clientRateServiceFilter != null && r.serviceMode != clientRateServiceFilter) return false;
+      if (clientRateFreightFilter != null &&
+          r.freightMode != clientRateFreightFilter)
+        return false;
+      if (clientRateServiceFilter != null &&
+          r.serviceMode != clientRateServiceFilter)
+        return false;
       if (q.isEmpty) return true;
-      return r.chargeCode.toLowerCase().contains(q) || r.freightMode.label.toLowerCase().contains(q);
-    }).toList()
-      ..sort((a, b) {
-        if (!clientRateSortByExpiry) return 0;
-        final ad = a.expiryDate;
-        final bd = b.expiryDate;
-        if (ad == null && bd == null) return 0;
-        if (ad == null) return 1;
-        if (bd == null) return -1;
-        return ad.compareTo(bd);
-      });
+      return r.chargeCode.toLowerCase().contains(q) ||
+          r.freightMode.label.toLowerCase().contains(q);
+    }).toList()..sort((a, b) {
+      if (!clientRateSortByExpiry) return 0;
+      final ad = a.expiryDate;
+      final bd = b.expiryDate;
+      if (ad == null && bd == null) return 0;
+      if (ad == null) return 1;
+      if (bd == null) return -1;
+      return ad.compareTo(bd);
+    });
   }
 
-  int get clientRatePageCount => (filteredClientRates.length / clientRatesPerPage).ceil().clamp(1, 1 << 30);
+  int get clientRatePageCount =>
+      (filteredClientRates.length / clientRatesPerPage).ceil().clamp(
+        1,
+        1 << 30,
+      );
 
   List<ClientRate> get pagedClientRates {
     final start = clientRatePage * clientRatesPerPage;
     if (start >= filteredClientRates.length) return const [];
-    final end = (start + clientRatesPerPage).clamp(0, filteredClientRates.length);
+    final end = (start + clientRatesPerPage).clamp(
+      0,
+      filteredClientRates.length,
+    );
     return filteredClientRates.sublist(start, end);
   }
 
@@ -174,31 +224,71 @@ class RatesShellState extends Equatable {
     final q = publishedRateSearch.toLowerCase();
     return publishedRates.where((r) {
       if (r.status != publishedRatesTab) return false;
-      if (publishedRateFreightFilter != null && r.freightMode != publishedRateFreightFilter) return false;
-      if (publishedRateServiceFilter != null && r.serviceMode != publishedRateServiceFilter) return false;
+      if (publishedRateFreightFilter != null &&
+          r.freightMode != publishedRateFreightFilter)
+        return false;
+      if (publishedRateServiceFilter != null &&
+          r.serviceMode != publishedRateServiceFilter)
+        return false;
       if (q.isEmpty) return true;
       return r.chargeCode.toLowerCase().contains(q) ||
           r.freightMode.label.toLowerCase().contains(q) ||
           r.routeLabel.toLowerCase().contains(q);
-    }).toList()
-      ..sort((a, b) {
-        if (!publishedRateSortByExpiry) return 0;
-        final ad = a.expiryDate;
-        final bd = b.expiryDate;
-        if (ad == null && bd == null) return 0;
-        if (ad == null) return 1;
-        if (bd == null) return -1;
-        return ad.compareTo(bd);
-      });
+    }).toList()..sort((a, b) {
+      if (!publishedRateSortByExpiry) return 0;
+      final ad = a.expiryDate;
+      final bd = b.expiryDate;
+      if (ad == null && bd == null) return 0;
+      if (ad == null) return 1;
+      if (bd == null) return -1;
+      return ad.compareTo(bd);
+    });
   }
 
-  int get publishedRatePageCount => (filteredPublishedRates.length / publishedRatesPerPage).ceil().clamp(1, 1 << 30);
+  int get publishedRatePageCount =>
+      (filteredPublishedRates.length / publishedRatesPerPage).ceil().clamp(
+        1,
+        1 << 30,
+      );
 
   List<PublishedRate> get pagedPublishedRates {
     final start = publishedRatePage * publishedRatesPerPage;
     if (start >= filteredPublishedRates.length) return const [];
-    final end = (start + publishedRatesPerPage).clamp(0, filteredPublishedRates.length);
+    final end = (start + publishedRatesPerPage).clamp(
+      0,
+      filteredPublishedRates.length,
+    );
     return filteredPublishedRates.sublist(start, end);
+  }
+
+  List<AuditLog> get filteredAuditLogs {
+    final q = auditLogSearch.toLowerCase();
+    return auditLogs.where((l) {
+      if (auditLogActionFilter != null && l.action != auditLogActionFilter) {
+        return false;
+      }
+      if (q.isEmpty) return true;
+      return (l.tableName?.toLowerCase().contains(q) ?? false) ||
+          (l.recordId?.toLowerCase().contains(q) ?? false) ||
+          (l.userName?.toLowerCase().contains(q) ?? false);
+    }).toList()..sort((a, b) {
+      final ad = a.createdAt;
+      final bd = b.createdAt;
+      if (ad == null && bd == null) return 0;
+      if (ad == null) return 1;
+      if (bd == null) return -1;
+      return bd.compareTo(ad);
+    });
+  }
+
+  int get auditLogPageCount =>
+      (filteredAuditLogs.length / auditLogsPerPage).ceil().clamp(1, 1 << 30);
+
+  List<AuditLog> get pagedAuditLogs {
+    final start = auditLogPage * auditLogsPerPage;
+    if (start >= filteredAuditLogs.length) return const [];
+    final end = (start + auditLogsPerPage).clamp(0, filteredAuditLogs.length);
+    return filteredAuditLogs.sublist(start, end);
   }
 
   RatesShellState copyWith({
@@ -245,6 +335,16 @@ class RatesShellState extends Equatable {
     ServiceMode? publishedRateServiceFilter,
     bool clearPublishedRateServiceFilter = false,
     bool? publishedRateSortByExpiry,
+    String? deletingRateId,
+    bool clearDeletingRateId = false,
+    String? deleteRateError,
+    bool clearDeleteRateError = false,
+    List<AuditLog>? auditLogs,
+    bool? auditLogsLoading,
+    String? auditLogSearch,
+    String? auditLogActionFilter,
+    bool clearAuditLogActionFilter = false,
+    int? auditLogPage,
   }) {
     return RatesShellState(
       isLoading: isLoading ?? this.isLoading,
@@ -265,64 +365,97 @@ class RatesShellState extends Equatable {
       clientRateSearch: clientRateSearch ?? this.clientRateSearch,
       clientRatesTab: clientRatesTab ?? this.clientRatesTab,
       clientRatePage: clientRatePage ?? this.clientRatePage,
-      clientRateFreightFilter: clearClientRateFreightFilter ? null : (clientRateFreightFilter ?? this.clientRateFreightFilter),
-      clientRateServiceFilter: clearClientRateServiceFilter ? null : (clientRateServiceFilter ?? this.clientRateServiceFilter),
-      clientRateSortByExpiry: clientRateSortByExpiry ?? this.clientRateSortByExpiry,
-      existingRate: clearExistingRate ? null : (existingRate ?? this.existingRate),
+      clientRateFreightFilter: clearClientRateFreightFilter
+          ? null
+          : (clientRateFreightFilter ?? this.clientRateFreightFilter),
+      clientRateServiceFilter: clearClientRateServiceFilter
+          ? null
+          : (clientRateServiceFilter ?? this.clientRateServiceFilter),
+      clientRateSortByExpiry:
+          clientRateSortByExpiry ?? this.clientRateSortByExpiry,
+      existingRate: clearExistingRate
+          ? null
+          : (existingRate ?? this.existingRate),
       editRateLoading: editRateLoading ?? this.editRateLoading,
       returnView: clearReturnView ? null : (returnView ?? this.returnView),
       calcClientSearch: calcClientSearch ?? this.calcClientSearch,
       calcClientPage: calcClientPage ?? this.calcClientPage,
-      selectedCalcClientId: clearSelectedCalcClientId ? null : (selectedCalcClientId ?? this.selectedCalcClientId),
+      selectedCalcClientId: clearSelectedCalcClientId
+          ? null
+          : (selectedCalcClientId ?? this.selectedCalcClientId),
       publishedRates: publishedRates ?? this.publishedRates,
-      publishedRatesLoading: publishedRatesLoading ?? this.publishedRatesLoading,
+      publishedRatesLoading:
+          publishedRatesLoading ?? this.publishedRatesLoading,
       publishedRateSearch: publishedRateSearch ?? this.publishedRateSearch,
       publishedRatesTab: publishedRatesTab ?? this.publishedRatesTab,
       publishedRatePage: publishedRatePage ?? this.publishedRatePage,
-      publishedRateFreightFilter:
-          clearPublishedRateFreightFilter ? null : (publishedRateFreightFilter ?? this.publishedRateFreightFilter),
-      publishedRateServiceFilter:
-          clearPublishedRateServiceFilter ? null : (publishedRateServiceFilter ?? this.publishedRateServiceFilter),
-      publishedRateSortByExpiry: publishedRateSortByExpiry ?? this.publishedRateSortByExpiry,
+      publishedRateFreightFilter: clearPublishedRateFreightFilter
+          ? null
+          : (publishedRateFreightFilter ?? this.publishedRateFreightFilter),
+      publishedRateServiceFilter: clearPublishedRateServiceFilter
+          ? null
+          : (publishedRateServiceFilter ?? this.publishedRateServiceFilter),
+      publishedRateSortByExpiry:
+          publishedRateSortByExpiry ?? this.publishedRateSortByExpiry,
+      deletingRateId: clearDeletingRateId
+          ? null
+          : (deletingRateId ?? this.deletingRateId),
+      deleteRateError: clearDeleteRateError
+          ? null
+          : (deleteRateError ?? this.deleteRateError),
+      auditLogs: auditLogs ?? this.auditLogs,
+      auditLogsLoading: auditLogsLoading ?? this.auditLogsLoading,
+      auditLogSearch: auditLogSearch ?? this.auditLogSearch,
+      auditLogActionFilter: clearAuditLogActionFilter
+          ? null
+          : (auditLogActionFilter ?? this.auditLogActionFilter),
+      auditLogPage: auditLogPage ?? this.auditLogPage,
     );
   }
 
   @override
   List<Object?> get props => [
-        isLoading,
-        view,
-        ratesMenuOpen,
-        profileMenuOpen,
-        modalOpen,
-        rateChoice,
-        stats,
-        recentRates,
-        clients,
-        clientRateCounts,
-        clientSearch,
-        clientPage,
-        selectedClientId,
-        selectedClientRates,
-        existingRate,
-        editRateLoading,
-        returnView,
-        clientRatesLoading,
-        clientRateSearch,
-        clientRatesTab,
-        clientRatePage,
-        clientRateFreightFilter,
-        clientRateServiceFilter,
-        clientRateSortByExpiry,
-        calcClientSearch,
-        calcClientPage,
-        selectedCalcClientId,
-        publishedRates,
-        publishedRatesLoading,
-        publishedRateSearch,
-        publishedRatesTab,
-        publishedRatePage,
-        publishedRateFreightFilter,
-        publishedRateServiceFilter,
-        publishedRateSortByExpiry,
-      ];
+    isLoading,
+    view,
+    ratesMenuOpen,
+    profileMenuOpen,
+    modalOpen,
+    rateChoice,
+    stats,
+    recentRates,
+    clients,
+    clientRateCounts,
+    clientSearch,
+    clientPage,
+    selectedClientId,
+    selectedClientRates,
+    existingRate,
+    editRateLoading,
+    returnView,
+    clientRatesLoading,
+    clientRateSearch,
+    clientRatesTab,
+    clientRatePage,
+    clientRateFreightFilter,
+    clientRateServiceFilter,
+    clientRateSortByExpiry,
+    calcClientSearch,
+    calcClientPage,
+    selectedCalcClientId,
+    publishedRates,
+    publishedRatesLoading,
+    publishedRateSearch,
+    publishedRatesTab,
+    publishedRatePage,
+    publishedRateFreightFilter,
+    publishedRateServiceFilter,
+    publishedRateSortByExpiry,
+    deletingRateId,
+    deleteRateError,
+    auditLogs,
+    auditLogsLoading,
+    auditLogSearch,
+    auditLogActionFilter,
+    auditLogPage,
+  ];
 }

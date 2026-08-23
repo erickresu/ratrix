@@ -52,10 +52,15 @@ class _WizardView extends StatelessWidget {
     return MultiBlocListener(
       listeners: [
         BlocListener<RateWizardBloc, RateWizardState>(
-          listenWhen: (prev, curr) => prev.removeRouteIndex != curr.removeRouteIndex && curr.removeRouteIndex != null,
+          listenWhen: (prev, curr) =>
+              prev.removeRouteIndex != curr.removeRouteIndex &&
+              curr.removeRouteIndex != null,
           listener: (context, state) async {
             final bloc = context.read<RateWizardBloc>();
-            final confirmed = await showShadDialog<bool>(context: context, builder: (_) => const RemoveRouteDialog());
+            final confirmed = await showShadDialog<bool>(
+              context: context,
+              builder: (_) => const RemoveRouteDialog(),
+            );
             if (!context.mounted) return;
             if (confirmed == true) {
               bloc.add(const RouteRemoveConfirmed());
@@ -65,7 +70,9 @@ class _WizardView extends StatelessWidget {
           },
         ),
         BlocListener<RateWizardBloc, RateWizardState>(
-          listenWhen: (prev, curr) => prev.submitError != curr.submitError || prev.submitSucceeded != curr.submitSucceeded,
+          listenWhen: (prev, curr) =>
+              prev.submitError != curr.submitError ||
+              prev.submitSucceeded != curr.submitSucceeded,
           listener: (context, state) {
             if (state.submitError != null) {
               ScaffoldMessenger.of(context)
@@ -75,13 +82,19 @@ class _WizardView extends StatelessWidget {
               if (state.lastSubmitStayedOnPage) {
                 ScaffoldMessenger.of(context)
                   ..hideCurrentSnackBar()
-                  ..showSnackBar(const SnackBar(content: Text('Changes saved.')));
+                  ..showSnackBar(
+                    const SnackBar(content: Text('Changes saved.')),
+                  );
               } else {
                 final shellBloc = context.read<RatesShellBloc>();
                 final wizardState = context.read<RateWizardBloc>().state;
-                shellBloc.add(WizardExitRequested(
-                  fallback: wizardState.isCustom ? RatesView.dashboard : RatesView.publishedRates,
-                ));
+                shellBloc.add(
+                  WizardExitRequested(
+                    fallback: wizardState.isCustom
+                        ? RatesView.dashboard
+                        : RatesView.publishedRates,
+                  ),
+                );
                 shellBloc.add(const RatesDataRequested());
               }
             }
@@ -92,34 +105,52 @@ class _WizardView extends StatelessWidget {
         children: [
           Expanded(
             child: Container(
-              decoration: BoxDecoration(gradient: context.colors.wizardBgGradient),
-              child: Builder(builder: (context) {
-                final isMobile = Breakpoints.isMobile(context);
-                return SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _WizardHeader(),
-                      const SizedBox(height: 32),
-                      isMobile
-                          ? const _StepContent()
-                          : Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Builder(builder: (context) {
-                                  final step = context.select((RateWizardBloc b) => b.state.step);
-                                  final bloc = context.read<RateWizardBloc>();
-                                  return StepRail(currentStep: step, onStepTap: (s) => bloc.add(WizardStepChanged(s)));
-                                }),
-                                const SizedBox(width: 48),
-                                const Expanded(child: _StepContent()),
-                              ],
-                            ),
-                    ],
-                  ),
-                );
-              }),
+              decoration: BoxDecoration(
+                gradient: context.colors.wizardBgGradient,
+              ),
+              child: Builder(
+                builder: (context) {
+                  final isMobile = Breakpoints.isMobile(context);
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      isMobile ? 20 : 64,
+                      48,
+                      isMobile ? 20 : 64,
+                      40,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _WizardHeader(),
+                        const SizedBox(height: 32),
+                        isMobile
+                            ? const _StepContent()
+                            : Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Builder(
+                                    builder: (context) {
+                                      final step = context.select(
+                                        (RateWizardBloc b) => b.state.step,
+                                      );
+                                      final bloc = context
+                                          .read<RateWizardBloc>();
+                                      return StepRail(
+                                        currentStep: step,
+                                        onStepTap: (s) =>
+                                            bloc.add(WizardStepChanged(s)),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 48),
+                                  const Expanded(child: _StepContent()),
+                                ],
+                              ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
           const _WizardFooter(),
@@ -141,23 +172,45 @@ class _WizardHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         BackPill(
-          onTap: () => shellBloc.add(WizardExitRequested(
-            fallback: wizardState.isCustom ? RatesView.customClientRates : RatesView.publishedRates,
-          )),
+          onTap: () => shellBloc.add(
+            WizardExitRequested(
+              fallback: wizardState.isCustom
+                  ? RatesView.customClientRates
+                  : RatesView.publishedRates,
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
             Text(
               wizardState.isCustom ? 'Create New Custom Rate' : 'New rate',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.colors.textBody),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+                color: context.colors.textBody,
+              ),
             ),
             if (wizardState.isCustom && wizardState.clientName != null) ...[
               const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
-                child: Text(wizardState.clientName!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: context.colors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  wizardState.clientName!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textMutedStrong,
+                  ),
+                ),
               ),
             ],
           ],
@@ -166,8 +219,19 @@ class _WizardHeader extends StatelessWidget {
           const SizedBox(height: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: context.colors.primaryChipBg, borderRadius: BorderRadius.circular(6)),
-            child: Text('${wizardState.freightMode!.label.toUpperCase()} FREIGHT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.primaryDeep, letterSpacing: 0.3)),
+            decoration: BoxDecoration(
+              color: context.colors.primaryChipBg,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '${wizardState.freightMode!.label.toUpperCase()} FREIGHT',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: context.colors.primaryDeep,
+                letterSpacing: 0.3,
+              ),
+            ),
           ),
         ],
       ],
@@ -182,14 +246,35 @@ class _StepContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = context.watch<RateWizardBloc>().state;
 
-    const stepLabels = ['Rate Setup', 'Rate Matrix', 'Add-ons', 'Conditional Add-ons'];
+    const stepLabels = [
+      'Rate Setup',
+      'Rate Matrix',
+      'Add-ons',
+      'Conditional Add-ons',
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Step ${state.step + 1} of 4', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.primary, letterSpacing: 0.6)),
+        Text(
+          'Step ${state.step + 1} of 4',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.colors.primary,
+            letterSpacing: 0.6,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(stepLabels[state.step], style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.colors.textBody)),
+        Text(
+          stepLabels[state.step],
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+            color: context.colors.textBody,
+          ),
+        ),
         const SizedBox(height: 32),
         switch (state.step) {
           0 => const Step0RateSetup(),
@@ -209,21 +294,36 @@ class _WizardFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final wizardBloc = context.read<RateWizardBloc>();
     final step = context.select((RateWizardBloc b) => b.state.step);
-    final isSubmitting = context.select((RateWizardBloc b) => b.state.isSubmitting);
-    final isEditing = context.select((RateWizardBloc b) => b.state.editingRateId != null);
+    final isSubmitting = context.select(
+      (RateWizardBloc b) => b.state.isSubmitting,
+    );
+    final isEditing = context.select(
+      (RateWizardBloc b) => b.state.editingRateId != null,
+    );
+    final canLeaveStep0 = context.select(
+      (RateWizardBloc b) => b.state.canLeaveStep0,
+    );
     final isMobile = Breakpoints.isMobile(context);
+    final blockedByFreightMode = step == 0 && !canLeaveStep0;
 
     final nextButton = ShadButton(
-      gradient: step == 3 ? context.colors.accentButtonGradient : context.colors.primaryButtonGradient,
+      gradient: step == 3
+          ? context.colors.accentButtonGradient
+          : context.colors.primaryButtonGradient,
       leading: step == 3 && isSubmitting
           ? const SizedBox(
               width: 14,
               height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             )
           : Icon(step == 3 ? CupertinoIcons.paperplane_fill : null, size: 16),
-      trailing: step == 3 ? null : const Icon(CupertinoIcons.arrow_right, size: 16),
-      onPressed: (step == 3 && isSubmitting)
+      trailing: step == 3
+          ? null
+          : const Icon(CupertinoIcons.arrow_right, size: 16),
+      onPressed: (step == 3 && isSubmitting) || blockedByFreightMode
           ? null
           : () {
               if (step < 3) {
@@ -232,7 +332,9 @@ class _WizardFooter extends StatelessWidget {
                 wizardBloc.add(const RateSubmitRequested());
               }
             },
-      child: Text(step == 3 ? (isSubmitting ? 'Publishing...' : 'Publish Rate') : 'Next'),
+      child: Text(
+        step == 3 ? (isSubmitting ? 'Publishing...' : 'Publish Rate') : 'Next',
+      ),
     );
 
     final saveChangesButton = ShadButton.outline(
@@ -243,7 +345,9 @@ class _WizardFooter extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : const Icon(CupertinoIcons.checkmark_alt, size: 15),
-      onPressed: isSubmitting ? null : () => wizardBloc.add(const RateSubmitRequested(stayOnPage: true)),
+      onPressed: isSubmitting
+          ? null
+          : () => wizardBloc.add(const RateSubmitRequested(stayOnPage: true)),
       child: Text(isSubmitting ? 'Saving...' : 'Save changes'),
     );
 
@@ -252,7 +356,12 @@ class _WizardFooter extends StatelessWidget {
         : [nextButton];
 
     return Container(
-      padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 24, isMobile ? 20 : 64, 24),
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 20 : 64,
+        24,
+        isMobile ? 20 : 64,
+        24,
+      ),
       decoration: BoxDecoration(
         color: context.colors.surface,
         border: Border(top: BorderSide(color: context.colors.border)),
@@ -265,6 +374,25 @@ class _WizardFooter extends StatelessWidget {
               leading: const Icon(CupertinoIcons.chevron_left, size: 15),
               onPressed: () => wizardBloc.add(const WizardBackStepRequested()),
               child: const Text('Back'),
+            )
+          else if (blockedByFreightMode)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  CupertinoIcons.info_circle,
+                  size: 14,
+                  color: context.colors.textMuted,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Select a freight mode to continue',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.colors.textMuted,
+                  ),
+                ),
+              ],
             )
           else
             const SizedBox.shrink(),
@@ -279,7 +407,8 @@ class _WizardFooter extends StatelessWidget {
                   children: [
                     for (final button in trailingButtons) ...[
                       button,
-                      if (button != trailingButtons.last) const SizedBox(width: 12),
+                      if (button != trailingButtons.last)
+                        const SizedBox(width: 12),
                     ],
                   ],
                 ),

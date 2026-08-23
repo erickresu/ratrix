@@ -243,3 +243,47 @@ class ShippingCalculatorClientPageChanged extends RatesShellEvent {
 class ShippingCalculatorBackRequested extends RatesShellEvent {
   const ShippingCalculatorBackRequested();
 }
+
+class DeleteRateRequested extends RatesShellEvent {
+  const DeleteRateRequested(this.rateId);
+
+  final String rateId;
+
+  @override
+  List<Object?> get props => [rateId];
+}
+
+class DeleteRateErrorDismissed extends RatesShellEvent {
+  const DeleteRateErrorDismissed();
+}
+
+class AuditTrailRequested extends RatesShellEvent {
+  const AuditTrailRequested();
+}
+
+class AuditLogSearchChanged extends RatesShellEvent {
+  const AuditLogSearchChanged(this.query);
+
+  final String query;
+
+  @override
+  List<Object?> get props => [query];
+}
+
+class AuditLogActionFilterChanged extends RatesShellEvent {
+  const AuditLogActionFilterChanged(this.action);
+
+  final String? action;
+
+  @override
+  List<Object?> get props => [action];
+}
+
+class AuditLogPageChanged extends RatesShellEvent {
+  const AuditLogPageChanged(this.page);
+
+  final int page;
+
+  @override
+  List<Object?> get props => [page];
+}

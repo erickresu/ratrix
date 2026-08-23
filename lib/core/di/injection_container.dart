@@ -40,7 +40,9 @@ void setupDependencies() {
     () => ClientsRepository(getIt<ClientsDataSource>()),
   );
 
-  getIt.registerLazySingleton<PhLocationsService>(() => PhLocationsService(getIt<Dio>()));
+  getIt.registerLazySingleton<PhLocationsService>(
+    () => PhLocationsService(getIt<Dio>()),
+  );
 
   // Register new repositories/services/BLoCs here as features are added.
 }

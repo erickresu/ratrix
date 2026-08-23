@@ -28,7 +28,12 @@ class DashboardView extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 40),
+          padding: EdgeInsets.fromLTRB(
+            isMobile ? 20 : 64,
+            48,
+            isMobile ? 20 : 64,
+            40,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -60,7 +65,11 @@ class DashboardView extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: [
-                    BoxShadow(color: context.colors.primary.withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 6)),
+                    BoxShadow(
+                      color: context.colors.primary.withValues(alpha: 0.35),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
                   ],
                 ),
                 child: ShadButton(
@@ -84,7 +93,12 @@ class DashboardView extends StatelessWidget {
           child: CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 0, isMobile ? 20 : 64, 56),
+                padding: EdgeInsets.fromLTRB(
+                  isMobile ? 20 : 64,
+                  0,
+                  isMobile ? 20 : 64,
+                  56,
+                ),
                 sliver: SliverFillRemaining(
                   hasScrollBody: false,
                   child: Column(
@@ -93,8 +107,11 @@ class DashboardView extends StatelessWidget {
                       Row(
                         children: [
                           for (final stat in state.stats) ...[
-                            Expanded(child: _StatCard(stat: stat, compact: isMobile)),
-                            if (stat != state.stats.last) SizedBox(width: isMobile ? 10 : 20),
+                            Expanded(
+                              child: _StatCard(stat: stat, compact: isMobile),
+                            ),
+                            if (stat != state.stats.last)
+                              SizedBox(width: isMobile ? 10 : 20),
                           ],
                         ],
                       ),
@@ -112,11 +129,21 @@ class DashboardView extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                            decoration: BoxDecoration(color: context.colors.primaryChipBg, borderRadius: BorderRadius.circular(20)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.colors.primaryChipBg,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                             child: Text(
                               '${state.recentRates.length}',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primaryDeep),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: context.colors.primaryDeep,
+                              ),
                             ),
                           ),
                         ],
@@ -154,7 +181,12 @@ class _DashboardSkeleton extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 40),
+            padding: EdgeInsets.fromLTRB(
+              isMobile ? 20 : 64,
+              48,
+              isMobile ? 20 : 64,
+              40,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -174,7 +206,12 @@ class _DashboardSkeleton extends StatelessWidget {
           ),
           Expanded(
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 0, isMobile ? 20 : 64, 56),
+              padding: EdgeInsets.fromLTRB(
+                isMobile ? 20 : 64,
+                0,
+                isMobile ? 20 : 64,
+                56,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -258,15 +295,28 @@ class _StatCard extends StatelessWidget {
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(compact ? 14 : 20),
         boxShadow: [
-          BoxShadow(color: context.colors.shadowCard, blurRadius: 24, offset: const Offset(0, 10)),
-          BoxShadow(color: context.colors.shadowSoft, blurRadius: 4, offset: const Offset(0, 1)),
+          BoxShadow(
+            color: context.colors.shadowCard,
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: context.colors.shadowSoft,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(height: 4, decoration: BoxDecoration(gradient: context.colors.primaryButtonGradient)),
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              gradient: context.colors.primaryButtonGradient,
+            ),
+          ),
           Padding(
             padding: EdgeInsets.all(compact ? 12 : 24),
             child: Column(
@@ -293,7 +343,13 @@ class _StatCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(compact ? 10 : 13),
                         boxShadow: [
-                          BoxShadow(color: context.colors.primary.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4)),
+                          BoxShadow(
+                            color: context.colors.primary.withValues(
+                              alpha: 0.35,
+                            ),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
                         ],
                       ),
                       child: ClipRRect(
@@ -301,8 +357,14 @@ class _StatCard extends StatelessWidget {
                         child: ShineSweep(
                           child: Container(
                             alignment: Alignment.center,
-                            decoration: BoxDecoration(gradient: context.colors.primaryButtonGradient),
-                            child: Icon(_statIcon(stat.label), size: compact ? 14 : 19, color: Colors.white),
+                            decoration: BoxDecoration(
+                              gradient: context.colors.primaryButtonGradient,
+                            ),
+                            child: Icon(
+                              _statIcon(stat.label),
+                              size: compact ? 14 : 19,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -321,18 +383,27 @@ class _StatCard extends StatelessWidget {
                 ),
                 SizedBox(height: compact ? 6 : 10),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: compact ? 2 : 3),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 6 : 8,
+                    vertical: compact ? 2 : 3,
+                  ),
                   decoration: BoxDecoration(
-                    color: isPositive ? context.colors.successBg : context.colors.surfaceSubtle,
+                    color: isPositive
+                        ? context.colors.successBg
+                        : context.colors.surfaceSubtle,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isPositive ? CupertinoIcons.arrow_up_right : CupertinoIcons.arrow_down_right,
+                        isPositive
+                            ? CupertinoIcons.arrow_up_right
+                            : CupertinoIcons.arrow_down_right,
                         size: compact ? 9 : 11,
-                        color: isPositive ? context.colors.successText : context.colors.textMuted,
+                        color: isPositive
+                            ? context.colors.successText
+                            : context.colors.textMuted,
                       ),
                       SizedBox(width: compact ? 2 : 3),
                       Text(
@@ -342,7 +413,9 @@ class _StatCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: compact ? 10 : 12,
                           fontWeight: FontWeight.w600,
-                          color: isPositive ? context.colors.successText : context.colors.textMuted,
+                          color: isPositive
+                              ? context.colors.successText
+                              : context.colors.textMuted,
                         ),
                       ),
                     ],
@@ -385,7 +458,10 @@ class _RecentRatesTable extends StatelessWidget {
     }
 
     final bodyFontSize = compact ? 12.0 : 14.0;
-    final rowPadding = EdgeInsets.symmetric(horizontal: compact ? 18 : 24, vertical: 18);
+    final rowPadding = EdgeInsets.symmetric(
+      horizontal: compact ? 18 : 24,
+      vertical: 18,
+    );
     final fieldGap = SizedBox(width: compact ? 10 : 16);
 
     final table = Column(
@@ -393,7 +469,10 @@ class _RecentRatesTable extends StatelessWidget {
       children: [
         Container(
           color: context.colors.surfaceSubtle,
-          padding: EdgeInsets.symmetric(horizontal: compact ? 18 : 24, vertical: compact ? 13 : 14),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 18 : 24,
+            vertical: compact ? 13 : 14,
+          ),
           child: Row(
             children: [
               Expanded(flex: 24, child: Text('ROUTE', style: headerStyle)),
@@ -402,9 +481,23 @@ class _RecentRatesTable extends StatelessWidget {
               fieldGap,
               Expanded(flex: 10, child: Text('TYPE', style: headerStyle)),
               fieldGap,
-              Expanded(flex: 10, child: Text('RATE', textAlign: TextAlign.right, style: headerStyle)),
+              Expanded(
+                flex: 10,
+                child: Text(
+                  'RATE',
+                  textAlign: TextAlign.right,
+                  style: headerStyle,
+                ),
+              ),
               fieldGap,
-              Expanded(flex: 10, child: Text('STATUS', textAlign: TextAlign.right, style: headerStyle)),
+              Expanded(
+                flex: 10,
+                child: Text(
+                  'STATUS',
+                  textAlign: TextAlign.right,
+                  style: headerStyle,
+                ),
+              ),
             ],
           ),
         ),
@@ -417,26 +510,62 @@ class _RecentRatesTable extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Expanded(flex: 24, child: _RouteCell(route: rate.route, compact: compact)),
+                Expanded(
+                  flex: 24,
+                  child: _RouteCell(route: rate.route, compact: compact),
+                ),
                 fieldGap,
                 Expanded(
                   flex: 16,
                   child: rate.client == '—'
-                      ? Text('All clients', style: TextStyle(fontSize: bodyFontSize, fontStyle: FontStyle.italic, color: context.colors.textFaint))
-                      : Text(rate.client, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: bodyFontSize, color: context.colors.textMutedStrong)),
+                      ? Text(
+                          'All clients',
+                          style: TextStyle(
+                            fontSize: bodyFontSize,
+                            fontStyle: FontStyle.italic,
+                            color: context.colors.textFaint,
+                          ),
+                        )
+                      : Text(
+                          rate.client,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: bodyFontSize,
+                            color: context.colors.textMutedStrong,
+                          ),
+                        ),
                 ),
                 fieldGap,
-                Expanded(flex: 10, child: _typeBadge(context, rate.type, compact)),
+                Expanded(
+                  flex: 10,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _typeBadge(context, rate.type, compact),
+                  ),
+                ),
                 fieldGap,
                 Expanded(
                   flex: 10,
                   child: Align(
                     alignment: Alignment.centerRight,
-                    child: Text(rate.price, style: TextStyle(fontSize: bodyFontSize, fontWeight: FontWeight.w600, color: context.colors.textBody)),
+                    child: Text(
+                      rate.price,
+                      style: TextStyle(
+                        fontSize: bodyFontSize,
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textBody,
+                      ),
+                    ),
                   ),
                 ),
                 fieldGap,
-                Expanded(flex: 10, child: Align(alignment: Alignment.centerRight, child: _statusBadge(context, rate.status, compact))),
+                Expanded(
+                  flex: 10,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: _statusBadge(context, rate.status, compact),
+                  ),
+                ),
               ],
             ),
           ),
@@ -458,10 +587,17 @@ class _RecentRatesTable extends StatelessWidget {
     const rateWidth = 80.0;
     const statusWidth = 100.0;
     const colGap = 12.0;
-    const scrollableWidth = routeWidth + typeWidth + rateWidth + statusWidth + colGap * 3;
+    const scrollableWidth =
+        routeWidth + typeWidth + rateWidth + statusWidth + colGap * 3;
 
-    Widget headerCell(String text, double width, {TextAlign align = TextAlign.left}) =>
-        SizedBox(width: width, child: Text(text, textAlign: align, style: headerStyle));
+    Widget headerCell(
+      String text,
+      double width, {
+      TextAlign align = TextAlign.left,
+    }) => SizedBox(
+      width: width,
+      child: Text(text, textAlign: align, style: headerStyle),
+    );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,23 +617,35 @@ class _RecentRatesTable extends StatelessWidget {
                 Container(
                   height: rowHeight,
                   alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: context.colors.surface,
-                    border: Border(top: BorderSide(color: context.colors.border)),
+                    border: Border(
+                      top: BorderSide(color: context.colors.border),
+                    ),
                   ),
                   child: rate.client == '—'
                       ? Text(
                           'All clients',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: bodyFontSize, fontStyle: FontStyle.italic, color: context.colors.textFaint),
+                          style: TextStyle(
+                            fontSize: bodyFontSize,
+                            fontStyle: FontStyle.italic,
+                            color: context.colors.textFaint,
+                          ),
                         )
                       : Text(
                           rate.client,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: bodyFontSize, color: context.colors.textMutedStrong),
+                          style: TextStyle(
+                            fontSize: bodyFontSize,
+                            color: context.colors.textMutedStrong,
+                          ),
                         ),
                 ),
             ],
@@ -532,25 +680,46 @@ class _RecentRatesTable extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       color: context.colors.surface,
-                      border: Border(top: BorderSide(color: context.colors.border)),
+                      border: Border(
+                        top: BorderSide(color: context.colors.border),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        SizedBox(width: routeWidth, child: _RouteCell(route: rate.route, compact: true)),
+                        SizedBox(
+                          width: routeWidth,
+                          child: _RouteCell(route: rate.route, compact: true),
+                        ),
                         const SizedBox(width: colGap),
-                        SizedBox(width: typeWidth, child: _typeBadge(context, rate.type, true)),
+                        SizedBox(
+                          width: typeWidth,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: _typeBadge(context, rate.type, true),
+                          ),
+                        ),
                         const SizedBox(width: colGap),
                         SizedBox(
                           width: rateWidth,
                           child: Align(
                             alignment: Alignment.centerRight,
-                            child: Text(rate.price, style: TextStyle(fontSize: bodyFontSize, fontWeight: FontWeight.w600, color: context.colors.textBody)),
+                            child: Text(
+                              rate.price,
+                              style: TextStyle(
+                                fontSize: bodyFontSize,
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.textBody,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: colGap),
                         SizedBox(
                           width: statusWidth,
-                          child: Align(alignment: Alignment.centerRight, child: _statusBadge(context, rate.status, true)),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: _statusBadge(context, rate.status, true),
+                          ),
                         ),
                       ],
                     ),
@@ -565,7 +734,9 @@ class _RecentRatesTable extends StatelessWidget {
 
   Widget _typeBadge(BuildContext context, RateType type, bool compact) {
     final isPublished = type == RateType.published;
-    final bg = isPublished ? context.colors.primaryChipBg : context.colors.customBg;
+    final bg = isPublished
+        ? context.colors.primaryChipBg
+        : context.colors.customBg;
     return ShadBadge(
       backgroundColor: bg,
       // These badges aren't interactive (no onPressed), so pin the hover
@@ -576,10 +747,16 @@ class _RecentRatesTable extends StatelessWidget {
       foregroundColor: isPublished
           ? context.colors.primaryDeep
           : context.colors.custom,
-      padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 3 : 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 3 : 4,
+      ),
       child: Text(
         type.label,
-        style: TextStyle(fontSize: compact ? 10 : 12, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: compact ? 10 : 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -587,18 +764,33 @@ class _RecentRatesTable extends StatelessWidget {
   Widget _statusBadge(BuildContext context, RateStatus status, bool compact) {
     final isActive = status == RateStatus.active;
     final fg = isActive ? context.colors.successText : context.colors.textMuted;
-    final bg = isActive ? context.colors.successBg : context.colors.surfaceMuted;
+    final bg = isActive
+        ? context.colors.successBg
+        : context.colors.surfaceMuted;
     return ShadBadge(
       backgroundColor: bg,
       hoverBackgroundColor: bg,
       foregroundColor: fg,
-      padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 10, vertical: compact ? 3 : 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 3 : 4,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 6, height: 6, decoration: BoxDecoration(color: fg, shape: BoxShape.circle)),
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
+          ),
           const SizedBox(width: 5),
-          Text(status.label, style: TextStyle(fontSize: compact ? 10 : 12, fontWeight: FontWeight.w600)),
+          Text(
+            status.label,
+            style: TextStyle(
+              fontSize: compact ? 10 : 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -657,19 +849,43 @@ class _RouteCell extends StatelessWidget {
     if (parts.length != 2) {
       return Text(
         route,
-        style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w500, color: context.colors.textBody),
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w500,
+          color: context.colors.textBody,
+        ),
       );
     }
-    final textStyle = TextStyle(fontSize: fontSize, fontWeight: FontWeight.w500, color: context.colors.textBody);
+    final textStyle = TextStyle(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w500,
+      color: context.colors.textBody,
+    );
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Flexible(child: Text(parts[0], overflow: TextOverflow.ellipsis, style: textStyle)),
+        Flexible(
+          child: Text(
+            parts[0],
+            overflow: TextOverflow.ellipsis,
+            style: textStyle,
+          ),
+        ),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 8),
-          child: Icon(CupertinoIcons.arrow_right, size: compact ? 11 : 13, color: context.colors.textFaint),
+          child: Icon(
+            CupertinoIcons.arrow_right,
+            size: compact ? 11 : 13,
+            color: context.colors.textFaint,
+          ),
         ),
-        Flexible(child: Text(parts[1], overflow: TextOverflow.ellipsis, style: textStyle)),
+        Flexible(
+          child: Text(
+            parts[1],
+            overflow: TextOverflow.ellipsis,
+            style: textStyle,
+          ),
+        ),
       ],
     );
   }

@@ -23,13 +23,18 @@ class RatesSidebar extends StatelessWidget {
     final state = context.watch<RatesShellBloc>().state;
 
     final isDashboard = state.view == RatesView.dashboard;
-    final isPublishActive = state.view == RatesView.publishedRates ||
-        (state.view == RatesView.create && state.rateChoice == RateType.published);
-    final isCustomActive = state.view == RatesView.customClients ||
+    final isPublishActive =
+        state.view == RatesView.publishedRates ||
+        (state.view == RatesView.create &&
+            state.rateChoice == RateType.published);
+    final isCustomActive =
+        state.view == RatesView.customClients ||
         state.view == RatesView.customClientRates ||
         (state.view == RatesView.create && state.rateChoice == RateType.custom);
     final isCalculatorActive =
-        state.view == RatesView.shippingCalculatorClients || state.view == RatesView.shippingCalculatorForm;
+        state.view == RatesView.shippingCalculatorClients ||
+        state.view == RatesView.shippingCalculatorForm;
+    final isAuditTrailActive = state.view == RatesView.auditTrail;
 
     void navigate(void Function() dispatch) {
       dispatch();
@@ -70,13 +75,17 @@ class RatesSidebar extends StatelessWidget {
                       icon: CupertinoIcons.arrow_up,
                       label: 'Publish Rates',
                       active: isPublishActive,
-                      onTap: () => navigate(() => bloc.add(const PublishedRatesRequested())),
+                      onTap: () => navigate(
+                        () => bloc.add(const PublishedRatesRequested()),
+                      ),
                     ),
                     _SubNavItem(
                       icon: CupertinoIcons.list_bullet,
                       label: 'Custom Rates',
                       active: isCustomActive,
-                      onTap: () => navigate(() => bloc.add(const CustomClientsRequested())),
+                      onTap: () => navigate(
+                        () => bloc.add(const CustomClientsRequested()),
+                      ),
                     ),
                   ],
                 ),
@@ -88,7 +97,15 @@ class RatesSidebar extends StatelessWidget {
             icon: Icons.local_shipping_rounded,
             label: 'Shipping Calculator',
             active: isCalculatorActive,
-            onTap: () => navigate(() => bloc.add(const ShippingCalculatorRequested())),
+            onTap: () =>
+                navigate(() => bloc.add(const ShippingCalculatorRequested())),
+          ),
+          const SizedBox(height: 4),
+          _NavItem(
+            icon: CupertinoIcons.clock,
+            label: 'Audit Trail',
+            active: isAuditTrailActive,
+            onTap: () => navigate(() => bloc.add(const AuditTrailRequested())),
           ),
           const Spacer(),
           const _ThemeToggleRow(),
@@ -133,7 +150,14 @@ class _ThemeToggleRow extends StatelessWidget {
         child: Row(
           children: [
             const Expanded(
-              child: Text('Theme', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+              child: Text(
+                'Theme',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             Switch(
               value: isDark,
@@ -143,14 +167,18 @@ class _ThemeToggleRow extends StatelessWidget {
                 return Icon(
                   on ? CupertinoIcons.moon_fill : CupertinoIcons.sun_max_fill,
                   size: 14,
-                  color: on ? RatesColors.dark.primary : const Color(0xFFB45309),
+                  color: on
+                      ? RatesColors.dark.primary
+                      : const Color(0xFFB45309),
                 );
               }),
               activeTrackColor: RatesColors.dark.primarySoftBg,
               activeThumbColor: Colors.white,
               inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
               inactiveThumbColor: Colors.white,
-              trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+              trackOutlineColor: const WidgetStatePropertyAll(
+                Colors.transparent,
+              ),
             ),
           ],
         ),
@@ -170,7 +198,12 @@ class _Logo extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  const _NavItem({required this.icon, required this.label, required this.active, required this.onTap});
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
@@ -191,12 +224,20 @@ class _NavItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 15, color: active ? Colors.white : Colors.white.withValues(alpha: 0.75)),
+            Icon(
+              icon,
+              size: 15,
+              color: active
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.75),
+            ),
             const SizedBox(width: 12),
             Text(
               label,
               style: TextStyle(
-                color: active ? Colors.white : Colors.white.withValues(alpha: 0.75),
+                color: active
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.75),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -220,31 +261,51 @@ class _NavParent extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       onTap: onToggle,
       child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(CupertinoIcons.bars, size: 14, color: Colors.white.withValues(alpha: 0.75)),
-                  const SizedBox(width: 12),
-                  Text('Rates', style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 14, fontWeight: FontWeight.w600)),
-                ],
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  CupertinoIcons.bars,
+                  size: 14,
+                  color: Colors.white.withValues(alpha: 0.75),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Rates',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.75),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            AnimatedRotation(
+              turns: open ? 0 : -0.25,
+              duration: const Duration(milliseconds: 150),
+              child: Icon(
+                CupertinoIcons.chevron_down,
+                size: 16,
+                color: Colors.white.withValues(alpha: 0.4),
               ),
-              AnimatedRotation(
-                turns: open ? 0 : -0.25,
-                duration: const Duration(milliseconds: 150),
-                child: Icon(CupertinoIcons.chevron_down, size: 16, color: Colors.white.withValues(alpha: 0.4)),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }
 
 class _SubNavItem extends StatelessWidget {
-  const _SubNavItem({required this.icon, required this.label, required this.active, required this.onTap});
+  const _SubNavItem({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
@@ -261,12 +322,20 @@ class _SubNavItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         child: Row(
           children: [
-            Icon(icon, size: 13, color: active ? RatesColors.dark.primary : Colors.white.withValues(alpha: 0.6)),
+            Icon(
+              icon,
+              size: 13,
+              color: active
+                  ? RatesColors.dark.primary
+                  : Colors.white.withValues(alpha: 0.6),
+            ),
             const SizedBox(width: 10),
             Text(
               label,
               style: TextStyle(
-                color: active ? RatesColors.dark.primary : Colors.white.withValues(alpha: 0.6),
+                color: active
+                    ? RatesColors.dark.primary
+                    : Colors.white.withValues(alpha: 0.6),
                 fontSize: 13,
                 fontWeight: active ? FontWeight.w600 : FontWeight.w500,
               ),
@@ -288,9 +357,20 @@ class _NotificationsRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(CupertinoIcons.bell, size: 15, color: Colors.white.withValues(alpha: 0.75)),
+              Icon(
+                CupertinoIcons.bell,
+                size: 15,
+                color: Colors.white.withValues(alpha: 0.75),
+              ),
               const SizedBox(width: 10),
-              Text('Notifications', style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13, fontWeight: FontWeight.w500)),
+              Text(
+                'Notifications',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
           Positioned(
@@ -299,7 +379,10 @@ class _NotificationsRow extends StatelessWidget {
             child: Container(
               width: 6,
               height: 6,
-              decoration: BoxDecoration(color: RatesColors.dark.primary, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: RatesColors.dark.primary,
+                shape: BoxShape.circle,
+              ),
             ),
           ),
         ],
@@ -376,7 +459,13 @@ class _ProfileBlockState extends State<_ProfileBlock> {
                 color: RatesColors.dark.sidebarPanelBg,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 24, offset: const Offset(0, 8))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -422,7 +511,9 @@ class _ProfileBlockState extends State<_ProfileBlock> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: widget.state.profileMenuOpen ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
+              color: widget.state.profileMenuOpen
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -431,8 +522,18 @@ class _ProfileBlockState extends State<_ProfileBlock> {
                   width: 30,
                   height: 30,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: RatesColors.dark.primaryChipBg, shape: BoxShape.circle),
-                  child: Text('AU', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: RatesColors.dark.primaryDeep)),
+                  decoration: BoxDecoration(
+                    color: RatesColors.dark.primaryChipBg,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    'AU',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: RatesColors.dark.primaryDeep,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -440,15 +541,34 @@ class _ProfileBlockState extends State<_ProfileBlock> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('Admin User', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-                      Text('Administrator', style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.4))),
+                      const Text(
+                        'Admin User',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'Administrator',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 AnimatedRotation(
                   turns: widget.state.profileMenuOpen ? 0.5 : 0,
                   duration: const Duration(milliseconds: 150),
-                  child: Icon(CupertinoIcons.chevron_down, size: 14, color: Colors.white.withValues(alpha: 0.4)),
+                  child: Icon(
+                    CupertinoIcons.chevron_down,
+                    size: 14,
+                    color: Colors.white.withValues(alpha: 0.4),
+                  ),
                 ),
               ],
             ),
@@ -460,7 +580,12 @@ class _ProfileBlockState extends State<_ProfileBlock> {
 }
 
 class _MenuRow extends StatelessWidget {
-  const _MenuRow({required this.label, required this.color, this.bold = false, this.onTap});
+  const _MenuRow({
+    required this.label,
+    required this.color,
+    this.bold = false,
+    this.onTap,
+  });
 
   final String label;
   final Color color;
@@ -477,7 +602,14 @@ class _MenuRow extends StatelessWidget {
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-          child: Text(label, style: TextStyle(fontSize: 13, fontWeight: bold ? FontWeight.w600 : FontWeight.w500, color: color)),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: bold ? FontWeight.w600 : FontWeight.w500,
+              color: color,
+            ),
+          ),
         ),
       ),
     );

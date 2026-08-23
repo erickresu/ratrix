@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../domain/entities/audit_log.dart';
 import '../../domain/entities/client_rate.dart';
 import '../../domain/entities/published_rate.dart';
 import '../../domain/entities/rate_stat.dart';
@@ -30,25 +31,47 @@ class RatesRepository {
   // Reads
   // ---------------------------------------------------------------------
 
-  Future<List<RatrixRate>> _fetchAllRates({String? rateType, int? clientId}) async {
-    final res = await _dataSource.fetchRates(rateType: rateType, clientId: clientId);
+  Future<List<RatrixRate>> _fetchAllRates({
+    String? rateType,
+    int? clientId,
+  }) async {
+    final res = await _dataSource.fetchRates(
+      rateType: rateType,
+      clientId: clientId,
+    );
     final rows = _asList(res.data);
-    return rows.whereType<Map<String, dynamic>>().map(RatrixRate.fromJson).toList();
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .map(RatrixRate.fromJson)
+        .toList();
   }
 
   /// Same as [_fetchAllRates] but via the paginated `GET api/rates/{type}`
   /// endpoint (only `publish`/`custom` are valid `rateType` values here) —
   /// use this when filtering by client, since it's the endpoint built for
   /// that query shape rather than fetching the unbounded full list.
-  Future<List<RatrixRate>> _fetchRatesByType(String rateType, {int? clientId, int perPage = 5000}) async {
-    final res = await _dataSource.fetchRatesByType(rateType, clientId: clientId, page: 1, perPage: perPage);
+  Future<List<RatrixRate>> _fetchRatesByType(
+    String rateType, {
+    int? clientId,
+    int perPage = 5000,
+  }) async {
+    final res = await _dataSource.fetchRatesByType(
+      rateType,
+      clientId: clientId,
+      page: 1,
+      perPage: perPage,
+    );
     final rows = _asList(res.data);
-    return rows.whereType<Map<String, dynamic>>().map(RatrixRate.fromJson).toList();
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .map(RatrixRate.fromJson)
+        .toList();
   }
 
   List<dynamic> _asList(dynamic body) {
     if (body is List) return body;
-    if (body is Map<String, dynamic> && body['data'] is List) return body['data'] as List;
+    if (body is Map<String, dynamic> && body['data'] is List)
+      return body['data'] as List;
     return const [];
   }
 
@@ -59,20 +82,38 @@ class RatesRepository {
     final rates = await _fetchAllRates();
 
     final activeCount = rates.where((r) => !r.isExpired).length;
-    final clientIds = rates.where((r) => r.isCustom && r.clientId != null).map((r) => r.clientId).toSet();
+    final clientIds = rates
+        .where((r) => r.isCustom && r.clientId != null)
+        .map((r) => r.clientId)
+        .toSet();
     final totalRoutes = rates.fold<int>(0, (sum, r) => sum + r.routes.length);
 
     final now = DateTime.now();
     final weekAgo = now.subtract(const Duration(days: 7));
     String deltaFor(bool Function(RatrixRate) matches) {
-      final createdThisWeek = rates.where((r) => r.createdAt != null && r.createdAt!.isAfter(weekAgo) && matches(r)).length;
+      final createdThisWeek = rates
+          .where(
+            (r) =>
+                r.createdAt != null &&
+                r.createdAt!.isAfter(weekAgo) &&
+                matches(r),
+          )
+          .length;
       return createdThisWeek > 0 ? '+$createdThisWeek this week' : '';
     }
 
     return [
-      RateStat(label: 'Active rates', value: '$activeCount', delta: deltaFor((r) => !r.isExpired)),
+      RateStat(
+        label: 'Active rates',
+        value: '$activeCount',
+        delta: deltaFor((r) => !r.isExpired),
+      ),
       RateStat(label: 'Clients', value: '${clientIds.length}', delta: ''),
-      RateStat(label: 'Total routes', value: '$totalRoutes', delta: deltaFor((_) => true)),
+      RateStat(
+        label: 'Total routes',
+        value: '$totalRoutes',
+        delta: deltaFor((_) => true),
+      ),
     ];
   }
 
@@ -81,17 +122,28 @@ class RatesRepository {
   /// string ids `ClientsRepository`/`RatesShellBloc` use) resolves the
   /// client column for custom rates — pass the shell's already-fetched
   /// client list; falls back to the raw id, then '—', when unavailable.
-  Future<List<RecentRate>> fetchRecentRates({int limit = 5, Map<String, String>? clientNamesById}) async {
+  Future<List<RecentRate>> fetchRecentRates({
+    int limit = 5,
+    Map<String, String>? clientNamesById,
+  }) async {
     final rates = await _fetchAllRates();
-    final sorted = [...rates]..sort((a, b) {
-        if (a.createdAt != null && b.createdAt != null) return b.createdAt!.compareTo(a.createdAt!);
+    final sorted = [...rates]
+      ..sort((a, b) {
+        if (a.createdAt != null && b.createdAt != null)
+          return b.createdAt!.compareTo(a.createdAt!);
         return b.id.compareTo(a.id);
       });
 
-    return sorted.take(limit).map((r) => _mapRecentRate(r, clientNamesById)).toList();
+    return sorted
+        .take(limit)
+        .map((r) => _mapRecentRate(r, clientNamesById))
+        .toList();
   }
 
-  RecentRate _mapRecentRate(RatrixRate rate, Map<String, String>? clientNamesById) {
+  RecentRate _mapRecentRate(
+    RatrixRate rate,
+    Map<String, String>? clientNamesById,
+  ) {
     final route = rate.routes.isNotEmpty ? rate.routes.first.routeLabel : '—';
     final price = _formatPrice(rate);
     String client = '—';
@@ -134,7 +186,10 @@ class RatesRepository {
 
   Future<List<ClientRate>> fetchAllClientRates() async {
     final rates = await _fetchAllRates(rateType: 'custom');
-    return rates.where((r) => r.clientId != null).map((r) => _mapClientRate(r, r.clientId!.toString())).toList();
+    return rates
+        .where((r) => r.clientId != null)
+        .map((r) => _mapClientRate(r, r.clientId!.toString()))
+        .toList();
   }
 
   /// All standard (non-custom) rates, for the Published Rates list.
@@ -144,12 +199,16 @@ class RatesRepository {
   }
 
   PublishedRate _mapPublishedRate(RatrixRate rate) {
-    final freightMode = _freightModeFromCode(rate.freightMode?.code) ?? FreightMode.air;
-    final serviceMode = _serviceModeFromCode(rate.serviceMode?.code) ?? ServiceMode.doorToDoor;
+    final freightMode =
+        _freightModeFromCode(rate.freightMode?.code) ?? FreightMode.air;
+    final serviceMode =
+        _serviceModeFromCode(rate.serviceMode?.code) ?? ServiceMode.doorToDoor;
     final isExpired = rate.isExpired;
     final expiryLabel = rate.rateExpiry == null
         ? (isExpired ? 'Expired' : 'Active')
-        : (isExpired ? 'Expired ${_formatDate(rate.rateExpiry!)}' : 'Active until ${_formatDate(rate.rateExpiry!)}');
+        : (isExpired
+              ? 'Expired ${_formatDate(rate.rateExpiry!)}'
+              : 'Active until ${_formatDate(rate.rateExpiry!)}');
 
     return PublishedRate(
       id: rate.id,
@@ -165,12 +224,16 @@ class RatesRepository {
   }
 
   ClientRate _mapClientRate(RatrixRate rate, String clientId) {
-    final freightMode = _freightModeFromCode(rate.freightMode?.code) ?? FreightMode.air;
-    final serviceMode = _serviceModeFromCode(rate.serviceMode?.code) ?? ServiceMode.doorToDoor;
+    final freightMode =
+        _freightModeFromCode(rate.freightMode?.code) ?? FreightMode.air;
+    final serviceMode =
+        _serviceModeFromCode(rate.serviceMode?.code) ?? ServiceMode.doorToDoor;
     final isExpired = rate.isExpired;
     final expiryLabel = rate.rateExpiry == null
         ? (isExpired ? 'Expired' : 'Active')
-        : (isExpired ? 'Expired ${_formatDate(rate.rateExpiry!)}' : 'Active until ${_formatDate(rate.rateExpiry!)}');
+        : (isExpired
+              ? 'Expired ${_formatDate(rate.rateExpiry!)}'
+              : 'Active until ${_formatDate(rate.rateExpiry!)}');
 
     return ClientRate(
       id: rate.id,
@@ -186,24 +249,37 @@ class RatesRepository {
   }
 
   String _formatDate(DateTime d) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
 
   FreightMode? _freightModeFromCode(String? code) => switch (code) {
-        'AIR' => FreightMode.air,
-        'LND' => FreightMode.land,
-        'SEA' => FreightMode.sea,
-        _ => null,
-      };
+    'AIR' => FreightMode.air,
+    'LND' => FreightMode.land,
+    'SEA' => FreightMode.sea,
+    _ => null,
+  };
 
   ServiceMode? _serviceModeFromCode(String? code) => switch (code) {
-        'D2D' => ServiceMode.doorToDoor,
-        'D2P' => ServiceMode.doorToPort,
-        'P2D' => ServiceMode.portToDoor,
-        'P2P' => ServiceMode.portToPort,
-        _ => null,
-      };
+    'D2D' => ServiceMode.doorToDoor,
+    'D2P' => ServiceMode.doorToPort,
+    'P2D' => ServiceMode.portToDoor,
+    'P2P' => ServiceMode.portToPort,
+    _ => null,
+  };
 
   /// Single rate by numeric id.
   Future<RatrixRate> fetchRateById(String id) async {
@@ -227,14 +303,31 @@ class RatesRepository {
     return null;
   }
 
-  Future<List<dynamic>> fetchAuditLogs({Map<String, dynamic>? query}) async {
-    final res = await _dataSource.fetchAuditLogs(queryParameters: query);
-    return _asList(res.data);
+  Future<List<AuditLog>> fetchAuditLogs({
+    String? recordId,
+    String? tableName,
+    String? action,
+    int perPage = 100,
+  }) async {
+    final res = await _dataSource.fetchAuditLogs(
+      queryParameters: {
+        if (recordId != null) 'record_id': recordId,
+        if (tableName != null) 'table_name': tableName,
+        if (action != null) 'action': action,
+        'per_page': perPage,
+      },
+    );
+    final rows = _asList(res.data);
+    return rows
+        .whereType<Map<String, dynamic>>()
+        .map(AuditLog.fromJson)
+        .toList();
   }
 
-  Future<Map<String, dynamic>> fetchAuditLog(String id) async {
+  Future<AuditLog?> fetchAuditLog(String id) async {
     final res = await _dataSource.fetchAuditLog(id);
-    return (res.data as Map<String, dynamic>?) ?? const {};
+    final data = res.data;
+    return data is Map<String, dynamic> ? AuditLog.fromJson(data) : null;
   }
 
   // ---------------------------------------------------------------------
@@ -277,16 +370,27 @@ class RatesRepository {
       // Laravel validation errors: { "field": ["message", ...], ... }
       final looksLikeFieldErrors = data.values.every((v) => v is List);
       if (looksLikeFieldErrors && data.isNotEmpty) {
-        final firstMessage = (data.values.first as List).isNotEmpty ? (data.values.first as List).first.toString() : 'Validation failed.';
+        final firstMessage = (data.values.first as List).isNotEmpty
+            ? (data.values.first as List).first.toString()
+            : 'Validation failed.';
         return RatesApiException(firstMessage, fieldErrors: data);
       }
       if (message != null && message.isNotEmpty) {
-        return RatesApiException(message, fieldErrors: data['errors'] as Map<String, dynamic>?);
+        return RatesApiException(
+          message,
+          fieldErrors: data['errors'] as Map<String, dynamic>?,
+        );
       }
     }
-    if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.connectionError) {
-      return const RatesApiException('Could not reach the server. Check your connection.');
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.connectionError) {
+      return const RatesApiException(
+        'Could not reach the server. Check your connection.',
+      );
     }
-    return RatesApiException(e.message ?? 'Something went wrong. Please try again.');
+    return RatesApiException(
+      e.message ?? 'Something went wrong. Please try again.',
+    );
   }
 }

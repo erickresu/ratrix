@@ -89,7 +89,16 @@ enum VatStatus {
   final String label;
 }
 
-enum RatesView { dashboard, customClients, customClientRates, publishedRates, create, shippingCalculatorClients, shippingCalculatorForm }
+enum RatesView {
+  dashboard,
+  customClients,
+  customClientRates,
+  publishedRates,
+  create,
+  shippingCalculatorClients,
+  shippingCalculatorForm,
+  auditTrail,
+}
 
 enum ServiceLevel {
   regular('Regular'),

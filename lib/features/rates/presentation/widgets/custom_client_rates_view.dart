@@ -11,6 +11,7 @@ import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 import 'back_pill.dart';
+import 'delete_rate_dialog.dart';
 
 const _kAllValue = '__all__';
 
@@ -72,14 +73,9 @@ class CustomClientRatesView extends StatelessWidget {
     final createRateButton = ShadButton(
       backgroundColor: context.colors.primary,
       hoverBackgroundColor: context.colors.primaryHover,
-      leading: const Icon(
-        CupertinoIcons.add,
-        size: 17,
-        color: Colors.white,
-      ),
-      onPressed: () => bloc.add(
-        const CreateCustomRateForSelectedClientRequested(),
-      ),
+      leading: const Icon(CupertinoIcons.add, size: 17, color: Colors.white),
+      onPressed: () =>
+          bloc.add(const CreateCustomRateForSelectedClientRequested()),
       child: const Text('Create New Rate'),
     );
 
@@ -88,17 +84,14 @@ class CustomClientRatesView extends StatelessWidget {
         _TabPill(
           label: 'Active',
           selected: state.clientRatesTab == RateStatus.active,
-          onTap: () => bloc.add(
-            const ClientRatesTabChanged(RateStatus.active),
-          ),
+          onTap: () => bloc.add(const ClientRatesTabChanged(RateStatus.active)),
         ),
         const SizedBox(width: 8),
         _TabPill(
           label: 'Expired',
           selected: state.clientRatesTab == RateStatus.expired,
-          onTap: () => bloc.add(
-            const ClientRatesTabChanged(RateStatus.expired),
-          ),
+          onTap: () =>
+              bloc.add(const ClientRatesTabChanged(RateStatus.expired)),
         ),
       ],
     );
@@ -108,15 +101,23 @@ class CustomClientRatesView extends StatelessWidget {
       child: ShadSelect<String>(
         placeholder: const Text('Freight mode'),
         initialValue: state.clientRateFreightFilter?.name ?? _kAllValue,
-        selectedOptionBuilder: (context, value) =>
-            Text(value == _kAllValue ? 'All modes' : FreightMode.values.byName(value).label),
+        selectedOptionBuilder: (context, value) => Text(
+          value == _kAllValue
+              ? 'All modes'
+              : FreightMode.values.byName(value).label,
+        ),
         onChanged: (value) {
           if (value == null) return;
-          bloc.add(ClientRateFreightFilterChanged(value == _kAllValue ? null : FreightMode.values.byName(value)));
+          bloc.add(
+            ClientRateFreightFilterChanged(
+              value == _kAllValue ? null : FreightMode.values.byName(value),
+            ),
+          );
         },
         options: [
           const ShadOption(value: _kAllValue, child: Text('All modes')),
-          for (final m in FreightMode.values) ShadOption(value: m.name, child: Text(m.label)),
+          for (final m in FreightMode.values)
+            ShadOption(value: m.name, child: Text(m.label)),
         ],
       ),
     );
@@ -126,15 +127,23 @@ class CustomClientRatesView extends StatelessWidget {
       child: ShadSelect<String>(
         placeholder: const Text('Service mode'),
         initialValue: state.clientRateServiceFilter?.name ?? _kAllValue,
-        selectedOptionBuilder: (context, value) =>
-            Text(value == _kAllValue ? 'All services' : ServiceMode.values.byName(value).label),
+        selectedOptionBuilder: (context, value) => Text(
+          value == _kAllValue
+              ? 'All services'
+              : ServiceMode.values.byName(value).label,
+        ),
         onChanged: (value) {
           if (value == null) return;
-          bloc.add(ClientRateServiceFilterChanged(value == _kAllValue ? null : ServiceMode.values.byName(value)));
+          bloc.add(
+            ClientRateServiceFilterChanged(
+              value == _kAllValue ? null : ServiceMode.values.byName(value),
+            ),
+          );
         },
         options: [
           const ShadOption(value: _kAllValue, child: Text('All services')),
-          for (final m in ServiceMode.values) ShadOption(value: m.name, child: Text(m.label)),
+          for (final m in ServiceMode.values)
+            ShadOption(value: m.name, child: Text(m.label)),
         ],
       ),
     );
@@ -142,9 +151,7 @@ class CustomClientRatesView extends StatelessWidget {
     final searchField = SizedBox(
       width: 260,
       child: ShadInput(
-        placeholder: const Text(
-          'Search by charge code, freight mode...',
-        ),
+        placeholder: const Text('Search by charge code, freight mode...'),
         leading: Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Icon(
@@ -182,126 +189,152 @@ class CustomClientRatesView extends StatelessWidget {
             ],
           );
 
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              BackPill(onTap: () => bloc.add(const ClientsBackRequested())),
-              const SizedBox(height: 24),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 16 : 32,
-                  vertical: isMobile ? 20 : 28,
-                ),
-                decoration: BoxDecoration(
-                  color: context.colors.sidebarPanelBg,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: isMobile
-                    ? Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              avatar,
-                              const SizedBox(width: 16),
-                              Flexible(child: clientInfo),
-                            ],
-                          ),
-                          createRateButton,
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          avatar,
-                          const SizedBox(width: 16),
-                          Expanded(child: clientInfo),
-                          createRateButton,
-                        ],
-                      ),
-              ),
-              const SizedBox(height: 28),
-              if (isMobile) ...[
-                tabsRow,
-                const SizedBox(height: 16),
-              ],
-              filtersControlsRow,
-            ],
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 0, isMobile ? 20 : 64, 56),
-            child: state.clientRatesLoading
-                ? const SkeletonShimmer(
-                    child: Column(
-                      children: [
-                        ListRowCardSkeleton(),
-                        SizedBox(height: 16),
-                        ListRowCardSkeleton(),
-                        SizedBox(height: 16),
-                        ListRowCardSkeleton(),
-                      ],
-                    ),
-                  )
-                : state.filteredClientRates.isEmpty
-                ? Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(40),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: context.colors.borderStrong,
-                        style: BorderStyle.solid,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          CupertinoIcons.tray,
-                          size: 26,
-                          color: context.colors.textFaint,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No ${state.clientRatesTab.label.toLowerCase()} rates for this client.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: context.colors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Column(
-                    children: [
-                      for (final rate in state.pagedClientRates) ...[
-                        _ClientRateCard(
-                          rate: rate,
-                          onTap: () => bloc.add(EditRateRequested(rate.id)),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ],
+    return BlocListener<RatesShellBloc, RatesShellState>(
+      listenWhen: (prev, curr) =>
+          curr.deleteRateError != null &&
+          prev.deleteRateError != curr.deleteRateError,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              backgroundColor: context.colors.destructive,
+              content: Text(state.deleteRateError!),
+            ),
+          );
+        bloc.add(const DeleteRateErrorDismissed());
+      },
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              isMobile ? 20 : 64,
+              48,
+              isMobile ? 20 : 64,
+              40,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BackPill(onTap: () => bloc.add(const ClientsBackRequested())),
+                const SizedBox(height: 24),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 16 : 32,
+                    vertical: isMobile ? 20 : 28,
                   ),
+                  decoration: BoxDecoration(
+                    color: context.colors.sidebarPanelBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: isMobile
+                      ? Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 16,
+                          runSpacing: 16,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                avatar,
+                                const SizedBox(width: 16),
+                                Flexible(child: clientInfo),
+                              ],
+                            ),
+                            createRateButton,
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            avatar,
+                            const SizedBox(width: 16),
+                            Expanded(child: clientInfo),
+                            createRateButton,
+                          ],
+                        ),
+                ),
+                const SizedBox(height: 28),
+                if (isMobile) ...[tabsRow, const SizedBox(height: 16)],
+                filtersControlsRow,
+              ],
+            ),
           ),
-        ),
-        if (!state.clientRatesLoading && state.filteredClientRates.isNotEmpty)
-          PaginationBar(
-            page: state.clientRatePage,
-            itemsPerPage: RatesShellState.clientRatesPerPage,
-            totalItems: state.filteredClientRates.length,
-            onPageChanged: (p) => bloc.add(ClientRatePageChanged(p)),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                isMobile ? 20 : 64,
+                0,
+                isMobile ? 20 : 64,
+                24,
+              ),
+              child: state.clientRatesLoading
+                  ? const SkeletonShimmer(
+                      child: Column(
+                        children: [
+                          ListRowCardSkeleton(),
+                          SizedBox(height: 16),
+                          ListRowCardSkeleton(),
+                          SizedBox(height: 16),
+                          ListRowCardSkeleton(),
+                        ],
+                      ),
+                    )
+                  : state.filteredClientRates.isEmpty
+                  ? Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(40),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: context.colors.borderStrong,
+                          style: BorderStyle.solid,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            CupertinoIcons.tray,
+                            size: 26,
+                            color: context.colors.textFaint,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No ${state.clientRatesTab.label.toLowerCase()} rates for this client.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: context.colors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _ClientRatesTable(
+                      rates: state.pagedClientRates,
+                      deletingRateId: state.deletingRateId,
+                      onEdit: (rate) => bloc.add(EditRateRequested(rate.id)),
+                      onDelete: (rate) async {
+                        final confirmed = await showShadDialog<bool>(
+                          context: context,
+                          builder: (_) =>
+                              DeleteRateDialog(chargeCode: rate.chargeCode),
+                        );
+                        if (confirmed == true)
+                          bloc.add(DeleteRateRequested(rate.id));
+                      },
+                    ),
+            ),
           ),
-      ],
+          if (!state.clientRatesLoading && state.filteredClientRates.isNotEmpty)
+            PaginationBar(
+              page: state.clientRatePage,
+              itemsPerPage: RatesShellState.clientRatesPerPage,
+              totalItems: state.filteredClientRates.length,
+              onPageChanged: (p) => bloc.add(ClientRatePageChanged(p)),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -371,7 +404,9 @@ class _SortByExpiryToggle extends StatelessWidget {
             decoration: BoxDecoration(
               color: active ? context.colors.primary : context.colors.surface,
               border: Border.all(
-                color: active ? context.colors.primary : context.colors.borderStrong,
+                color: active
+                    ? context.colors.primary
+                    : context.colors.borderStrong,
               ),
               borderRadius: BorderRadius.circular(7),
             ),
@@ -387,86 +422,284 @@ class _SortByExpiryToggle extends StatelessWidget {
   }
 }
 
-class _ClientRateCard extends StatelessWidget {
-  const _ClientRateCard({required this.rate, required this.onTap});
+class _ClientRatesTable extends StatelessWidget {
+  const _ClientRatesTable({
+    required this.rates,
+    required this.deletingRateId,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final List<ClientRate> rates;
+  final String? deletingRateId;
+  final ValueChanged<ClientRate> onEdit;
+  final ValueChanged<ClientRate> onDelete;
+
+  static const _headerStyle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.4,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        border: Border.all(color: context.colors.border),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: context.colors.shadowSoft,
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            color: context.colors.surfaceSubtle,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'CHARGE CODE',
+                    style: _headerStyle.copyWith(
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'MODE',
+                    style: _headerStyle.copyWith(
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'SERVICE',
+                    style: _headerStyle.copyWith(
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'ROUTES',
+                    style: _headerStyle.copyWith(
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'STATUS',
+                    style: _headerStyle.copyWith(
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 80),
+              ],
+            ),
+          ),
+          for (final rate in rates)
+            _ClientRateRow(
+              rate: rate,
+              deleting: deletingRateId == rate.id,
+              onTap: () => onEdit(rate),
+              onDelete: () => onDelete(rate),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClientRateRow extends StatelessWidget {
+  const _ClientRateRow({
+    required this.rate,
+    required this.deleting,
+    required this.onTap,
+    required this.onDelete,
+  });
 
   final ClientRate rate;
+  final bool deleting;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final isActive = rate.status == RateStatus.active;
 
+    return Opacity(
+      opacity: deleting ? 0.5 : 1,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: context.colors.border)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Text(
+                rate.chargeCode,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'monospace',
+                  color: context.colors.textBody,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ShadBadge(
+                  backgroundColor: context.colors.successBg.withValues(
+                    alpha: 0.6,
+                  ),
+                  hoverBackgroundColor: context.colors.successBg.withValues(
+                    alpha: 0.6,
+                  ),
+                  foregroundColor: context.colors.primaryDeep,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 3,
+                  ),
+                  child: Text(
+                    rate.freightMode.label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                rate.serviceMode.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.colors.textMutedStrong,
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                '${rate.routeCount} route(s)',
+                style: TextStyle(fontSize: 13, color: context.colors.textMuted),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ShadBadge(
+                  backgroundColor: isActive
+                      ? context.colors.successBg
+                      : context.colors.surfaceMuted,
+                  hoverBackgroundColor: isActive
+                      ? context.colors.successBg
+                      : context.colors.surfaceMuted,
+                  foregroundColor: isActive
+                      ? context.colors.successText
+                      : context.colors.textMuted,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    rate.expiryLabel,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 80,
+              child: deleting
+                  ? const Center(
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        _RowActionButton(
+                          icon: CupertinoIcons.pencil,
+                          background: context.colors.primaryChipBg,
+                          foreground: context.colors.primaryDeep,
+                          onTap: onTap,
+                        ),
+                        const SizedBox(width: 6),
+                        _RowActionButton(
+                          icon: CupertinoIcons.trash,
+                          background: context.colors.destructive.withValues(
+                            alpha: 0.1,
+                          ),
+                          foreground: context.colors.destructive,
+                          onTap: onDelete,
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RowActionButton extends StatelessWidget {
+  const _RowActionButton({
+    required this.icon,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: background,
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          decoration: BoxDecoration(
-            color: context.colors.surface,
-            border: Border.all(color: context.colors.border),
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: context.colors.shadowSoft,
-                blurRadius: 12,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              ShadBadge(
-                backgroundColor: context.colors.successBg.withValues(alpha: 0.6),
-                hoverBackgroundColor: context.colors.successBg.withValues(alpha: 0.6),
-                foregroundColor: context.colors.primaryDeep,
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                child: Text(
-                  rate.freightMode.label,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      rate.chargeCode,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'monospace',
-                        color: context.colors.textBody,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${rate.serviceMode.label} · ${rate.routeCount} route(s)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.colors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ShadBadge(
-                backgroundColor: isActive ? context.colors.successBg : context.colors.surfaceMuted,
-                hoverBackgroundColor: isActive ? context.colors.successBg : context.colors.surfaceMuted,
-                foregroundColor: isActive
-                    ? context.colors.successText
-                    : context.colors.textMuted,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                child: Text(
-                  rate.expiryLabel,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
+        child: Padding(
+          padding: const EdgeInsets.all(7),
+          child: Icon(icon, size: 15, color: foreground),
         ),
       ),
     );

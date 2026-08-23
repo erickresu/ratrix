@@ -72,30 +72,39 @@ class RateWizardState extends Equatable {
     this.lastSubmitStayedOnPage = false,
   });
 
-  String get chargeCodePrefix => '${(freightMode?.name ?? '').toUpperCase()}_${serviceMode.abbreviation}';
+  String get chargeCodePrefix =>
+      '${(freightMode?.name ?? '').toUpperCase()}_${serviceMode.abbreviation}';
 
   String get fullChargeCode {
     if (chargeCodeSuffix.trim().isEmpty) return chargeCodePrefix;
-    final suffix = chargeCodeSuffix.trim().toUpperCase().replaceAll(RegExp(r'\s+'), '_');
+    final suffix = chargeCodeSuffix.trim().toUpperCase().replaceAll(
+      RegExp(r'\s+'),
+      '_',
+    );
     return '${chargeCodePrefix}_$suffix';
   }
 
   bool get isValid => !isCustom || expiryDate != null;
 
+  /// Freight mode drives charge-code prefix and which addon fields apply
+  /// (e.g. sea vs air THC) — later steps don't make sense without it, so
+  /// step 0 can't be left until it's picked.
+  bool get canLeaveStep0 => freightMode != null;
+
   /// True when [pricingOption] is one of the 3 "Minimum …" breakweight
   /// variants — just informational here, a reminder that the first
   /// breakweight bracket's rate should be entered as a flat fee for these.
   bool get requiresMinimumCharge => const {
-        PricingOption.minimumFixedBreakweight,
-        PricingOption.minimumCummulativeBreakweight,
-        PricingOption.minimumExcessBreakweight,
-      }.contains(pricingOption);
+    PricingOption.minimumFixedBreakweight,
+    PricingOption.minimumCummulativeBreakweight,
+    PricingOption.minimumExcessBreakweight,
+  }.contains(pricingOption);
 
   List<String> get locationSuggestions => switch (locationBasis) {
-        LocationBasis.city => phCities,
-        LocationBasis.province => phProvinces,
-        LocationBasis.code => const [],
-      };
+    LocationBasis.city => phCities,
+    LocationBasis.province => phProvinces,
+    LocationBasis.code => const [],
+  };
 
   RateWizardState copyWith({
     int? step,
@@ -146,50 +155,58 @@ class RateWizardState extends Equatable {
       phProvinces: phProvinces ?? this.phProvinces,
       matrixRows: matrixRows ?? this.matrixRows,
       breakweights: breakweights ?? this.breakweights,
-      removeRouteIndex: clearRemoveRouteIndex ? null : (removeRouteIndex ?? this.removeRouteIndex),
+      removeRouteIndex: clearRemoveRouteIndex
+          ? null
+          : (removeRouteIndex ?? this.removeRouteIndex),
       addonValues: addonValues ?? this.addonValues,
       addonModes: addonModes ?? this.addonModes,
       conditionalType: conditionalType ?? this.conditionalType,
-      conditionalPricingOption: conditionalPricingOption ?? this.conditionalPricingOption,
-      conditionalMatrixRows: conditionalMatrixRows ?? this.conditionalMatrixRows,
-      conditionalBreakweights: conditionalBreakweights ?? this.conditionalBreakweights,
+      conditionalPricingOption:
+          conditionalPricingOption ?? this.conditionalPricingOption,
+      conditionalMatrixRows:
+          conditionalMatrixRows ?? this.conditionalMatrixRows,
+      conditionalBreakweights:
+          conditionalBreakweights ?? this.conditionalBreakweights,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       submitError: clearSubmitError ? null : (submitError ?? this.submitError),
-      submitSucceeded: clearSubmitSucceeded ? false : (submitSucceeded ?? this.submitSucceeded),
-      lastSubmitStayedOnPage: lastSubmitStayedOnPage ?? this.lastSubmitStayedOnPage,
+      submitSucceeded: clearSubmitSucceeded
+          ? false
+          : (submitSucceeded ?? this.submitSucceeded),
+      lastSubmitStayedOnPage:
+          lastSubmitStayedOnPage ?? this.lastSubmitStayedOnPage,
     );
   }
 
   @override
   List<Object?> get props => [
-        isCustom,
-        clientId,
-        clientName,
-        editingRateId,
-        step,
-        freightMode,
-        serviceMode,
-        chargeBasis,
-        pricingOption,
-        chargeCodeSuffix,
-        expiryDate,
-        matrixTab,
-        markup,
-        locationBasis,
-        phCities,
-        phProvinces,
-        matrixRows,
-        breakweights,
-        removeRouteIndex,
-        addonValues,
-        addonModes,
-        conditionalType,
-        conditionalPricingOption,
-        conditionalMatrixRows,
-        conditionalBreakweights,
-        isSubmitting,
-        submitError,
-        submitSucceeded,
-        lastSubmitStayedOnPage,
-      ];
+    isCustom,
+    clientId,
+    clientName,
+    editingRateId,
+    step,
+    freightMode,
+    serviceMode,
+    chargeBasis,
+    pricingOption,
+    chargeCodeSuffix,
+    expiryDate,
+    matrixTab,
+    markup,
+    locationBasis,
+    phCities,
+    phProvinces,
+    matrixRows,
+    breakweights,
+    removeRouteIndex,
+    addonValues,
+    addonModes,
+    conditionalType,
+    conditionalPricingOption,
+    conditionalMatrixRows,
+    conditionalBreakweights,
+    isSubmitting,
+    submitError,
+    submitSucceeded,
+    lastSubmitStayedOnPage,
+  ];
 }
