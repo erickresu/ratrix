@@ -231,7 +231,7 @@ class _AuditLogTable extends StatelessWidget {
       children: [
         Container(
           color: context.colors.surfaceSubtle,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
               Expanded(
@@ -366,7 +366,7 @@ class _AuditLogRow extends StatelessWidget {
           builder: (_) => _AuditLogDetailDialog(log: log),
         ),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           decoration: BoxDecoration(
             border: Border(top: BorderSide(color: context.colors.border)),
           ),
@@ -379,7 +379,7 @@ class _AuditLogRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: context.colors.textMutedStrong,
                   ),
                 ),
@@ -426,7 +426,7 @@ class _AuditLogRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: context.colors.textMutedStrong,
                   ),
                 ),

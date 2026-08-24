@@ -117,13 +117,8 @@ class FreightBreakdownPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: context.colors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: context.colors.border),
-            ),
+          child: _PulsingBorderCard(
+            borderRadius: BorderRadius.circular(16),
             child: Column(
               children: [
                 _DialogHeader(rateType: state.rateType),
@@ -155,6 +150,68 @@ class FreightBreakdownPanel extends StatelessWidget {
           GeneratePdfButton(state: state, client: client),
         ],
       ],
+    );
+  }
+}
+
+/// Wraps the docked result card in a slow, continuous border-color pulse
+/// (normal border <-> gold) so the panel keeps gently drawing the eye while
+/// a result is showing — the panel would otherwise blend into the page next
+/// to the plain-bordered form cards.
+class _PulsingBorderCard extends StatefulWidget {
+  const _PulsingBorderCard({required this.child, required this.borderRadius});
+
+  final Widget child;
+  final BorderRadius borderRadius;
+
+  @override
+  State<_PulsingBorderCard> createState() => _PulsingBorderCardState();
+}
+
+class _PulsingBorderCardState extends State<_PulsingBorderCard> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final borderColor = Color.lerp(context.colors.border, context.colors.primary, _controller.value)!;
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: widget.borderRadius,
+            boxShadow: [
+              BoxShadow(
+                color: context.colors.primary.withValues(alpha: 0.35 * _controller.value),
+                blurRadius: 16,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              borderRadius: widget.borderRadius,
+              border: Border.all(color: borderColor, width: 2),
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: widget.child,
     );
   }
 }

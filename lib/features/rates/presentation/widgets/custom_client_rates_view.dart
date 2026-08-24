@@ -491,7 +491,7 @@ class _ClientRatesTable extends StatelessWidget {
       children: [
         Container(
           color: context.colors.surfaceSubtle,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
               Expanded(
@@ -778,7 +778,7 @@ class _ClientRateRow extends StatelessWidget {
     return Opacity(
       opacity: deleting ? 0.5 : 1,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
           border: Border(top: BorderSide(color: context.colors.border)),
         ),
@@ -791,7 +791,7 @@ class _ClientRateRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'monospace',
                   color: context.colors.textBody,
@@ -810,7 +810,7 @@ class _ClientRateRow extends StatelessWidget {
               child: Text(
                 rate.serviceMode.label,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 12,
                   color: context.colors.textMutedStrong,
                 ),
               ),
@@ -819,7 +819,7 @@ class _ClientRateRow extends StatelessWidget {
               flex: 2,
               child: Text(
                 '${rate.routeCount} route(s)',
-                style: TextStyle(fontSize: 13, color: context.colors.textMuted),
+                style: TextStyle(fontSize: 12, color: context.colors.textMuted),
               ),
             ),
             Expanded(

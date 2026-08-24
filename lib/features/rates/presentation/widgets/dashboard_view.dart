@@ -33,9 +33,9 @@ class DashboardView extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(
-            isMobile ? 20 : 64,
-            48,
-            isMobile ? 20 : 64,
+            isMobile ? 20 : 88,
+            64,
+            isMobile ? 20 : 88,
             40,
           ),
           child: Row(
@@ -120,13 +120,19 @@ class DashboardView extends StatelessWidget {
         ),
         Expanded(
           child: CustomScrollView(
+            // Desktop's content (5-row table + stat cards) fits the
+            // viewport by design now, so scrolling there is disabled
+            // outright rather than just discouraged — mobile keeps normal
+            // scroll since its stacked/compact layout can still run taller
+            // than the screen.
+            physics: isMobile ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
             slivers: [
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(
-                  isMobile ? 20 : 64,
+                  isMobile ? 20 : 88,
                   0,
-                  isMobile ? 20 : 64,
-                  56,
+                  isMobile ? 20 : 88,
+                  64,
                 ),
                 sliver: SliverFillRemaining(
                   hasScrollBody: false,
@@ -185,7 +191,11 @@ class DashboardView extends StatelessWidget {
                           blurRadius: 20,
                           shadowOffset: const Offset(0, 8),
                           width: double.infinity,
-                          child: _RecentRatesTable(rates: state.recentRates),
+                          // Capped at 5 so the dashboard's table fits within
+                          // the viewport without needing its own scroll —
+                          // "recent" only ever needs a glance, not the full
+                          // history (that lives in Published/Custom Rates).
+                          child: _RecentRatesTable(rates: state.recentRates.take(5).toList()),
                         ),
                       ),
                     ],
@@ -516,7 +526,7 @@ class _RecentRatesTable extends StatelessWidget {
       );
     }
 
-    final bodyFontSize = compact ? 12.0 : 14.0;
+    final bodyFontSize = 12.0;
     final rowPadding = EdgeInsets.symmetric(
       horizontal: compact ? 18 : 24,
       vertical: 18,
