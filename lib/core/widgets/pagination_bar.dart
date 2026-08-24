@@ -62,6 +62,7 @@ class PaginationBar extends StatelessWidget {
     );
 
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.fromLTRB(
         isMobile ? 16 : 40,
         12,
@@ -73,12 +74,13 @@ class PaginationBar extends StatelessWidget {
         border: Border(top: BorderSide(color: context.colors.border)),
       ),
       child: isMobile
-          ? Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 12,
-              runSpacing: 8,
-              children: [rangeText, pageControls],
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                rangeText,
+                const SizedBox(height: 10),
+                pageControls,
+              ],
             )
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

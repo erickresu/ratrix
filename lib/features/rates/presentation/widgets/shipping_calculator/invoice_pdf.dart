@@ -7,16 +7,16 @@ import '../../../domain/entities/client.dart';
 import '../../../domain/entities/rates_fk_ids.dart';
 import '../../bloc/shipping_calculator_bloc.dart';
 
-const _tealDeep = PdfColor.fromInt(0xFF1B7A65);
+const _goldDeep = PdfColor.fromInt(0xFFB8890F);
 const _textBody = PdfColor.fromInt(0xFF1A1F26);
 const _textMuted = PdfColor.fromInt(0xFF6B7280);
 const _border = PdfColor.fromInt(0xFFE2E5EA);
 const _sectionBg = PdfColor.fromInt(0xFFF4F6F8);
 const _white = PdfColor.fromInt(0xFFFFFFFF);
-// Matches `RatesColors.dark.sidebarBg` — the logo asset's own canvas is
-// solid black (no alpha), so the header band needs to be the same near-black
-// for it to blend in rather than showing as a box.
-const _brandBlack = PdfColor.fromInt(0xFF0B1210);
+// Matches the logo asset's own canvas (regenerated navy, no alpha) and
+// `RatesColors.dark.sidebarBg` — the header band needs to be the same navy
+// for the logo to blend in rather than showing as a box.
+const _brandNavy = PdfColor.fromInt(0xFF0F1B2E);
 
 /// One row of the charges item table.
 typedef _ChargeItem = ({String description, String rate, String qty, num total});
@@ -105,7 +105,7 @@ Future<void> generateInvoicePdf({
                           pw.Text('TOTAL:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: _textBody)),
                           pw.Text(
                             'Php ${(state.roundedDisplay ? state.grandTotal.roundToDouble() : state.grandTotal).toStringAsFixed(2)}',
-                            style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: _tealDeep),
+                            style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: _goldDeep),
                           ),
                         ],
                       ),
@@ -140,7 +140,7 @@ pw.Widget _header(pw.ImageProvider logo, String referenceNo, String date, String
   return pw.Container(
     padding: const pw.EdgeInsets.all(16),
     decoration: pw.BoxDecoration(
-      color: _brandBlack,
+      color: _brandNavy,
       borderRadius: pw.BorderRadius.circular(6),
     ),
     child: pw.Row(
@@ -232,7 +232,7 @@ pw.Widget _itemTable(List<_ChargeItem> items) {
     },
     children: [
       pw.TableRow(
-        decoration: pw.BoxDecoration(color: _tealDeep),
+        decoration: pw.BoxDecoration(color: _goldDeep),
         children: [
           headerCell('SL'),
           headerCell('DESCRIPTION'),

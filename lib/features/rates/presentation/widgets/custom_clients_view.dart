@@ -106,7 +106,9 @@ class CustomClientsView extends StatelessWidget {
               ? SkeletonShimmer(
                   child: GridView.builder(
                     padding: gridPadding,
-                    physics: const NeverScrollableScrollPhysics(),
+                    physics: isMobile
+                        ? const AlwaysScrollableScrollPhysics()
+                        : const NeverScrollableScrollPhysics(),
                     itemCount: columns * _clientGridRows,
                     gridDelegate: gridDelegate,
                     itemBuilder: (context, index) => const GridCardSkeleton(),
@@ -114,7 +116,15 @@ class CustomClientsView extends StatelessWidget {
                 )
               : GridView.builder(
                   padding: gridPadding,
-                  physics: const NeverScrollableScrollPhysics(),
+                  // Desktop/tablet pages always fit their fixed 3-row grid
+                  // within the Expanded region, so scrolling is disabled
+                  // there. On mobile that's not true — 3 rows of 184px
+                  // cards can exceed the viewport left after the header and
+                  // pagination bar, and a non-scrollable grid just clips
+                  // instead of ever showing the rest.
+                  physics: isMobile
+                      ? const AlwaysScrollableScrollPhysics()
+                      : const NeverScrollableScrollPhysics(),
                   itemCount: state.pagedClients.length,
                   gridDelegate: gridDelegate,
                   itemBuilder: (context, index) {

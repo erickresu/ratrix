@@ -63,58 +63,122 @@ class _CalculatorView extends StatelessWidget {
             ),
           );
 
+    final header = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        BackPill(onTap: () => shellBloc.add(const ShippingCalculatorBackRequested())),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Text(
+              'Calculate Freight',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.colors.textBody),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
+                child: Text(
+                  client.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Enter cargo and routing details to compute the freight breakdown.',
+          style: TextStyle(fontSize: 14, color: context.colors.textMuted),
+        ),
+      ],
+    );
+
+    final formColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _ServiceFreightCard(),
+        const SizedBox(height: 20),
+        routingAndCargo,
+        const SizedBox(height: 20),
+        const _SubmitButton(),
+      ],
+    );
+
+    // Force both columns' button rows (Reset/Calculate on the left,
+    // Generate Invoice PDF on the right) to sit level with each other —
+    // `IntrinsicHeight` + `stretch` gives both columns the taller one's
+    // height, and `spaceBetween` pins each column's last child (its button
+    // row) to that shared bottom edge instead of trailing wherever its own
+    // content happened to end.
+    final desktopLayout = IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const _ServiceFreightCard(),
+                    const SizedBox(height: 20),
+                    routingAndCargo,
+                  ],
+                ),
+                const Padding(padding: EdgeInsets.only(top: 20), child: _SubmitButton()),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          SizedBox(
+            width: 400,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // `Expanded` grows the card to fill the same height as the
+                // left column's details cards (both columns are stretched
+                // by the outer `IntrinsicHeight`), instead of the card
+                // sizing to its own content and leaving a big empty gap
+                // before the button.
+                Expanded(child: FreightBreakdownPanel(client: client, showButton: false)),
+                Padding(padding: const EdgeInsets.only(top: 20), child: _GeneratePdfButtonSlot(client: client)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final content = SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 56),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 24),
+          isMobile ? formColumn : desktopLayout,
+        ],
+      ),
+    );
+
+    // Desktop/tablet shows the result docked as a right-hand panel (always
+    // in the layout, no listener needed — it just re-renders off state).
+    // Mobile has no room for that side-by-side, so it keeps the modal.
+    if (!isMobile) return content;
+
     return BlocListener<ShippingCalculatorBloc, ShippingCalculatorState>(
-      // Only when a result newly appears — not on every recompute (e.g. the
-      // charge-basis switch inside the already-open dialog), which must
-      // update the same dialog in place rather than opening a new one.
       listenWhen: (prev, curr) => prev.calcResult == null && curr.calcResult != null,
       listener: (context, state) {
         final calcBloc = context.read<ShippingCalculatorBloc>();
-        final shellBloc = context.read<RatesShellBloc>();
         showFreightBreakdownDialog(context, calcBloc: calcBloc, shellBloc: shellBloc, client: client);
       },
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 56),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            BackPill(onTap: () => shellBloc.add(const ShippingCalculatorBackRequested())),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Text(
-                  'Calculate Freight',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: context.colors.textBody),
-                ),
-                const SizedBox(width: 10),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
-                    child: Text(
-                      client.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Enter cargo and routing details to compute the freight breakdown.',
-              style: TextStyle(fontSize: 14, color: context.colors.textMuted),
-            ),
-            const SizedBox(height: 24),
-            const _ServiceFreightCard(),
-            const SizedBox(height: 20),
-            routingAndCargo,
-            const SizedBox(height: 20),
-            const _SubmitButton(),
-          ],
-        ),
-      ),
+      child: content,
     );
   }
 }
@@ -272,25 +336,6 @@ class _ServiceFreightCard extends StatelessWidget {
       ],
     );
 
-    final serviceLevelField = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _FieldLabel('Service Level'),
-        SizedBox(
-          width: double.infinity,
-          height: _fieldHeight,
-          child: ShadSelect<ServiceLevel>(
-            initialValue: state.serviceLevel,
-            selectedOptionBuilder: (context, value) => Text(value.label),
-            onChanged: (value) {
-              if (value != null) bloc.add(CalcServiceLevelChanged(value));
-            },
-            options: [for (final l in ServiceLevel.values) ShadOption(value: l, child: Text(l.label))],
-          ),
-        ),
-      ],
-    );
-
     Widget fieldRow(Widget left, Widget right) {
       if (isMobile) {
         return Column(
@@ -317,8 +362,6 @@ class _ServiceFreightCard extends StatelessWidget {
           fieldRow(rateCategoryField, freightModeField),
           const SizedBox(height: 20),
           fieldRow(serviceModeField, rateTableField),
-          const SizedBox(height: 20),
-          isMobile ? serviceLevelField : fieldRow(serviceLevelField, const SizedBox.shrink()),
         ],
       ),
     );
@@ -430,7 +473,7 @@ class _CargoDetailsCard extends StatelessWidget {
         const _FieldLabel('Divisor'),
         ShadInput(
           initialValue: state.divisor,
-          keyboardType: TextInputType.number,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (v) => bloc.add(CalcDivisorChanged(v)),
         ),
       ],
@@ -443,7 +486,7 @@ class _CargoDetailsCard extends StatelessWidget {
         ShadInput(
           placeholder: const Text('0.00'),
           initialValue: state.weight,
-          keyboardType: TextInputType.number,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (v) => bloc.add(CalcWeightChanged(v)),
         ),
       ],
@@ -456,8 +499,27 @@ class _CargoDetailsCard extends StatelessWidget {
         ShadInput(
           placeholder: const Text('0.00'),
           initialValue: state.declaredValue,
-          keyboardType: TextInputType.number,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (v) => bloc.add(CalcDeclaredValueChanged(v)),
+        ),
+      ],
+    );
+
+    final chargeBasisField = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _FieldLabel('Charge Basis'),
+        SizedBox(
+          width: double.infinity,
+          height: _fieldHeight,
+          child: ShadSelect<CalcChargeBasis>(
+            initialValue: state.chargeBasis,
+            selectedOptionBuilder: (context, value) => Text(value.label),
+            onChanged: (value) {
+              if (value != null) bloc.add(CalcChargeBasisChanged(value));
+            },
+            options: [for (final b in CalcChargeBasis.values) ShadOption(value: b, child: Text(b.label))],
+          ),
         ),
       ],
     );
@@ -511,7 +573,7 @@ class _CargoDetailsCard extends StatelessWidget {
                 child: ShadInput(
                   placeholder: const Text('L'),
                   initialValue: state.length,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (v) => bloc.add(CalcLengthChanged(v)),
                 ),
               ),
@@ -520,7 +582,7 @@ class _CargoDetailsCard extends StatelessWidget {
                 child: ShadInput(
                   placeholder: const Text('W'),
                   initialValue: state.width,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (v) => bloc.add(CalcWidthChanged(v)),
                 ),
               ),
@@ -529,7 +591,7 @@ class _CargoDetailsCard extends StatelessWidget {
                 child: ShadInput(
                   placeholder: const Text('H'),
                   initialValue: state.height,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (v) => bloc.add(CalcHeightChanged(v)),
                 ),
               ),
@@ -537,6 +599,8 @@ class _CargoDetailsCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           fieldRow3(divisorField, weightField, declaredValueField),
+          const SizedBox(height: 20),
+          chargeBasisField,
           if (actualWeight != null && volumetricWeight != null) ...[
             const SizedBox(height: 12),
             _HigherWeightIndicator(actualWeight: actualWeight, volumetricWeight: volumetricWeight),
@@ -604,27 +668,97 @@ class _RouteTiersInfoButton extends StatelessWidget {
   final String destination;
   final List<RatrixBreakweight> tiers;
 
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: () => showShadDialog<void>(
+  void _showDialog(BuildContext context) => showShadDialog<void>(
         context: context,
         builder: (dialogContext) => ShadDialog(
           radius: BorderRadius.circular(16),
           backgroundColor: dialogContext.colors.surface,
-          title: const Text('Route Breakweights'),
+          padding: EdgeInsets.zero,
+          closeIcon: const SizedBox.shrink(),
           child: Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: RouteTiersTable(origin: origin, destination: destination, tiers: tiers),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(CupertinoIcons.square_stack_3d_up, size: 18, color: dialogContext.colors.primaryDeep),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Route Breakweights',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: dialogContext.colors.textBody),
+                      ),
+                    ),
+                    Material(
+                      color: dialogContext.colors.surfaceMuted,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: () => Navigator.of(dialogContext).pop(),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Icon(CupertinoIcons.xmark, size: 14, color: dialogContext.colors.textMuted),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                RouteTiersTable(origin: origin, destination: destination, tiers: tiers),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: context.colors.primaryChipBg,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => _showDialog(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: context.colors.primaryBorder),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(CupertinoIcons.info_circle, size: 15, color: context.colors.primaryDeep),
+              const SizedBox(width: 6),
+              Text(
+                'Rate Details',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.primaryDeep),
+              ),
+            ],
           ),
         ),
       ),
-      icon: Icon(CupertinoIcons.info_circle, size: 18, color: context.colors.textMuted),
-      tooltip: 'View breakweight brackets for this route',
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
     );
+  }
+}
+
+/// Renders `GeneratePdfButton` in its own slot outside `FreightBreakdownPanel`
+/// (which is told `showButton: false`) so it can sit in a separate bottom-
+/// aligned row alongside the form's Reset/Calculate buttons — see
+/// `desktopLayout` in `_CalculatorView`.
+class _GeneratePdfButtonSlot extends StatelessWidget {
+  const _GeneratePdfButtonSlot({required this.client});
+
+  final Client client;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<ShippingCalculatorBloc>().state;
+    final result = state.calcResult;
+    if (result == null || result.error != null) return const SizedBox.shrink();
+    return GeneratePdfButton(state: state, client: client);
   }
 }
 

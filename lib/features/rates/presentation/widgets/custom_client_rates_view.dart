@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ratrix/core/widgets/shine_sweep.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../../core/utils/breakpoints.dart';
+import '../../../../core/widgets/horizontal_scroll_table.dart';
 import '../../../../core/widgets/mr_ratrix.dart';
 import '../../../../core/widgets/pagination_bar.dart';
 import '../../../../core/widgets/skeleton_box.dart';
@@ -438,8 +439,34 @@ class _ClientRatesTable extends StatelessWidget {
     letterSpacing: 0.4,
   );
 
+  // Mobile column widths — CHARGE CODE stays pinned in a fixed left pane,
+  // MODE/SERVICE/ROUTES/STATUS/actions scroll horizontally together, same
+  // split the dashboard's recent-rates table and the rate wizard's matrix
+  // table use.
+  static const _chargeCodeWidth = 130.0;
+  static const _modeWidth = 90.0;
+  static const _serviceWidth = 90.0;
+  static const _routesWidth = 90.0;
+  static const _statusWidth = 130.0;
+  static const _actionsWidth = 92.0;
+  static const _colGap = 12.0;
+  static const _headerHeight = 40.0;
+  static const _rowHeight = 64.0;
+  // +24 accounts for the scrollable pane's own 12px symmetric padding
+  // (left+right) around the header/row content — without it the last
+  // column (actions) clips against the pane's right edge.
+  static const _scrollableWidth = _modeWidth +
+      _serviceWidth +
+      _routesWidth +
+      _statusWidth +
+      _actionsWidth +
+      _colGap * 4 +
+      24;
+
   @override
   Widget build(BuildContext context) {
+    final isMobile = Breakpoints.isMobile(context);
+
     return Container(
       decoration: BoxDecoration(
         color: context.colors.surface,
@@ -454,72 +481,157 @@ class _ClientRatesTable extends StatelessWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            color: context.colors.surfaceSubtle,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
+      child: isMobile ? _buildMobile(context) : _buildDesktop(context),
+    );
+  }
+
+  Widget _buildDesktop(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          color: context.colors.surfaceSubtle,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'CHARGE CODE',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'MODE',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'SERVICE',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'ROUTES',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'STATUS',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              const SizedBox(width: 80),
+            ],
+          ),
+        ),
+        for (final rate in rates)
+          _ClientRateRow(
+            rate: rate,
+            deleting: deletingRateId == rate.id,
+            onTap: () => onEdit(rate),
+            onDelete: () => onDelete(rate),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMobile(BuildContext context) {
+    Widget headerCell(String text, double width, {TextAlign align = TextAlign.left}) =>
+        SizedBox(
+          width: width,
+          child: Text(
+            text,
+            textAlign: align,
+            style: _headerStyle.copyWith(color: context.colors.textMuted),
+          ),
+        );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: _chargeCodeWidth,
+          child: Column(
+            children: [
+              Container(
+                height: _headerHeight,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 20),
+                color: context.colors.surfaceSubtle,
+                child: Text(
+                  'CHARGE CODE',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              for (final rate in rates)
+                Container(
+                  height: _rowHeight,
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: context.colors.border)),
+                  ),
+                  child: Text(
+                    rate.chargeCode,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'monospace',
+                      color: context.colors.textBody,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: HorizontalScrollTable(
+            width: _scrollableWidth,
+            child: Column(
               children: [
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    'CHARGE CODE',
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
+                Container(
+                  height: _headerHeight,
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  color: context.colors.surfaceSubtle,
+                  child: Row(
+                    children: [
+                      headerCell('MODE', _modeWidth),
+                      const SizedBox(width: _colGap),
+                      headerCell('SERVICE', _serviceWidth),
+                      const SizedBox(width: _colGap),
+                      headerCell('ROUTES', _routesWidth),
+                      const SizedBox(width: _colGap),
+                      headerCell('STATUS', _statusWidth),
+                      const SizedBox(width: _colGap),
+                      SizedBox(width: _actionsWidth),
+                    ],
                   ),
                 ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'MODE',
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
+                for (final rate in rates)
+                  _ClientRateRow(
+                    rate: rate,
+                    deleting: deletingRateId == rate.id,
+                    onTap: () => onEdit(rate),
+                    onDelete: () => onDelete(rate),
+                    compact: true,
                   ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'SERVICE',
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'ROUTES',
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    'STATUS',
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 80),
               ],
             ),
           ),
-          for (final rate in rates)
-            _ClientRateRow(
-              rate: rate,
-              deleting: deletingRateId == rate.id,
-              onTap: () => onEdit(rate),
-              onDelete: () => onDelete(rate),
-            ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -530,6 +642,7 @@ class _ClientRateRow extends StatelessWidget {
     required this.deleting,
     required this.onTap,
     required this.onDelete,
+    this.compact = false,
   });
 
   final ClientRate rate;
@@ -537,9 +650,130 @@ class _ClientRateRow extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
+  /// Renders without the CHARGE CODE column (pinned separately in mobile's
+  /// fixed left pane) and with fixed-width columns matching
+  /// `_ClientRatesTable._buildMobile`'s header, instead of flex columns.
+  final bool compact;
+
+  Widget _modeBadge(BuildContext context) => ShadBadge(
+        backgroundColor: context.colors.successBg.withValues(alpha: 0.6),
+        hoverBackgroundColor: context.colors.successBg.withValues(alpha: 0.6),
+        foregroundColor: context.colors.primaryDeep,
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+        child: Text(
+          rate.freightMode.label,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+        ),
+      );
+
+  Widget _statusBadge(BuildContext context, bool isActive) => ShadBadge(
+        backgroundColor:
+            isActive ? context.colors.successBg : context.colors.surfaceMuted,
+        hoverBackgroundColor:
+            isActive ? context.colors.successBg : context.colors.surfaceMuted,
+        foregroundColor:
+            isActive ? context.colors.successText : context.colors.textMuted,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Text(
+          rate.expiryLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      );
+
+  Widget _actions(BuildContext context, {required double width}) => SizedBox(
+        width: width,
+        child: deleting
+            ? const Center(
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _RowActionButton(
+                    icon: CupertinoIcons.pencil,
+                    background: context.colors.primaryChipBg,
+                    foreground: context.colors.primaryDeep,
+                    onTap: onTap,
+                  ),
+                  const SizedBox(width: 6),
+                  _RowActionButton(
+                    icon: CupertinoIcons.trash,
+                    background:
+                        context.colors.destructive.withValues(alpha: 0.1),
+                    foreground: context.colors.destructive,
+                    onTap: onDelete,
+                  ),
+                ],
+              ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final isActive = rate.status == RateStatus.active;
+
+    if (compact) {
+      return Opacity(
+        opacity: deleting ? 0.5 : 1,
+        child: Container(
+          height: _ClientRatesTable._rowHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: context.colors.border)),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: _ClientRatesTable._modeWidth,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _modeBadge(context),
+                ),
+              ),
+              const SizedBox(width: _ClientRatesTable._colGap),
+              SizedBox(
+                width: _ClientRatesTable._serviceWidth,
+                child: Text(
+                  rate.serviceMode.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.colors.textMutedStrong,
+                  ),
+                ),
+              ),
+              const SizedBox(width: _ClientRatesTable._colGap),
+              SizedBox(
+                width: _ClientRatesTable._routesWidth,
+                child: Text(
+                  '${rate.routeCount} route(s)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      TextStyle(fontSize: 13, color: context.colors.textMuted),
+                ),
+              ),
+              const SizedBox(width: _ClientRatesTable._colGap),
+              SizedBox(
+                width: _ClientRatesTable._statusWidth,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _statusBadge(context, isActive),
+                ),
+              ),
+              const SizedBox(width: _ClientRatesTable._colGap),
+              _actions(context, width: _ClientRatesTable._actionsWidth),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Opacity(
       opacity: deleting ? 0.5 : 1,
@@ -568,26 +802,7 @@ class _ClientRateRow extends StatelessWidget {
               flex: 2,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: ShadBadge(
-                  backgroundColor: context.colors.successBg.withValues(
-                    alpha: 0.6,
-                  ),
-                  hoverBackgroundColor: context.colors.successBg.withValues(
-                    alpha: 0.6,
-                  ),
-                  foregroundColor: context.colors.primaryDeep,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 3,
-                  ),
-                  child: Text(
-                    rate.freightMode.label,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+                child: _modeBadge(context),
               ),
             ),
             Expanded(
@@ -611,61 +826,10 @@ class _ClientRateRow extends StatelessWidget {
               flex: 3,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: ShadBadge(
-                  backgroundColor: isActive
-                      ? context.colors.successBg
-                      : context.colors.surfaceMuted,
-                  hoverBackgroundColor: isActive
-                      ? context.colors.successBg
-                      : context.colors.surfaceMuted,
-                  foregroundColor: isActive
-                      ? context.colors.successText
-                      : context.colors.textMuted,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  child: Text(
-                    rate.expiryLabel,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+                child: _statusBadge(context, isActive),
               ),
             ),
-            SizedBox(
-              width: 80,
-              child: deleting
-                  ? const Center(
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        _RowActionButton(
-                          icon: CupertinoIcons.pencil,
-                          background: context.colors.primaryChipBg,
-                          foreground: context.colors.primaryDeep,
-                          onTap: onTap,
-                        ),
-                        const SizedBox(width: 6),
-                        _RowActionButton(
-                          icon: CupertinoIcons.trash,
-                          background: context.colors.destructive.withValues(
-                            alpha: 0.1,
-                          ),
-                          foreground: context.colors.destructive,
-                          onTap: onDelete,
-                        ),
-                      ],
-                    ),
-            ),
+            _actions(context, width: 80),
           ],
         ),
       ),

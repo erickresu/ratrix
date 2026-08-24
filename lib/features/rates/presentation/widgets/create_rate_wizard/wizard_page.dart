@@ -355,6 +355,35 @@ class _WizardFooter extends StatelessWidget {
         ? [saveChangesButton, nextButton]
         : [nextButton];
 
+    final leading = step > 0
+        ? ShadButton.outline(
+            leading: const Icon(CupertinoIcons.chevron_left, size: 15),
+            onPressed: () => wizardBloc.add(const WizardBackStepRequested()),
+            child: const Text('Back'),
+          )
+        : blockedByFreightMode
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                CupertinoIcons.info_circle,
+                size: 14,
+                color: context.colors.textMuted,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  'Select a freight mode to continue',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.colors.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          )
+        : const SizedBox.shrink();
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         isMobile ? 20 : 64,
@@ -366,44 +395,27 @@ class _WizardFooter extends StatelessWidget {
         color: context.colors.surface,
         border: Border(top: BorderSide(color: context.colors.border)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          if (step > 0)
-            ShadButton.outline(
-              leading: const Icon(CupertinoIcons.chevron_left, size: 15),
-              onPressed: () => wizardBloc.add(const WizardBackStepRequested()),
-              child: const Text('Back'),
-            )
-          else if (blockedByFreightMode)
-            Row(
-              mainAxisSize: MainAxisSize.min,
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(
-                  CupertinoIcons.info_circle,
-                  size: 14,
-                  color: context.colors.textMuted,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Select a freight mode to continue',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: context.colors.textMuted,
+                // Primary action (Next/Publish) on top, Save changes below
+                // it — reverse of trailingButtons' desktop left-to-right
+                // order, since the most important action reads first when
+                // stacked.
+                for (final button in trailingButtons.reversed)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: SizedBox(width: double.infinity, child: button),
                   ),
-                ),
+                if (step > 0 || blockedByFreightMode) leading,
               ],
             )
-          else
-            const SizedBox.shrink(),
-          isMobile
-              ? Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: trailingButtons,
-                )
-              : Row(
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                leading,
+                Row(
                   children: [
                     for (final button in trailingButtons) ...[
                       button,
@@ -412,8 +424,8 @@ class _WizardFooter extends StatelessWidget {
                     ],
                   ],
                 ),
-        ],
-      ),
+              ],
+            ),
     );
   }
 }

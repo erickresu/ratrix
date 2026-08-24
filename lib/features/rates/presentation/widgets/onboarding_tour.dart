@@ -137,6 +137,10 @@ class OnboardingTour {
   final VoidCallback onFinish;
 
   void show(BuildContext context) {
+    // The drawer's nav items run edge-to-edge on phones, so a right-aligned
+    // bubble has nowhere to go and shoots off-screen — force bottom on
+    // mobile regardless of what each step normally prefers on desktop.
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
     final targets = [
       for (final step in _kSteps)
         TargetFocus(
@@ -146,7 +150,7 @@ class OnboardingTour {
           radius: 10,
           contents: [
             TargetContent(
-              align: step.align,
+              align: isMobile ? ContentAlign.bottom : step.align,
               builder: (context, controller) => _TourContent(
                 step: step,
                 isLast: step == _kSteps.last,
@@ -164,6 +168,9 @@ class OnboardingTour {
       opacityShadow: 0.75,
       paddingFocus: 8,
       hideSkip: true,
+      // Default pulse is 500ms — reads as a rapid flicker. Slow it down to
+      // a calmer breathing glow.
+      pulseAnimationDuration: const Duration(milliseconds: 3000),
       onFinish: () {
         _tts.stop();
         onFinish();
@@ -215,8 +222,132 @@ class _TourContentState extends State<_TourContent> {
   Future<void> _speakStep() =>
       _speak('${widget.step.title}. ${widget.step.body}');
 
+  Widget _buildBubble(BuildContext context, {required bool isMobile}) {
+    return Container(
+      width: isMobile ? double.infinity : 300,
+      padding: EdgeInsets.all(isMobile ? 20 : 26),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  widget.step.title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF17241F),
+                  ),
+                ),
+              ),
+              Material(
+                color: RatesColors.dark.primarySoftBg,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: _speakStep,
+                  child: Padding(
+                    padding: const EdgeInsets.all(7),
+                    child: Icon(
+                      Icons.volume_up_rounded,
+                      size: 18,
+                      color: RatesColors.dark.primaryDeep,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text.rich(
+            TextSpan(
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: Color(0xFF5B6B82),
+              ),
+              children: [
+                const TextSpan(
+                  text: 'Cerro: ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF17241F),
+                  ),
+                ),
+                TextSpan(text: widget.step.body),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: widget.onSkip,
+                style: TextButton.styleFrom(
+                  foregroundColor: RatesColors.dark.primary,
+                ),
+                child: const Text('Skip'),
+              ),
+              ElevatedButton(
+                onPressed: widget.onNext,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: RatesColors.dark.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(widget.isLast ? 'Got it' : 'Next'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isMobile = screenWidth < 600;
+
+    if (isMobile) {
+      // Bottom-aligned content on mobile spans the full screen width with
+      // no horizontal centering of its own — center this column within it.
+      return Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: screenWidth - 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              MrRatrix(size: (screenWidth * 0.4).clamp(120, 180)),
+              const SizedBox(height: 12),
+              _buildBubble(context, isMobile: true),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,106 +357,7 @@ class _TourContentState extends State<_TourContent> {
         Flexible(
           child: Padding(
             padding: const EdgeInsets.only(top: 36),
-            child: Container(
-              width: 300,
-              padding: const EdgeInsets.all(26),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.step.title,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF17241F),
-                          ),
-                        ),
-                      ),
-                      Material(
-                        color: RatesColors.dark.primarySoftBg,
-                        shape: const CircleBorder(),
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: _speakStep,
-                          child: Padding(
-                            padding: const EdgeInsets.all(7),
-                            child: Icon(
-                              Icons.volume_up_rounded,
-                              size: 18,
-                              color: RatesColors.dark.primaryDeep,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text.rich(
-                    TextSpan(
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.5,
-                        color: Color(0xFF5B6B82),
-                      ),
-                      children: [
-                        const TextSpan(
-                          text: 'Cerro: ',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF17241F),
-                          ),
-                        ),
-                        TextSpan(text: widget.step.body),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: widget.onSkip,
-                        style: TextButton.styleFrom(
-                          foregroundColor: RatesColors.dark.primary,
-                        ),
-                        child: const Text('Skip'),
-                      ),
-                      ElevatedButton(
-                        onPressed: widget.onNext,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: RatesColors.dark.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(widget.isLast ? 'Got it' : 'Next'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            child: _buildBubble(context, isMobile: false),
           ),
         ),
       ],
@@ -373,17 +405,21 @@ class _OnboardingIntroState extends State<OnboardingIntro> {
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: Column(
+              child: Builder(builder: (context) {
+                final screenWidth = MediaQuery.sizeOf(context).width;
+                final isMobile = screenWidth < 600;
+                final bubbleWidth = isMobile ? screenWidth - 48 : 340.0;
+                return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const MrRatrix(size: 260),
+                  MrRatrix(size: isMobile ? (screenWidth * 0.45).clamp(140, 220) : 260),
                   const SizedBox(
                     width: 26,
                     height: 12,
                     child: CustomPaint(painter: _UpTailPainter()),
                   ),
                   Container(
-                    width: 340,
+                    width: bubbleWidth,
                     padding: const EdgeInsets.all(26),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -483,7 +519,8 @@ class _OnboardingIntroState extends State<OnboardingIntro> {
                     ),
                   ),
                 ],
-              ),
+              );
+              }),
             ),
           ),
         ],

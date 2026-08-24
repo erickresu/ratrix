@@ -48,7 +48,15 @@ class RatesSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _Logo(),
+          const Text(
+            'CERRO RATRIX',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 24),
           _NavItem(
             key: SidebarTourKeys.homeNav,

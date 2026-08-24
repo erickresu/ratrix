@@ -197,6 +197,17 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
                 : e.value,
           )
           .toList();
+      // Editing a tier's max leaves the next tier's min stale — cascade it
+      // forward so the ranges stay contiguous instead of gapping/overlapping.
+      final nextIndex = event.index + 1;
+      if (nextIndex < list.length) {
+        final newMax = num.tryParse(event.value);
+        if (newMax != null) {
+          list[nextIndex] = list[nextIndex].copyWith(
+            min: _numToString(newMax + 1),
+          );
+        }
+      }
       emit(state.copyWith(breakweights: list));
     });
 
@@ -321,6 +332,17 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
                 : e.value,
           )
           .toList();
+      // Editing a tier's max leaves the next tier's min stale — cascade it
+      // forward so the ranges stay contiguous instead of gapping/overlapping.
+      final nextIndex = event.index + 1;
+      if (nextIndex < list.length) {
+        final newMax = num.tryParse(event.value);
+        if (newMax != null) {
+          list[nextIndex] = list[nextIndex].copyWith(
+            min: _numToString(newMax + 1),
+          );
+        }
+      }
       emit(state.copyWith(conditionalBreakweights: list));
     });
 

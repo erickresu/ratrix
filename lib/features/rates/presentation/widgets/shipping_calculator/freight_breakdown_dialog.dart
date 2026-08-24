@@ -64,6 +64,101 @@ class _BlurredBarrier extends StatelessWidget {
   }
 }
 
+/// Docked, always-in-page-flow version of the freight breakdown — used by
+/// the calculator's desktop/tablet layout as the right-hand panel instead of
+/// a modal (see `_CalculatorView` in `shipping_calculator_form_view.dart`).
+/// Shows a placeholder until a result exists, then the same header/body/PDF
+/// button as the dialog minus the close button and blur backdrop.
+class FreightBreakdownPanel extends StatelessWidget {
+  const FreightBreakdownPanel({super.key, required this.client, this.showButton = true});
+
+  final Client client;
+
+  /// Set false when the caller renders the Generate Invoice PDF button
+  /// itself in a separate slot (e.g. to bottom-align it against another
+  /// column's own trailing button row).
+  final bool showButton;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<ShippingCalculatorBloc>().state;
+    final result = state.calcResult;
+
+    if (result == null) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          border: Border.all(color: context.colors.border),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(CupertinoIcons.arrow_down_circle, size: 32, color: context.colors.textFaint),
+            const SizedBox(height: 12),
+            Text(
+              'Freight Breakdown',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Fill in the details and calculate to see the breakdown here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: context.colors.textMuted),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: context.colors.border),
+            ),
+            child: Column(
+              children: [
+                _DialogHeader(rateType: state.rateType),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                    child: result.error != null
+                        ? _ErrorBody(
+                            message: result.error!,
+                            origin: state.origin,
+                            destination: state.destination,
+                            tiers: result.routeTiers,
+                            onEditRate: state.selectedRate == null
+                                ? null
+                                : () {
+                                    final rateId = state.selectedRate!.id;
+                                    context.read<RatesShellBloc>().add(EditRateRequested(rateId));
+                                  },
+                          )
+                        : const _ResultBody(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (showButton && result.error == null) ...[
+          const SizedBox(height: 12),
+          GeneratePdfButton(state: state, client: client),
+        ],
+      ],
+    );
+  }
+}
+
 class _FreightBreakdownDialog extends StatelessWidget {
   const _FreightBreakdownDialog({required this.client});
 
@@ -75,8 +170,15 @@ class _FreightBreakdownDialog extends StatelessWidget {
     final result = state.calcResult;
     if (result == null) return const SizedBox.shrink();
 
+    // `_BlurredBarrier` centers this with no horizontal padding of its
+    // own, so a flat 480px cap would overflow off both edges of any
+    // screen narrower than that (every phone). Clamp to the smaller of
+    // 480 and the viewport minus a margin.
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final maxWidth = screenWidth - 32 < 480 ? screenWidth - 32 : 480.0;
+
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 480),
+      constraints: BoxConstraints(maxWidth: maxWidth),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -125,17 +227,56 @@ class _FreightBreakdownDialog extends StatelessWidget {
           ),
           if (result.error == null) ...[
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ShadButton(
-                gradient: context.colors.primaryButtonGradient,
-                leading: const Icon(CupertinoIcons.arrow_down_doc, size: 16),
-                onPressed: () => generateInvoicePdf(state: state, client: client),
-                child: const Text('Generate Invoice PDF'),
-              ),
-            ),
+            GeneratePdfButton(state: state, client: client),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// `Printing.layoutPdf` renders the whole document client-side before its
+/// print/save dialog appears — on web especially, that can take a few
+/// seconds with zero visual feedback otherwise, reading as a hang. Track a
+/// local loading flag so the button shows a spinner and disables itself for
+/// the duration instead of looking unresponsive.
+class GeneratePdfButton extends StatefulWidget {
+  const GeneratePdfButton({super.key, required this.state, required this.client});
+
+  final ShippingCalculatorState state;
+  final Client client;
+
+  @override
+  State<GeneratePdfButton> createState() => _GeneratePdfButtonState();
+}
+
+class _GeneratePdfButtonState extends State<GeneratePdfButton> {
+  bool _generating = false;
+
+  Future<void> _handleTap() async {
+    setState(() => _generating = true);
+    try {
+      await generateInvoicePdf(state: widget.state, client: widget.client);
+    } finally {
+      if (mounted) setState(() => _generating = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ShadButton(
+        gradient: context.colors.primaryButtonGradient,
+        leading: _generating
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const Icon(CupertinoIcons.arrow_down_doc, size: 16),
+        onPressed: _generating ? null : _handleTap,
+        child: Text(_generating ? 'Generating...' : 'Generate Invoice PDF'),
       ),
     );
   }
@@ -297,77 +438,132 @@ class RouteTiersTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    TextStyle headerStyle(BuildContext context) =>
-        TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.3, color: context.colors.textMuted);
+    TextStyle headerLabelStyle(BuildContext context) =>
+        TextStyle(fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.2, color: context.colors.textMutedStrong);
+    TextStyle headerRangeStyle(BuildContext context) =>
+        TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.colors.textBody);
     TextStyle cellStyle(BuildContext context) =>
-        TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textBody);
+        TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.colors.textBody);
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.colors.surfaceSubtle,
-        border: Border.all(color: context.colors.border),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(CupertinoIcons.arrow_right_arrow_left, size: 13, color: context.colors.textMuted),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${origin.isEmpty ? '—' : origin} → ${destination.isEmpty ? '—' : destination}',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (onEdit != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: Material(
+              color: context.colors.primary,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: onEdit,
+                child: const Padding(
+                  padding: EdgeInsets.all(7),
+                  child: Icon(CupertinoIcons.pencil, size: 16, color: Colors.white),
                 ),
               ),
-              if (onEdit != null)
-                Material(
-                  color: context.colors.primary,
-                  borderRadius: BorderRadius.circular(8),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: onEdit,
-                    child: const Padding(
-                      padding: EdgeInsets.all(7),
-                      child: Icon(CupertinoIcons.pencil, size: 18, color: Colors.white),
+            ),
+          ),
+        if (tiers.isEmpty)
+          Text('No breakweight tiers found for this route.', style: cellStyle(context).copyWith(color: context.colors.textMuted))
+        else
+          Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              border: Border.all(color: context.colors.border),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Origin/Destination pinned as the leftmost column, mirroring
+                // the rate wizard's matrix table layout.
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    children: [
+                      Container(
+                        height: 44,
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        color: context.colors.surfaceSubtle,
+                        child: Text('ROUTE', style: headerLabelStyle(context)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        decoration: BoxDecoration(border: Border(top: BorderSide(color: context.colors.border))),
+                        child: Text(
+                          '${origin.isEmpty ? '—' : origin} → ${destination.isEmpty ? '—' : destination}',
+                          style: cellStyle(context).copyWith(fontWeight: FontWeight.w700),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                for (var i = 0; i < tiers.length; i++)
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 44,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          decoration: BoxDecoration(
+                            color: context.colors.surfaceSubtle,
+                            border: Border(left: BorderSide(color: context.colors.border)),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                i == 0 ? 'MINIMUM' : 'TIER ${i + 1}',
+                                style: i == 0
+                                    ? headerLabelStyle(context).copyWith(color: context.colors.primaryDeep)
+                                    : headerLabelStyle(context),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${tiers[i].min.toStringAsFixed(0)}–${tiers[i].max.toStringAsFixed(0)}',
+                                style: headerRangeStyle(context),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              top: BorderSide(color: context.colors.border),
+                              left: BorderSide(color: context.colors.border),
+                            ),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: context.colors.primaryChipBg,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '₱${tiers[i].rate.toStringAsFixed(2)}',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.primaryDeep),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (tiers.isEmpty)
-            Text('No breakweight tiers found for this route.', style: cellStyle(context).copyWith(color: context.colors.textMuted))
-          else ...[
-            Row(
-              children: [
-                Expanded(flex: 2, child: Text('MIN (KG)', style: headerStyle(context))),
-                Expanded(flex: 2, child: Text('MAX (KG)', style: headerStyle(context))),
-                Expanded(flex: 3, child: Text('RATE', style: headerStyle(context), textAlign: TextAlign.right)),
               ],
             ),
-            const SizedBox(height: 6),
-            Divider(height: 1, color: context.colors.border),
-            for (final tier in tiers) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(flex: 2, child: Text(tier.min.toStringAsFixed(2), style: cellStyle(context))),
-                  Expanded(flex: 2, child: Text(tier.max.toStringAsFixed(2), style: cellStyle(context))),
-                  Expanded(
-                    flex: 3,
-                    child: Text('₱${tier.rate.toStringAsFixed(2)}', style: cellStyle(context), textAlign: TextAlign.right),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
@@ -394,13 +590,17 @@ class _ResultBody extends StatelessWidget {
             Expanded(
               child: _WeightStat(
                 label: 'ACT',
-                value: '${result.actualWeight?.toStringAsFixed(1) ?? '—'}KG',
+                value: result.actualWeight == null
+                    ? '—'
+                    : '${displayValue(result.actualWeight!).toStringAsFixed(state.roundedDisplay ? 0 : 1)}KG',
               ),
             ),
             Expanded(
               child: _WeightStat(
                 label: 'VOL',
-                value: '${result.volumetricWeight?.toStringAsFixed(1) ?? '—'}KG',
+                value: result.volumetricWeight == null
+                    ? '—'
+                    : '${displayValue(result.volumetricWeight!).toStringAsFixed(state.roundedDisplay ? 0 : 1)}KG',
               ),
             ),
             Expanded(

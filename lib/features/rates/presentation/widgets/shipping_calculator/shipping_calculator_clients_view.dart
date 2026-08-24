@@ -94,7 +94,9 @@ class ShippingCalculatorClientsView extends StatelessWidget {
               ? SkeletonShimmer(
                   child: GridView.builder(
                     padding: gridPadding,
-                    physics: const NeverScrollableScrollPhysics(),
+                    physics: isMobile
+                        ? const AlwaysScrollableScrollPhysics()
+                        : const NeverScrollableScrollPhysics(),
                     itemCount: columns * _clientGridRows,
                     gridDelegate: gridDelegate,
                     itemBuilder: (context, index) => const GridCardSkeleton(),
@@ -102,7 +104,13 @@ class ShippingCalculatorClientsView extends StatelessWidget {
                 )
               : GridView.builder(
                   padding: gridPadding,
-                  physics: const NeverScrollableScrollPhysics(),
+                  // Desktop/tablet always fits its fixed-row grid within
+                  // the Expanded region. Mobile doesn't — rows can exceed
+                  // the viewport left after the header/pagination bar, and
+                  // a non-scrollable grid just clips instead of scrolling.
+                  physics: isMobile
+                      ? const AlwaysScrollableScrollPhysics()
+                      : const NeverScrollableScrollPhysics(),
                   itemCount: state.pagedCalcClients.length,
                   gridDelegate: gridDelegate,
                   itemBuilder: (context, index) {

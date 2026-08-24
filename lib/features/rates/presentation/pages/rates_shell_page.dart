@@ -48,6 +48,13 @@ class _RatesShellViewState extends State<_RatesShellView> {
     AdvancedDrawerValue.visible(),
   );
 
+  // While the tour runs, the sidebar's `onNavigated` (which hides the
+  // drawer) is suppressed — every tour step spotlights a nav item that only
+  // exists in the tree while the drawer is open, so it must not collapse
+  // for the duration regardless of what state it was in before the tour
+  // started or anything that happens while it's showing.
+  bool _tourActive = false;
+
   @override
   void initState() {
     super.initState();
@@ -58,7 +65,12 @@ class _RatesShellViewState extends State<_RatesShellView> {
     final storage = getIt<LocalStorageService>();
     final seen = await storage.readOnboardingSeen();
     if (seen || !mounted) return;
+    setState(() => _tourActive = true);
+    _drawerController.showDrawer();
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
     await showOnboarding(context, onFinish: storage.writeOnboardingSeen);
+    if (mounted) setState(() => _tourActive = false);
   }
 
   @override
@@ -121,7 +133,9 @@ class _RatesShellViewState extends State<_RatesShellView> {
       // covering the freshly-switched page, making it look like the
       // click did nothing until the drawer was closed separately.
       drawer: SafeArea(
-        child: RatesSidebar(onNavigated: _drawerController.hideDrawer),
+        child: RatesSidebar(
+          onNavigated: _tourActive ? null : _drawerController.hideDrawer,
+        ),
       ),
       child: Scaffold(
         backgroundColor: context.colors.pageBg,
@@ -148,17 +162,6 @@ class _RatesShellViewState extends State<_RatesShellView> {
               ),
             ),
           ),
-          // When the drawer is collapsed there's otherwise zero brand
-          // identity left on screen, just the toggle.
-          title: const Text(
-            'CERRO RATRIX',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.4,
-            ),
-          ),
-          centerTitle: false,
         ),
         body: content,
       ),

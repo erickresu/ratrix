@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/utils/breakpoints.dart';
+import '../../../../core/widgets/horizontal_scroll_table.dart';
 import '../../../../core/widgets/mr_ratrix.dart';
 import '../../../../core/widgets/shine_sweep.dart';
 import '../../../../core/widgets/skeleton_box.dart';
@@ -315,7 +316,10 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPositive = stat.delta.trim().startsWith('+');
-    final iconSize = compact ? 32.0 : 42.0;
+    // Smaller than before on mobile — the icon is decorative, so shrinking
+    // it (rather than the label/value/delta text) reclaims width for the
+    // numbers that actually matter in a 3-across row.
+    final iconSize = compact ? 18.0 : 42.0;
 
     return Container(
       width: double.infinity,
@@ -346,7 +350,12 @@ class _StatCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: EdgeInsets.all(compact ? 12 : 24),
+            padding: EdgeInsets.fromLTRB(
+              compact ? 10 : 24,
+              compact ? 10 : 24,
+              compact ? 8 : 24,
+              compact ? 10 : 24,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -356,20 +365,22 @@ class _StatCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         stat.label,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: compact ? 11 : 13,
-                          fontWeight: FontWeight.w500,
+                          fontSize: compact ? 12 : 13,
+                          fontWeight: FontWeight.w600,
+                          height: 1.15,
                           color: context.colors.textMuted,
                         ),
                       ),
                     ),
+                    SizedBox(width: compact ? 6 : 0),
                     Container(
                       width: iconSize,
                       height: iconSize,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(compact ? 10 : 13),
+                        borderRadius: BorderRadius.circular(compact ? 8 : 13),
                         boxShadow: [
                           BoxShadow(
                             color: context.colors.primary.withValues(
@@ -381,7 +392,7 @@ class _StatCard extends StatelessWidget {
                         ],
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(compact ? 10 : 13),
+                        borderRadius: BorderRadius.circular(compact ? 8 : 13),
                         child: ShineSweep(
                           child: Container(
                             alignment: Alignment.center,
@@ -390,7 +401,7 @@ class _StatCard extends StatelessWidget {
                             ),
                             child: Icon(
                               _statIcon(stat.label),
-                              size: compact ? 14 : 19,
+                              size: compact ? 12 : 19,
                               color: Colors.white,
                             ),
                           ),
@@ -399,54 +410,67 @@ class _StatCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                SizedBox(height: compact ? 8 : 14),
-                Text(
-                  stat.value,
-                  style: TextStyle(
-                    fontSize: compact ? 22 : 32,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
-                    color: context.colors.textBody,
+                SizedBox(height: compact ? 10 : 14),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    stat.value,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: compact ? 24 : 32,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.4,
+                      color: context.colors.textBody,
+                    ),
                   ),
                 ),
                 SizedBox(height: compact ? 6 : 10),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 6 : 8,
-                    vertical: compact ? 2 : 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isPositive
-                        ? context.colors.successBg
-                        : context.colors.surfaceSubtle,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPositive
-                            ? CupertinoIcons.arrow_up_right
-                            : CupertinoIcons.arrow_down_right,
-                        size: compact ? 9 : 11,
-                        color: isPositive
-                            ? context.colors.successText
-                            : context.colors.textMuted,
-                      ),
-                      SizedBox(width: compact ? 2 : 3),
-                      Text(
-                        stat.delta,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: compact ? 10 : 12,
-                          fontWeight: FontWeight.w600,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 6 : 8,
+                      vertical: compact ? 2 : 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isPositive
+                          ? context.colors.successBg
+                          : context.colors.surfaceSubtle,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isPositive
+                              ? CupertinoIcons.arrow_up_right
+                              : CupertinoIcons.arrow_down_right,
+                          size: compact ? 9 : 11,
                           color: isPositive
                               ? context.colors.successText
                               : context.colors.textMuted,
                         ),
-                      ),
-                    ],
+                        SizedBox(width: compact ? 2 : 3),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: compact ? 70 : 110,
+                          ),
+                          child: Text(
+                            stat.delta,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: compact ? 11 : 12,
+                              fontWeight: FontWeight.w600,
+                              color: isPositive
+                                  ? context.colors.successText
+                                  : context.colors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -622,8 +646,11 @@ class _RecentRatesTable extends StatelessWidget {
     const rateWidth = 80.0;
     const statusWidth = 100.0;
     const colGap = 12.0;
+    // +24 accounts for the scrollable pane's own 12px symmetric padding
+    // (left+right) — without it the last column clips against the pane's
+    // right edge.
     const scrollableWidth =
-        routeWidth + typeWidth + rateWidth + statusWidth + colGap * 3;
+        routeWidth + typeWidth + rateWidth + statusWidth + colGap * 3 + 24;
 
     Widget headerCell(
       String text,
@@ -687,7 +714,7 @@ class _RecentRatesTable extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: _HorizontalScrollTable(
+          child: HorizontalScrollTable(
             width: scrollableWidth,
             child: Column(
               children: [
@@ -827,45 +854,6 @@ class _RecentRatesTable extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Fixed-width content in a horizontal scroll with a visible, always-on,
-/// draggable Scrollbar — same pattern as the rate wizard's
-/// `_HorizontalScrollPane`, so mobile users get a clear hint there are more
-/// columns off-screen instead of a silent SingleChildScrollView.
-class _HorizontalScrollTable extends StatefulWidget {
-  const _HorizontalScrollTable({required this.width, required this.child});
-
-  final double width;
-  final Widget child;
-
-  @override
-  State<_HorizontalScrollTable> createState() => _HorizontalScrollTableState();
-}
-
-class _HorizontalScrollTableState extends State<_HorizontalScrollTable> {
-  final _controller = ScrollController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scrollbar(
-      controller: _controller,
-      thumbVisibility: true,
-      trackVisibility: true,
-      child: SingleChildScrollView(
-        controller: _controller,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(bottom: 10),
-        child: SizedBox(width: widget.width, child: widget.child),
       ),
     );
   }

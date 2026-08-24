@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/utils/breakpoints.dart';
+import '../../../../core/widgets/horizontal_scroll_table.dart';
 import '../../../../core/widgets/mr_ratrix.dart';
 import '../../../../core/widgets/pagination_bar.dart';
 import '../../../../core/widgets/skeleton_box.dart';
@@ -188,8 +189,24 @@ class _AuditLogTable extends StatelessWidget {
     letterSpacing: 0.4,
   );
 
+  // Mobile column widths — TIME stays pinned in a fixed left pane,
+  // ACTION/RECORD ID/USER scroll horizontally together.
+  static const _timeWidth = 140.0;
+  static const _actionWidth = 90.0;
+  static const _recordIdWidth = 160.0;
+  static const _userWidth = 110.0;
+  static const _colGap = 12.0;
+  static const _headerHeight = 40.0;
+  // +24 accounts for the scrollable pane's own 12px symmetric padding
+  // (left+right) — without it the last column clips against the pane's
+  // right edge.
+  static const _scrollableWidth =
+      _actionWidth + _recordIdWidth + _userWidth + _colGap * 2 + 24;
+
   @override
   Widget build(BuildContext context) {
+    final isMobile = Breakpoints.isMobile(context);
+
     return Container(
       decoration: BoxDecoration(
         color: context.colors.surface,
@@ -204,56 +221,118 @@ class _AuditLogTable extends StatelessWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            color: context.colors.surfaceSubtle,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(
+      child: isMobile ? _buildMobile(context) : _buildDesktop(context),
+    );
+  }
+
+  Widget _buildDesktop(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          color: context.colors.surfaceSubtle,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'TIME',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'ACTION',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              Expanded(
+                flex: 4,
+                child: Text(
+                  'RECORD ID',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'USER',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+            ],
+          ),
+        ),
+        for (final log in logs) _AuditLogRow(log: log),
+      ],
+    );
+  }
+
+  Widget _buildMobile(BuildContext context) {
+    Widget headerCell(String text, double width) => SizedBox(
+          width: width,
+          child: Text(
+            text,
+            style: _headerStyle.copyWith(color: context.colors.textMuted),
+          ),
+        );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: _timeWidth,
+          child: Column(
+            children: [
+              Container(
+                height: _headerHeight,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 20),
+                color: context.colors.surfaceSubtle,
+                child: Text(
+                  'TIME',
+                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                ),
+              ),
+              for (final log in logs) _AuditLogTimeCell(log: log),
+            ],
+          ),
+        ),
+        Expanded(
+          child: HorizontalScrollTable(
+            width: _scrollableWidth,
+            child: Column(
               children: [
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    'TIME',
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
+                Container(
+                  height: _headerHeight,
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  color: context.colors.surfaceSubtle,
+                  child: Row(
+                    children: [
+                      headerCell('ACTION', _actionWidth),
+                      const SizedBox(width: _colGap),
+                      headerCell('RECORD ID', _recordIdWidth),
+                      const SizedBox(width: _colGap),
+                      headerCell('USER', _userWidth),
+                    ],
                   ),
                 ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'ACTION',
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
+                for (final log in logs)
+                  _AuditLogScrollableRow(
+                    log: log,
+                    actionWidth: _actionWidth,
+                    recordIdWidth: _recordIdWidth,
+                    userWidth: _userWidth,
+                    colGap: _colGap,
                   ),
-                ),
-                Expanded(
-                  flex: 4,
-                  child: Text(
-                    'RECORD ID',
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'USER',
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
-          for (final log in logs) _AuditLogRow(log: log),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -350,6 +429,139 @@ class _AuditLogRow extends StatelessWidget {
                     fontSize: 13,
                     color: context.colors.textMutedStrong,
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+const _kAuditRowHeight = 52.0;
+
+void _openAuditLogDetail(BuildContext context, AuditLog log) => showShadDialog<void>(
+      context: context,
+      builder: (_) => _AuditLogDetailDialog(log: log),
+    );
+
+/// Mobile's pinned-left-pane TIME column for one audit row — paired with
+/// [_AuditLogScrollableRow] for the same [log], both fixed to
+/// [_kAuditRowHeight] so the two panes stay visually aligned while the
+/// right pane scrolls independently.
+class _AuditLogTimeCell extends StatelessWidget {
+  const _AuditLogTimeCell({required this.log});
+
+  final AuditLog log;
+
+  @override
+  Widget build(BuildContext context) {
+    final time = log.createdAt;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openAuditLogDetail(context, log),
+        child: Container(
+          height: _kAuditRowHeight,
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: context.colors.border)),
+          ),
+          child: Text(
+            time == null ? '—' : _formatTimestamp(time),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 13, color: context.colors.textMutedStrong),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mobile's scrollable-right-pane ACTION/RECORD ID/USER columns for one
+/// audit row — see [_AuditLogTimeCell].
+class _AuditLogScrollableRow extends StatelessWidget {
+  const _AuditLogScrollableRow({
+    required this.log,
+    required this.actionWidth,
+    required this.recordIdWidth,
+    required this.userWidth,
+    required this.colGap,
+  });
+
+  final AuditLog log;
+  final double actionWidth;
+  final double recordIdWidth;
+  final double userWidth;
+  final double colGap;
+
+  Color _actionColor(BuildContext context) => switch (log.action) {
+        'create' => context.colors.successText,
+        'delete' => context.colors.destructive,
+        _ => context.colors.primaryDeep,
+      };
+
+  Color _actionBg(BuildContext context) => switch (log.action) {
+        'create' => context.colors.successBg,
+        'delete' => context.colors.destructive.withValues(alpha: 0.1),
+        _ => context.colors.primaryChipBg,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openAuditLogDetail(context, log),
+        child: Container(
+          height: _kAuditRowHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: context.colors.border)),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: actionWidth,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: ShadBadge(
+                    backgroundColor: _actionBg(context),
+                    hoverBackgroundColor: _actionBg(context),
+                    foregroundColor: _actionColor(context),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                    child: Text(
+                      log.actionLabel,
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: colGap),
+              SizedBox(
+                width: recordIdWidth,
+                child: Text(
+                  log.recordId ?? '—',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    color: context.colors.textMuted,
+                  ),
+                ),
+              ),
+              SizedBox(width: colGap),
+              SizedBox(
+                width: userWidth,
+                child: Text(
+                  log.userName ?? '—',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, color: context.colors.textMutedStrong),
                 ),
               ),
             ],
