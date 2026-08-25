@@ -312,15 +312,42 @@ class RatesRepository {
     try {
       final res = await _dataSource.searchLocations(q: q, type: type);
       final body = res.data;
-      var rows = _asList(body);
-      if (rows.isEmpty && body is Map<String, dynamic>) {
+      var rows = <dynamic>[];
+      if (body is Map<String, dynamic>) {
         final data = body['data'];
-        if (data is Map<String, dynamic> && data['results'] is List) {
-          rows = data['results'] as List;
+        if (data is Map<String, dynamic>) {
+          // Real shape: `data` splits results by category —
+          // `islands`/`regions`/`provinces`/`cities`/`barangays`/`iata` —
+          // rather than one flat list. Pick the sub-array matching the
+          // requested `type` (pluralized; `iata` has no plural form).
+          final key = switch (type) {
+            'island' => 'islands',
+            'region' => 'regions',
+            'province' => 'provinces',
+            'city' => 'cities',
+            'barangay' => 'barangays',
+            'iata' => 'iata',
+            _ => null,
+          };
+          final picked = key == null ? null : data[key];
+          if (picked is List) {
+            rows = picked;
+          } else if (data['results'] is List) {
+            rows = data['results'] as List;
+          }
+        } else if (data is List) {
+          rows = data;
         }
+      } else if (body is List) {
+        rows = body;
       }
+      // TEMP DEBUG — remove once the iata-type response shape is confirmed.
+      // ignore: avoid_print
+      print('[searchLocations] q=$q type=$type rawRows=$rows');
       return rows.whereType<Map<String, dynamic>>().map(LocationOption.fromJson).toList();
-    } catch (_) {
+    } catch (e) {
+      // ignore: avoid_print
+      print('[searchLocations] EXCEPTION: $e');
       return const [];
     }
   }

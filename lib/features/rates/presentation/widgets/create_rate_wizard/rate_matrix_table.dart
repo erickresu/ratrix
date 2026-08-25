@@ -77,7 +77,7 @@ class RateMatrixTable extends StatelessWidget {
   final void Function(int index) onRemoveBreakweight;
   final void Function(int rowIndex)? onRemoveRoute;
 
-  static const _headerHeight = 76.0;
+  static const _headerHeight = 88.0;
   static const _rowHeight = 64.0;
   static const _bwColWidth = 156.0;
   static const _leftPaneWidth = 560.0;
@@ -437,10 +437,8 @@ class _LocationField extends StatefulWidget {
   /// formatted display text so the plain text-sync path keeps working.
   final void Function(LocationOption option, String displayText)? onOptionSelected;
 
-  /// The whole column's current "match by" filter type, and the callback to
-  /// change it — shown as a small tappable label docked at the field's
-  /// leading edge. Any row can open the menu; changing it applies to the
-  /// whole column (shared state), not just this row.
+  /// This field's current "match by" filter type, and the callback to
+  /// change it — shown docked inside the field as a leading widget.
   final LocationSearchType? matchByType;
   final ValueChanged<LocationSearchType>? onMatchByChanged;
 
@@ -476,18 +474,26 @@ class _LocationFieldState extends State<_LocationField> {
     // Results/loading state arrives from the parent (server-driven, not
     // filtered locally) — rebuild the overlay whenever either changes so a
     // focused field shows fresh results/spinner state without needing a
-    // keystroke to trigger it.
+    // keystroke to trigger it. Deferred to a post-frame callback: this
+    // widget's own rebuild can itself be triggered by an ancestor rebuild
+    // (e.g. another sibling field's "match by" selection changing bloc
+    // state), in which case `didUpdateWidget` runs mid-build — inserting or
+    // marking-dirty an `OverlayEntry` synchronously in that window throws
+    // ("setState() called during build").
     if (_focusNode.hasFocus &&
         (widget.options != oldWidget.options || widget.loading != oldWidget.loading)) {
-      if (widget.options.isNotEmpty || widget.loading) {
-        if (_entry == null) {
-          _showOverlay();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (widget.options.isNotEmpty || widget.loading) {
+          if (_entry == null) {
+            _showOverlay();
+          } else {
+            _entry!.markNeedsBuild();
+          }
         } else {
-          _entry!.markNeedsBuild();
+          _removeOverlay();
         }
-      } else {
-        _removeOverlay();
-      }
+      });
     }
   }
 
@@ -652,10 +658,10 @@ class _LocationFieldState extends State<_LocationField> {
   }
 }
 
-/// Compact "match by" label docked at a search field's leading edge —
-/// shows the whole column's current filter type (e.g. "City") and opens
-/// the same 6-option menu as a plain [ShadSelect] on tap, just styled to
-/// read as an inline label rather than a boxed dropdown.
+/// Compact "match by" label docked at a search field's leading edge — shows
+/// this field's current filter type (e.g. "City") and opens the same
+/// 6-option menu as a plain [ShadSelect] on tap, styled to read as an
+/// inline label rather than a boxed dropdown.
 class _MatchByLeading extends StatelessWidget {
   const _MatchByLeading({required this.value, required this.onChanged});
 
@@ -703,9 +709,6 @@ class _MatchByLeading extends StatelessWidget {
   }
 }
 
-/// Column header for Origin/Destination: the column label plus, when a
-/// callback is provided, a compact "match by" filter dropdown right below
-/// it — inline with the column instead of a separate row above the table.
 class _HeaderLabel extends StatelessWidget {
   const _HeaderLabel({required this.label});
 
@@ -796,12 +799,13 @@ class _BreakweightHeaderCell extends StatelessWidget {
                   color: removeDisabled ? context.colors.textFaint : context.colors.destructive,
                   splashRadius: 12,
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(minWidth: 18, minHeight: 18, maxWidth: 18, maxHeight: 18),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Row(
             children: [
               Expanded(
