@@ -1,3 +1,5 @@
+import 'location_option.dart';
+
 enum FreightMode {
   air('Air'),
   land('Land'),
@@ -45,13 +47,39 @@ enum PricingOption {
   final String label;
 }
 
-enum LocationBasis {
-  city('City'),
-  province('Province'),
-  code('Internal Code');
+enum LocationSearchType {
+  island('Island', 'island'),
+  cityProvince('City, Province', 'city'),
+  province('Province', 'province'),
+  internalCode('Internal Code', 'iata'),
+  iataCode('IATA Code', 'iata'),
+  seaPortCode('Sea Port Code', 'iata');
 
-  const LocationBasis(this.label);
+  const LocationSearchType(this.label, this.apiType);
+
+  /// UI label shown in the filter dropdown.
   final String label;
+
+  /// `type` query param sent to `GET api/locations/search`. Internal Code,
+  /// IATA Code, and Sea Port Code all send the identical `type=iata`
+  /// request — the backend returns one result set for that type, and these
+  /// three options only differ in which field of each result gets shown
+  /// (see [formatOption]). IATA Code and Sea Port Code are the literal same
+  /// case with zero distinction between them anywhere.
+  final String apiType;
+
+  /// Selected-result display text for this filter type.
+  String formatOption(LocationOption option) => switch (this) {
+        LocationSearchType.iataCode ||
+        LocationSearchType.seaPortCode =>
+          option.iata ?? option.label,
+        LocationSearchType.internalCode =>
+          '${option.code ?? ''} — (${option.cityName ?? ''}, ${option.provinceName ?? ''})',
+        LocationSearchType.island ||
+        LocationSearchType.cityProvince ||
+        LocationSearchType.province =>
+          option.label,
+      };
 }
 
 enum AddonMode { exact, percentage }

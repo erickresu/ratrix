@@ -4,7 +4,9 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../domain/entities/breakweight.dart';
+import '../../../domain/entities/location_option.dart';
 import '../../../domain/entities/matrix_row.dart' as domain;
+import '../../../domain/entities/rates_enums.dart';
 import '../../rates_colors.dart';
 
 /// Two-pane rate matrix: a fixed origin/destination column on the left and a
@@ -24,16 +26,50 @@ class RateMatrixTable extends StatelessWidget {
     required this.onBreakweightMaxChanged,
     required this.onRemoveBreakweight,
     this.onRemoveRoute,
-    this.locationOptions = const [],
+    this.originSearchResults = const [],
+    this.destinationSearchResults = const [],
+    this.originSearchLoading = false,
+    this.destinationSearchLoading = false,
+    this.originSearchType = LocationSearchType.island,
+    this.destinationSearchType = LocationSearchType.island,
+    this.onOriginQueryChanged,
+    this.onDestinationQueryChanged,
+    this.onOriginSelected,
+    this.onDestinationSelected,
+    this.onOriginSearchTypeChanged,
+    this.onDestinationSearchTypeChanged,
   });
 
   final List<domain.MatrixRow> matrixRows;
   final List<Breakweight> breakweights;
   final String originPlaceholder;
   final String destinationPlaceholder;
-  final List<String> locationOptions;
+
+  /// Origin and Destination each search independently with their own type
+  /// filter, results, and loading state — both fields can search
+  /// simultaneously with different types.
+  final List<LocationOption> originSearchResults;
+  final List<LocationOption> destinationSearchResults;
+  final bool originSearchLoading;
+  final bool destinationSearchLoading;
+  final LocationSearchType originSearchType;
+  final LocationSearchType destinationSearchType;
   final void Function(int rowIndex, String value) onOriginChanged;
   final void Function(int rowIndex, String value) onDestinationChanged;
+
+  /// Fired on every keystroke in the Origin/Destination field respectively —
+  /// triggers each field's own debounced server search. Null falls back to
+  /// no live search (the field still accepts free text via
+  /// [onOriginChanged]/[onDestinationChanged]).
+  final ValueChanged<String>? onOriginQueryChanged;
+  final ValueChanged<String>? onDestinationQueryChanged;
+  final void Function(int rowIndex, LocationOption option, String displayText)? onOriginSelected;
+  final void Function(int rowIndex, LocationOption option, String displayText)? onDestinationSelected;
+
+  /// Changes to each column's "match by" filter type, shown inline in that
+  /// column's header. Null hides the dropdown for that column.
+  final ValueChanged<LocationSearchType>? onOriginSearchTypeChanged;
+  final ValueChanged<LocationSearchType>? onDestinationSearchTypeChanged;
   final void Function(int rowIndex, int breakweightIndex, String value)
   onCellChanged;
   final void Function(int index, String value) onBreakweightMinChanged;
@@ -41,11 +77,15 @@ class RateMatrixTable extends StatelessWidget {
   final void Function(int index) onRemoveBreakweight;
   final void Function(int rowIndex)? onRemoveRoute;
 
-  static const _headerHeight = 98.0;
+  static const _headerHeight = 76.0;
   static const _rowHeight = 64.0;
   static const _bwColWidth = 156.0;
   static const _leftPaneWidth = 560.0;
-  static const _leftPaneWidthMobile = 340.0;
+  // Widened from 340 so each Origin/Destination field has enough room for
+  // the inline leading "match by" label (30% of field width) plus a usable
+  // text-entry area on mobile — the whole table already scrolls
+  // horizontally as one unit on mobile, so a wider pane is safe.
+  static const _leftPaneWidthMobile = 460.0;
   static const _removeColWidth = 40.0;
   static const _compactInputPadding = EdgeInsets.symmetric(
     horizontal: 6,
@@ -101,27 +141,43 @@ class RateMatrixTable extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 4, 0),
                           child: _LocationField(
                             key: ValueKey('origin-$i-$originPlaceholder'),
                             value: matrixRows[i].origin,
                             placeholder: originPlaceholder,
-                            options: locationOptions,
+                            options: originSearchResults,
+                            loading: originSearchLoading,
+                            formatOption: originSearchType.formatOption,
+                            matchByType: originSearchType,
+                            onMatchByChanged: onOriginSearchTypeChanged,
                             onChanged: (v) => onOriginChanged(i, v),
+                            onQueryChanged: onOriginQueryChanged,
+                            onOptionSelected: onOriginSelected == null
+                                ? null
+                                : (option, text) => onOriginSelected!(i, option, text),
                           ),
                         ),
                       ),
                       Expanded(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.fromLTRB(4, 0, 16, 0),
                           child: _LocationField(
                             key: ValueKey(
                               'destination-$i-$destinationPlaceholder',
                             ),
                             value: matrixRows[i].destination,
                             placeholder: destinationPlaceholder,
-                            options: locationOptions,
+                            options: destinationSearchResults,
+                            loading: destinationSearchLoading,
+                            formatOption: destinationSearchType.formatOption,
+                            matchByType: destinationSearchType,
+                            onMatchByChanged: onDestinationSearchTypeChanged,
                             onChanged: (v) => onDestinationChanged(i, v),
+                            onQueryChanged: onDestinationQueryChanged,
+                            onOptionSelected: onDestinationSelected == null
+                                ? null
+                                : (option, text) => onDestinationSelected!(i, option, text),
                           ),
                         ),
                       ),
@@ -354,13 +410,39 @@ class _LocationField extends StatefulWidget {
     required this.value,
     required this.placeholder,
     required this.options,
+    required this.formatOption,
     required this.onChanged,
+    this.loading = false,
+    this.onQueryChanged,
+    this.onOptionSelected,
+    this.matchByType,
+    this.onMatchByChanged,
   });
 
   final String value;
   final String placeholder;
-  final List<String> options;
+
+  /// Server-filtered search results — not re-filtered client-side, this
+  /// list IS what's shown.
+  final List<LocationOption> options;
+  final bool loading;
+  final String Function(LocationOption) formatOption;
   final ValueChanged<String> onChanged;
+
+  /// Fires on every keystroke to trigger the debounced server search.
+  final ValueChanged<String>? onQueryChanged;
+
+  /// Fires when a suggestion is picked, carrying the full option so the
+  /// caller can resolve a typed id — `onChanged` still also fires with the
+  /// formatted display text so the plain text-sync path keeps working.
+  final void Function(LocationOption option, String displayText)? onOptionSelected;
+
+  /// The whole column's current "match by" filter type, and the callback to
+  /// change it — shown as a small tappable label docked at the field's
+  /// leading edge. Any row can open the menu; changing it applies to the
+  /// whole column (shared state), not just this row.
+  final LocationSearchType? matchByType;
+  final ValueChanged<LocationSearchType>? onMatchByChanged;
 
   @override
   State<_LocationField> createState() => _LocationFieldState();
@@ -371,7 +453,6 @@ class _LocationFieldState extends State<_LocationField> {
   late final _controller = TextEditingController(text: widget.value);
   final _focusNode = FocusNode();
   OverlayEntry? _entry;
-  List<String> _matches = const [];
   bool _suppressTextListener = false;
 
   @override
@@ -392,6 +473,22 @@ class _LocationFieldState extends State<_LocationField> {
       );
       _suppressTextListener = false;
     }
+    // Results/loading state arrives from the parent (server-driven, not
+    // filtered locally) — rebuild the overlay whenever either changes so a
+    // focused field shows fresh results/spinner state without needing a
+    // keystroke to trigger it.
+    if (_focusNode.hasFocus &&
+        (widget.options != oldWidget.options || widget.loading != oldWidget.loading)) {
+      if (widget.options.isNotEmpty || widget.loading) {
+        if (_entry == null) {
+          _showOverlay();
+        } else {
+          _entry!.markNeedsBuild();
+        }
+      } else {
+        _removeOverlay();
+      }
+    }
   }
 
   @override
@@ -405,17 +502,22 @@ class _LocationFieldState extends State<_LocationField> {
   }
 
   void _onFocusChanged() {
-    if (!_focusNode.hasFocus) _removeOverlay();
+    if (!_focusNode.hasFocus) {
+      _removeOverlay();
+      return;
+    }
+    // Gaining focus with existing text — re-request that text's results
+    // rather than trusting whatever the shared search state currently
+    // holds (it may reflect a different field's last query).
+    final text = _controller.text.trim();
+    if (text.isNotEmpty) widget.onQueryChanged?.call(text);
   }
 
   void _onTextChanged() {
     if (_suppressTextListener) return;
-    final query = _controller.text.trim().toLowerCase();
-    final matches = query.isEmpty || widget.options.isEmpty
-        ? const <String>[]
-        : widget.options.where((o) => o.toLowerCase().contains(query)).toList();
-    _matches = matches;
-    if (matches.isEmpty) {
+    final query = _controller.text.trim();
+    widget.onQueryChanged?.call(query);
+    if (query.isEmpty) {
       _removeOverlay();
     } else if (_entry == null) {
       _showOverlay();
@@ -444,44 +546,56 @@ class _LocationFieldState extends State<_LocationField> {
               color: context.colors.surface,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 240),
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  shrinkWrap: true,
-                  itemCount: _matches.length,
-                  itemBuilder: (context, index) {
-                    final option = _matches[index];
-                    // Selection runs from the raw `onPointerDown` below, not
-                    // from InkWell's onTap/onTapDown — those wait on
-                    // gesture-arena resolution (or a ~100ms timeout), and on
-                    // web the focused field's hidden native <input> blurs
-                    // synchronously on the same mousedown, which tears this
-                    // overlay down via `_onFocusChanged` before that
-                    // resolution ever happens. A raw pointer listener fires
-                    // immediately, unconditionally, ahead of that. InkWell
-                    // stays only for the visual splash feedback.
-                    return Listener(
-                      behavior: HitTestBehavior.opaque,
-                      onPointerDown: (_) => _select(option),
-                      child: InkWell(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          child: Text(
-                            option,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: context.colors.textBody,
-                            ),
+                child: widget.loading
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        shrinkWrap: true,
+                        itemCount: widget.options.length,
+                        itemBuilder: (context, index) {
+                          final option = widget.options[index];
+                          final display = widget.formatOption(option);
+                          // Selection runs from the raw `onPointerDown` below, not
+                          // from InkWell's onTap/onTapDown — those wait on
+                          // gesture-arena resolution (or a ~100ms timeout), and on
+                          // web the focused field's hidden native <input> blurs
+                          // synchronously on the same mousedown, which tears this
+                          // overlay down via `_onFocusChanged` before that
+                          // resolution ever happens. A raw pointer listener fires
+                          // immediately, unconditionally, ahead of that. InkWell
+                          // stays only for the visual splash feedback.
+                          return Listener(
+                            behavior: HitTestBehavior.opaque,
+                            onPointerDown: (_) => _select(option, display),
+                            child: InkWell(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                child: Text(
+                                  display,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: context.colors.textBody,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
             ),
           ),
@@ -496,36 +610,102 @@ class _LocationFieldState extends State<_LocationField> {
     _entry = null;
   }
 
-  void _select(String option) {
-    debugPrint(
-      '_LocationField._select: "$option" (placeholder: ${widget.placeholder})',
-    );
+  void _select(LocationOption option, String display) {
     // Suppress the text listener for this mutation — otherwise it fires
     // mid-selection and tries to rebuild `_entry` right as `_removeOverlay`
     // below tears it down.
     _suppressTextListener = true;
     _controller.value = TextEditingValue(
-      text: option,
-      selection: TextSelection.collapsed(offset: option.length),
+      text: display,
+      selection: TextSelection.collapsed(offset: display.length),
     );
     _suppressTextListener = false;
-    widget.onChanged(option);
+    widget.onChanged(display);
+    widget.onOptionSelected?.call(option, display);
     _removeOverlay();
     _focusNode.unfocus();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ShadInput(
-      key: _fieldKey,
-      controller: _controller,
-      focusNode: _focusNode,
-      placeholder: Text(widget.placeholder),
-      onChanged: widget.onChanged,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ShadInput(
+          key: _fieldKey,
+          controller: _controller,
+          focusNode: _focusNode,
+          placeholder: Text(widget.placeholder),
+          leading: widget.matchByType == null
+              ? null
+              : SizedBox(
+                  width: constraints.maxWidth * 0.3,
+                  child: _MatchByLeading(
+                    value: widget.matchByType!,
+                    onChanged: widget.onMatchByChanged,
+                  ),
+                ),
+          trailing: Icon(CupertinoIcons.chevron_down, size: 14, color: context.colors.textMuted),
+          onChanged: widget.onChanged,
+        );
+      },
     );
   }
 }
 
+/// Compact "match by" label docked at a search field's leading edge —
+/// shows the whole column's current filter type (e.g. "City") and opens
+/// the same 6-option menu as a plain [ShadSelect] on tap, just styled to
+/// read as an inline label rather than a boxed dropdown.
+class _MatchByLeading extends StatelessWidget {
+  const _MatchByLeading({required this.value, required this.onChanged});
+
+  final LocationSearchType value;
+  final ValueChanged<LocationSearchType>? onChanged;
+
+  static const _shortLabels = {
+    LocationSearchType.island: 'Island',
+    LocationSearchType.cityProvince: 'City',
+    LocationSearchType.province: 'Province',
+    LocationSearchType.internalCode: 'Code',
+    LocationSearchType.iataCode: 'IATA',
+    LocationSearchType.seaPortCode: 'Sea Port',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 22,
+      child: ShadSelect<LocationSearchType>(
+        initialValue: value,
+        decoration: const ShadDecoration(
+          border: ShadBorder.none,
+          focusedBorder: ShadBorder.none,
+          secondaryBorder: ShadBorder.none,
+          secondaryFocusedBorder: ShadBorder.none,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        selectedOptionBuilder: (context, v) => Text(
+          _shortLabels[v] ?? v.label,
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.primaryDeep),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
+        onChanged: (v) {
+          if (v != null) onChanged?.call(v);
+        },
+        options: [
+          for (final t in LocationSearchType.values)
+            ShadOption(value: t, child: Text(t.label)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Column header for Origin/Destination: the column label plus, when a
+/// callback is provided, a compact "match by" filter dropdown right below
+/// it — inline with the column instead of a separate row above the table.
 class _HeaderLabel extends StatelessWidget {
   const _HeaderLabel({required this.label});
 
@@ -579,7 +759,7 @@ class _BreakweightHeaderCell extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+      padding: const EdgeInsets.fromLTRB(8, 6, 6, 6),
       decoration: BoxDecoration(
         color: context.colors.surfaceSubtle,
         border: Border(
@@ -587,74 +767,66 @@ class _BreakweightHeaderCell extends StatelessWidget {
           bottom: BorderSide(color: context.colors.border),
         ),
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        clipBehavior: Clip.none,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
+          Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 14),
+              Expanded(
                 child: Text(
                   'Breakweight ${index + 1}',
                   textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
                     color: context.colors.textMutedStrong,
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: ShadInput(
-                      placeholder: const Text('Min'),
-                      initialValue: breakweight.min,
-                      textAlign: TextAlign.center,
-                      padding: _compactInputPadding,
-                      onChanged: onMinChanged,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(
-                      '–',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.colors.textMuted,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: ShadInput(
-                      placeholder: const Text('Max'),
-                      initialValue: breakweight.max,
-                      textAlign: TextAlign.center,
-                      padding: _compactInputPadding,
-                      onChanged: onMaxChanged,
-                    ),
-                  ),
-                ],
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: IconButton(
+                  onPressed: removeDisabled ? null : onRemove,
+                  icon: const Icon(CupertinoIcons.xmark, size: 11),
+                  color: removeDisabled ? context.colors.textFaint : context.colors.destructive,
+                  splashRadius: 12,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                ),
               ),
             ],
           ),
-          Positioned(
-            top: -2,
-            right: -2,
-            child: IconButton(
-              onPressed: removeDisabled ? null : onRemove,
-              icon: const Icon(CupertinoIcons.xmark, size: 12),
-              color: removeDisabled
-                  ? context.colors.textFaint
-                  : context.colors.destructive,
-              splashRadius: 14,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-            ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: ShadInput(
+                  placeholder: const Text('Min'),
+                  initialValue: breakweight.min,
+                  textAlign: TextAlign.center,
+                  padding: _compactInputPadding,
+                  onChanged: onMinChanged,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text('–', style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
+              ),
+              Expanded(
+                child: ShadInput(
+                  placeholder: const Text('Max'),
+                  initialValue: breakweight.max,
+                  textAlign: TextAlign.center,
+                  padding: _compactInputPadding,
+                  onChanged: onMaxChanged,
+                ),
+              ),
+            ],
           ),
         ],
       ),

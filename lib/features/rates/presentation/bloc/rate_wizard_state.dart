@@ -20,9 +20,18 @@ class RateWizardState extends Equatable {
 
   final String matrixTab;
   final String markup;
-  final LocationBasis locationBasis;
-  final List<String> phCities;
-  final List<String> phProvinces;
+
+  /// Origin and Destination each have their own independent search-type
+  /// filter (e.g. Origin by City, Destination by IATA Code) and their own
+  /// result/loading state, since both fields can now search simultaneously
+  /// with different types rather than sharing one "whichever field has
+  /// focus" result set.
+  final LocationSearchType originSearchType;
+  final LocationSearchType destinationSearchType;
+  final List<LocationOption> originSearchResults;
+  final List<LocationOption> destinationSearchResults;
+  final bool originSearchLoading;
+  final bool destinationSearchLoading;
   final List<MatrixRow> matrixRows;
   final List<Breakweight> breakweights;
   final int? removeRouteIndex;
@@ -54,9 +63,12 @@ class RateWizardState extends Equatable {
     this.expiryDate,
     this.matrixTab = 'standard',
     this.markup = '',
-    this.locationBasis = LocationBasis.city,
-    this.phCities = const [],
-    this.phProvinces = const [],
+    this.originSearchType = LocationSearchType.island,
+    this.destinationSearchType = LocationSearchType.island,
+    this.originSearchResults = const [],
+    this.destinationSearchResults = const [],
+    this.originSearchLoading = false,
+    this.destinationSearchLoading = false,
     this.matrixRows = const [MatrixRow()],
     this.breakweights = const [Breakweight()],
     this.removeRouteIndex,
@@ -100,12 +112,6 @@ class RateWizardState extends Equatable {
     PricingOption.minimumExcessBreakweight,
   }.contains(pricingOption);
 
-  List<String> get locationSuggestions => switch (locationBasis) {
-    LocationBasis.city => phCities,
-    LocationBasis.province => phProvinces,
-    LocationBasis.code => const [],
-  };
-
   RateWizardState copyWith({
     int? step,
     FreightMode? freightMode,
@@ -116,9 +122,12 @@ class RateWizardState extends Equatable {
     DateTime? expiryDate,
     String? matrixTab,
     String? markup,
-    LocationBasis? locationBasis,
-    List<String>? phCities,
-    List<String>? phProvinces,
+    LocationSearchType? originSearchType,
+    LocationSearchType? destinationSearchType,
+    List<LocationOption>? originSearchResults,
+    List<LocationOption>? destinationSearchResults,
+    bool? originSearchLoading,
+    bool? destinationSearchLoading,
     List<MatrixRow>? matrixRows,
     List<Breakweight>? breakweights,
     int? removeRouteIndex,
@@ -150,9 +159,12 @@ class RateWizardState extends Equatable {
       expiryDate: expiryDate ?? this.expiryDate,
       matrixTab: matrixTab ?? this.matrixTab,
       markup: markup ?? this.markup,
-      locationBasis: locationBasis ?? this.locationBasis,
-      phCities: phCities ?? this.phCities,
-      phProvinces: phProvinces ?? this.phProvinces,
+      originSearchType: originSearchType ?? this.originSearchType,
+      destinationSearchType: destinationSearchType ?? this.destinationSearchType,
+      originSearchResults: originSearchResults ?? this.originSearchResults,
+      destinationSearchResults: destinationSearchResults ?? this.destinationSearchResults,
+      originSearchLoading: originSearchLoading ?? this.originSearchLoading,
+      destinationSearchLoading: destinationSearchLoading ?? this.destinationSearchLoading,
       matrixRows: matrixRows ?? this.matrixRows,
       breakweights: breakweights ?? this.breakweights,
       removeRouteIndex: clearRemoveRouteIndex
@@ -192,9 +204,12 @@ class RateWizardState extends Equatable {
     expiryDate,
     matrixTab,
     markup,
-    locationBasis,
-    phCities,
-    phProvinces,
+    originSearchType,
+    destinationSearchType,
+    originSearchResults,
+    destinationSearchResults,
+    originSearchLoading,
+    destinationSearchLoading,
     matrixRows,
     breakweights,
     removeRouteIndex,

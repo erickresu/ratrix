@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/services/ph_locations_service.dart';
 import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/breakweight.dart';
+import '../../domain/entities/location_option.dart';
 import '../../domain/entities/matrix_row.dart';
 import '../../domain/entities/rate_wizard_payload_mapper.dart';
 import '../../domain/entities/ratrix_rate.dart';
@@ -16,13 +18,11 @@ part 'rate_wizard_state.dart';
 class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
   RateWizardBloc({
     required bool isCustom,
-    required PhLocationsService phLocationsService,
     required RatesRepository ratesRepository,
     String? clientId,
     String? clientName,
     RatrixRate? existingRate,
-  }) : _phLocationsService = phLocationsService,
-       _ratesRepository = ratesRepository,
+  }) : _ratesRepository = ratesRepository,
        _existingRate = existingRate,
        super(
          existingRate != null
@@ -89,9 +89,94 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
     on<MarkupChanged>(
       (event, emit) => emit(state.copyWith(markup: event.value)),
     );
-    on<LocationBasisChanged>(
-      (event, emit) => emit(state.copyWith(locationBasis: event.basis)),
-    );
+    on<LocationSearchTypeChanged>((event, emit) {
+      // A stale result set from the old type shouldn't linger under the
+      // newly selected one.
+      switch (event.field) {
+        case LocationField.origin:
+          emit(state.copyWith(originSearchType: event.searchType, originSearchResults: const [], originSearchLoading: false));
+        case LocationField.destination:
+          emit(
+            state.copyWith(
+              destinationSearchType: event.searchType,
+              destinationSearchResults: const [],
+              destinationSearchLoading: false,
+            ),
+          );
+      }
+    });
+    on<LocationSearchQueryChanged>((event, emit) async {
+      final isOrigin = event.field == LocationField.origin;
+      (isOrigin ? _originSearchDebounce : _destinationSearchDebounce)?.cancel();
+
+      if (event.query.trim().isEmpty) {
+        emit(
+          isOrigin
+              ? state.copyWith(originSearchResults: const [], originSearchLoading: false)
+              : state.copyWith(destinationSearchResults: const [], destinationSearchLoading: false),
+        );
+        return;
+      }
+
+      emit(
+        isOrigin
+            ? state.copyWith(originSearchLoading: true)
+            : state.copyWith(destinationSearchLoading: true),
+      );
+
+      final requestId = isOrigin ? ++_latestOriginRequestId : ++_latestDestinationRequestId;
+      final completer = Completer<void>();
+      final timer = Timer(const Duration(milliseconds: 300), () => completer.complete());
+      if (isOrigin) {
+        _originSearchDebounce = timer;
+      } else {
+        _destinationSearchDebounce = timer;
+      }
+      await completer.future;
+      if (isClosed) return;
+
+      final searchType = isOrigin ? state.originSearchType : state.destinationSearchType;
+      final results = await _ratesRepository.searchLocations(q: event.query, type: searchType.apiType);
+      if (isClosed) return;
+      // Discard a response from a keystroke that's no longer the latest —
+      // network jitter can make an earlier request resolve after a later
+      // one, and debouncing alone doesn't prevent that.
+      final isStillLatest = isOrigin ? requestId == _latestOriginRequestId : requestId == _latestDestinationRequestId;
+      if (!isStillLatest) return;
+      emit(
+        isOrigin
+            ? state.copyWith(originSearchResults: results, originSearchLoading: false)
+            : state.copyWith(destinationSearchResults: results, destinationSearchLoading: false),
+      );
+    });
+    on<LocationSearchCleared>((event, emit) {
+      switch (event.field) {
+        case LocationField.origin:
+          emit(state.copyWith(originSearchResults: const [], originSearchLoading: false));
+        case LocationField.destination:
+          emit(state.copyWith(destinationSearchResults: const [], destinationSearchLoading: false));
+      }
+    });
+    on<OriginLocationSelected>((event, emit) {
+      final rows = state.matrixRows.asMap().entries.map((e) {
+        if (e.key != event.rowIndex) return e.value;
+        return e.value.copyWith(
+          origin: event.displayText,
+          originId: _resolveLocationId(event.option, state.originSearchType),
+        );
+      }).toList();
+      emit(state.copyWith(matrixRows: rows));
+    });
+    on<DestinationLocationSelected>((event, emit) {
+      final rows = state.matrixRows.asMap().entries.map((e) {
+        if (e.key != event.rowIndex) return e.value;
+        return e.value.copyWith(
+          destination: event.displayText,
+          destinationId: _resolveLocationId(event.option, state.destinationSearchType),
+        );
+      }).toList();
+      emit(state.copyWith(matrixRows: rows));
+    });
 
     on<RouteAdded>((event, emit) {
       final rates = List.filled(state.breakweights.length, '');
@@ -346,28 +431,37 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       emit(state.copyWith(conditionalBreakweights: list));
     });
 
-    on<PhLocationsLoaded>(
-      (event, emit) => emit(
-        state.copyWith(phCities: event.cities, phProvinces: event.provinces),
-      ),
-    );
-
     on<RateSubmitRequested>(_onSubmitRequested);
-
-    _phLocationsService.ensureLoaded().then((_) {
-      if (isClosed) return;
-      add(
-        PhLocationsLoaded(
-          _phLocationsService.cities,
-          _phLocationsService.provinces,
-        ),
-      );
-    });
   }
 
-  final PhLocationsService _phLocationsService;
   final RatesRepository _ratesRepository;
   final RatrixRate? _existingRate;
+
+  Timer? _originSearchDebounce;
+  Timer? _destinationSearchDebounce;
+  int _latestOriginRequestId = 0;
+  int _latestDestinationRequestId = 0;
+
+  @override
+  Future<void> close() {
+    _originSearchDebounce?.cancel();
+    _destinationSearchDebounce?.cancel();
+    return super.close();
+  }
+
+  /// `LocationOption.id` is a generic string, but `MatrixRow.originId`/
+  /// `destinationId` are typed `int?` — resolve the type-appropriate field
+  /// per the selected search type. The `iata`-mapped types' id field is a
+  /// best-effort guess (`option.id`) pending verification against the real
+  /// API response.
+  int? _resolveLocationId(LocationOption option, LocationSearchType type) => switch (type) {
+    LocationSearchType.island => option.islandId,
+    LocationSearchType.cityProvince => option.cityId,
+    LocationSearchType.province => option.provinceId,
+    LocationSearchType.internalCode ||
+    LocationSearchType.iataCode ||
+    LocationSearchType.seaPortCode => int.tryParse(option.id ?? ''),
+  };
 
   Future<void> _onSubmitRequested(
     RateSubmitRequested event,

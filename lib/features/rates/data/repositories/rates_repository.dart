@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../domain/entities/audit_log.dart';
 import '../../domain/entities/client_rate.dart';
+import '../../domain/entities/location_option.dart';
 import '../../domain/entities/published_rate.dart';
 import '../../domain/entities/rate_stat.dart';
 import '../../domain/entities/ratrix_rate.dart';
@@ -301,6 +302,27 @@ class RatesRepository {
       return DateTime.tryParse(body['updated_at']?.toString() ?? '');
     }
     return null;
+  }
+
+  /// Live per-keystroke location search for the rate wizard's
+  /// origin/destination picker (`GET api/locations/search`). A search
+  /// failure just returns no results rather than throwing, so a flaky
+  /// network doesn't crash the picker.
+  Future<List<LocationOption>> searchLocations({required String q, String? type}) async {
+    try {
+      final res = await _dataSource.searchLocations(q: q, type: type);
+      final body = res.data;
+      var rows = _asList(body);
+      if (rows.isEmpty && body is Map<String, dynamic>) {
+        final data = body['data'];
+        if (data is Map<String, dynamic> && data['results'] is List) {
+          rows = data['results'] as List;
+        }
+      }
+      return rows.whereType<Map<String, dynamic>>().map(LocationOption.fromJson).toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<List<AuditLog>> fetchAuditLogs({

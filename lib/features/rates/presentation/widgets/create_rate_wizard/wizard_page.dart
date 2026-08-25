@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../../core/di/injection_container.dart';
-import '../../../../../core/services/ph_locations_service.dart';
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../data/repositories/rates_repository.dart';
 import '../../../domain/entities/rates_enums.dart';
@@ -33,7 +32,6 @@ class WizardPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => RateWizardBloc(
         isCustom: isCustom,
-        phLocationsService: getIt<PhLocationsService>(),
         ratesRepository: getIt<RatesRepository>(),
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,

@@ -7,16 +7,6 @@ sealed class RateWizardEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class PhLocationsLoaded extends RateWizardEvent {
-  const PhLocationsLoaded(this.cities, this.provinces);
-
-  final List<String> cities;
-  final List<String> provinces;
-
-  @override
-  List<Object?> get props => [cities, provinces];
-}
-
 class WizardStepChanged extends RateWizardEvent {
   const WizardStepChanged(this.step);
 
@@ -106,13 +96,63 @@ class MarkupChanged extends RateWizardEvent {
   List<Object?> get props => [value];
 }
 
-class LocationBasisChanged extends RateWizardEvent {
-  const LocationBasisChanged(this.basis);
+/// Distinguishes which of the two independent Origin/Destination search
+/// pipelines an event applies to — each field has its own filter type,
+/// results, and loading state.
+enum LocationField { origin, destination }
 
-  final LocationBasis basis;
+class LocationSearchTypeChanged extends RateWizardEvent {
+  const LocationSearchTypeChanged(this.field, this.searchType);
+
+  final LocationField field;
+  final LocationSearchType searchType;
 
   @override
-  List<Object?> get props => [basis];
+  List<Object?> get props => [field, searchType];
+}
+
+class LocationSearchQueryChanged extends RateWizardEvent {
+  const LocationSearchQueryChanged(this.field, this.query);
+
+  final LocationField field;
+  final String query;
+
+  @override
+  List<Object?> get props => [field, query];
+}
+
+class LocationSearchCleared extends RateWizardEvent {
+  const LocationSearchCleared(this.field);
+
+  final LocationField field;
+
+  @override
+  List<Object?> get props => [field];
+}
+
+/// Fired when the user picks a suggestion from the Origin field's overlay.
+/// Carries the full [LocationOption] (not just its display string) so the
+/// bloc can resolve the correct typed id into `MatrixRow.originId`.
+class OriginLocationSelected extends RateWizardEvent {
+  const OriginLocationSelected(this.rowIndex, this.option, this.displayText);
+
+  final int rowIndex;
+  final LocationOption option;
+  final String displayText;
+
+  @override
+  List<Object?> get props => [rowIndex, option, displayText];
+}
+
+class DestinationLocationSelected extends RateWizardEvent {
+  const DestinationLocationSelected(this.rowIndex, this.option, this.displayText);
+
+  final int rowIndex;
+  final LocationOption option;
+  final String displayText;
+
+  @override
+  List<Object?> get props => [rowIndex, option, displayText];
 }
 
 class RouteAdded extends RateWizardEvent {

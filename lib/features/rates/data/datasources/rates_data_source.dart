@@ -57,4 +57,16 @@ class RatesDataSource {
       );
 
   Future<Response<dynamic>> fetchAuditLog(String id) => _dio.get('api/rates/audit-logs/$id');
+
+  /// `GET api/locations/search` — per-keystroke live search for the rate
+  /// wizard's origin/destination picker. `all=1` is only sent when [q] is
+  /// empty.
+  Future<Response<dynamic>> searchLocations({required String q, String? type}) => _dio.get(
+        'api/locations/search',
+        queryParameters: {
+          'q': q,
+          if (q.isEmpty) 'all': 1,
+          if (type != null) 'type': type,
+        },
+      );
 }

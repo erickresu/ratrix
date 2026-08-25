@@ -134,34 +134,26 @@ class Step3ConditionalAddons extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Text('Match by:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textMuted)),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(6)),
-                    child: Row(
-                      children: [
-                        for (final basis in LocationBasis.values)
-                          _SegButton(label: basis.label, selected: state.locationBasis == basis, onTap: () => bloc.add(LocationBasisChanged(basis))),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 16),
               RateMatrixTable(
                 matrixRows: state.conditionalMatrixRows,
                 breakweights: state.conditionalBreakweights,
                 originPlaceholder: 'Search origin...',
                 destinationPlaceholder: 'Search destination...',
-                locationOptions: state.locationSuggestions,
+                originSearchResults: state.originSearchResults,
+                destinationSearchResults: state.destinationSearchResults,
+                originSearchLoading: state.originSearchLoading,
+                destinationSearchLoading: state.destinationSearchLoading,
+                originSearchType: state.originSearchType,
+                destinationSearchType: state.destinationSearchType,
                 onOriginChanged: (i, v) =>
                     bloc.add(ConditionalOriginChanged(i, v)),
                 onDestinationChanged: (i, v) =>
                     bloc.add(ConditionalDestinationChanged(i, v)),
+                onOriginQueryChanged: (q) => bloc.add(LocationSearchQueryChanged(LocationField.origin, q)),
+                onDestinationQueryChanged: (q) => bloc.add(LocationSearchQueryChanged(LocationField.destination, q)),
+                onOriginSearchTypeChanged: (t) => bloc.add(LocationSearchTypeChanged(LocationField.origin, t)),
+                onDestinationSearchTypeChanged: (t) => bloc.add(LocationSearchTypeChanged(LocationField.destination, t)),
                 onCellChanged: (i, bi, v) =>
                     bloc.add(ConditionalCellChanged(i, bi, v)),
                 onBreakweightMinChanged: (i, v) =>
@@ -192,42 +184,6 @@ class Step3ConditionalAddons extends StatelessWidget {
   }
 }
 
-class _SegButton extends StatelessWidget {
-  const _SegButton({required this.label, required this.selected, required this.onTap});
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(5),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: selected ? context.colors.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(5),
-            boxShadow: selected
-                ? [BoxShadow(color: context.colors.shadowSoft, blurRadius: 4, offset: const Offset(0, 1))]
-                : null,
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: selected ? context.colors.textBody : context.colors.textMuted,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _ConditionCard extends StatelessWidget {
   const _ConditionCard({
