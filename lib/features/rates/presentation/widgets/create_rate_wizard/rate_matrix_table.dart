@@ -512,20 +512,20 @@ class _LocationFieldState extends State<_LocationField> {
       _removeOverlay();
       return;
     }
-    // Gaining focus with existing text — re-request that text's results
-    // rather than trusting whatever the shared search state currently
-    // holds (it may reflect a different field's last query).
-    final text = _controller.text.trim();
-    if (text.isNotEmpty) widget.onQueryChanged?.call(text);
+    // Gaining focus re-requests results for the current text — even when
+    // empty, so an empty focused field shows all options for the current
+    // "match by" type rather than requiring a keystroke first — rather
+    // than trusting whatever the shared search state currently holds (it
+    // may reflect a different field's last query).
+    widget.onQueryChanged?.call(_controller.text.trim());
+    if (_entry == null) _showOverlay();
   }
 
   void _onTextChanged() {
     if (_suppressTextListener) return;
     final query = _controller.text.trim();
     widget.onQueryChanged?.call(query);
-    if (query.isEmpty) {
-      _removeOverlay();
-    } else if (_entry == null) {
+    if (_entry == null) {
       _showOverlay();
     } else {
       _entry!.markNeedsBuild();
@@ -647,7 +647,13 @@ class _LocationFieldState extends State<_LocationField> {
                   width: constraints.maxWidth * 0.3,
                   child: _MatchByLeading(
                     value: widget.matchByType!,
-                    onChanged: widget.onMatchByChanged,
+                    onChanged: (type) {
+                      widget.onMatchByChanged?.call(type);
+                      // Re-request under the new type so a focused field
+                      // (typed or empty) refreshes its menu immediately
+                      // instead of waiting for another keystroke.
+                      widget.onQueryChanged?.call(_controller.text.trim());
+                    },
                   ),
                 ),
           trailing: Icon(CupertinoIcons.chevron_down, size: 14, color: context.colors.textMuted),

@@ -109,15 +109,9 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       final isOrigin = event.field == LocationField.origin;
       (isOrigin ? _originSearchDebounce : _destinationSearchDebounce)?.cancel();
 
-      if (event.query.trim().isEmpty) {
-        emit(
-          isOrigin
-              ? state.copyWith(originSearchResults: const [], originSearchLoading: false)
-              : state.copyWith(destinationSearchResults: const [], destinationSearchLoading: false),
-        );
-        return;
-      }
-
+      // An empty query still searches — the datasource sends `all=1` in
+      // that case, so a focused-but-untyped field shows every option for
+      // the current "match by" type instead of an empty menu.
       emit(
         isOrigin
             ? state.copyWith(originSearchLoading: true)
