@@ -70,7 +70,11 @@ class _BlurredBarrier extends StatelessWidget {
 /// Shows a placeholder until a result exists, then the same header/body/PDF
 /// button as the dialog minus the close button and blur backdrop.
 class FreightBreakdownPanel extends StatelessWidget {
-  const FreightBreakdownPanel({super.key, required this.client, this.showButton = true});
+  const FreightBreakdownPanel({
+    super.key,
+    required this.client,
+    this.showButton = true,
+  });
 
   final Client client;
 
@@ -96,11 +100,19 @@ class FreightBreakdownPanel extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(CupertinoIcons.arrow_down_circle, size: 32, color: context.colors.textFaint),
+            Icon(
+              CupertinoIcons.arrow_down_circle,
+              size: 32,
+              color: context.colors.textFaint,
+            ),
             const SizedBox(height: 12),
             Text(
               'Freight Breakdown',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: context.colors.textMutedStrong,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
@@ -135,7 +147,9 @@ class FreightBreakdownPanel extends StatelessWidget {
                                 ? null
                                 : () {
                                     final rateId = state.selectedRate!.id;
-                                    context.read<RatesShellBloc>().add(EditRateRequested(rateId));
+                                    context.read<RatesShellBloc>().add(
+                                      EditRateRequested(rateId),
+                                    );
                                   },
                           )
                         : const _ResultBody(),
@@ -168,13 +182,17 @@ class _PulsingBorderCard extends StatefulWidget {
   State<_PulsingBorderCard> createState() => _PulsingBorderCardState();
 }
 
-class _PulsingBorderCardState extends State<_PulsingBorderCard> with SingleTickerProviderStateMixin {
+class _PulsingBorderCardState extends State<_PulsingBorderCard>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))..repeat(reverse: true);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -188,13 +206,19 @@ class _PulsingBorderCardState extends State<_PulsingBorderCard> with SingleTicke
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final borderColor = Color.lerp(context.colors.border, context.colors.primary, _controller.value)!;
+        final borderColor = Color.lerp(
+          context.colors.border,
+          context.colors.primary,
+          _controller.value,
+        )!;
         return Container(
           decoration: BoxDecoration(
             borderRadius: widget.borderRadius,
             boxShadow: [
               BoxShadow(
-                color: context.colors.primary.withValues(alpha: 0.2 * _controller.value),
+                color: context.colors.primary.withValues(
+                  alpha: 0.2 * _controller.value,
+                ),
                 blurRadius: 14,
                 spreadRadius: 0.5,
               ),
@@ -212,6 +236,69 @@ class _PulsingBorderCardState extends State<_PulsingBorderCard> with SingleTicke
         );
       },
       child: widget.child,
+    );
+  }
+}
+
+/// Drives a slow, continuous pulse (normal border <-> gold, plus a matching
+/// glow) directly through [ShadDialog]'s own `border`/`shadows` params —
+/// same visual idea as [_PulsingBorderCard], but feeding the dialog's own
+/// decoration instead of wrapping it in a second bordered container (which
+/// would double up on top of the dialog's own border/background).
+class _PulsingDialogBorder extends StatefulWidget {
+  const _PulsingDialogBorder({required this.builder});
+
+  final Widget Function(
+    BuildContext context,
+    Border border,
+    List<BoxShadow> shadows,
+  )
+  builder;
+
+  @override
+  State<_PulsingDialogBorder> createState() => _PulsingDialogBorderState();
+}
+
+class _PulsingDialogBorderState extends State<_PulsingDialogBorder>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final borderColor = Color.lerp(
+          context.colors.border,
+          context.colors.primary,
+          _controller.value,
+        )!;
+        return widget
+            .builder(context, Border.all(color: borderColor, width: 2), [
+              BoxShadow(
+                color: context.colors.primary.withValues(
+                  alpha: 0.3 * _controller.value,
+                ),
+                blurRadius: 18,
+                spreadRadius: 1.5,
+              ),
+            ]);
+      },
     );
   }
 }
@@ -247,38 +334,44 @@ class _FreightBreakdownDialog extends StatelessWidget {
               child: _CloseButton(onTap: () => Navigator.of(context).pop()),
             ),
           ),
-          ShadDialog(
-            radius: BorderRadius.circular(16),
-            backgroundColor: context.colors.surface,
-            padding: EdgeInsets.zero,
-            closeIcon: const SizedBox.shrink(),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _DialogHeader(rateType: state.rateType),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                      child: result.error != null
-                          ? _ErrorBody(
-                              message: result.error!,
-                              origin: state.origin,
-                              destination: state.destination,
-                              tiers: result.routeTiers,
-                              onEditRate: state.selectedRate == null
-                                  ? null
-                                  : () {
-                                      final rateId = state.selectedRate!.id;
-                                      Navigator.of(context).pop();
-                                      context.read<RatesShellBloc>().add(EditRateRequested(rateId));
-                                    },
-                            )
-                          : const _ResultBody(),
+          _PulsingDialogBorder(
+            builder: (context, border, shadows) => ShadDialog(
+              radius: BorderRadius.circular(16),
+              backgroundColor: context.colors.surface,
+              border: border,
+              shadows: shadows,
+              padding: EdgeInsets.zero,
+              closeIcon: const SizedBox.shrink(),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _DialogHeader(rateType: state.rateType),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                        child: result.error != null
+                            ? _ErrorBody(
+                                message: result.error!,
+                                origin: state.origin,
+                                destination: state.destination,
+                                tiers: result.routeTiers,
+                                onEditRate: state.selectedRate == null
+                                    ? null
+                                    : () {
+                                        final rateId = state.selectedRate!.id;
+                                        Navigator.of(context).pop();
+                                        context.read<RatesShellBloc>().add(
+                                          EditRateRequested(rateId),
+                                        );
+                                      },
+                              )
+                            : const _ResultBody(),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -298,7 +391,11 @@ class _FreightBreakdownDialog extends StatelessWidget {
 /// local loading flag so the button shows a spinner and disables itself for
 /// the duration instead of looking unresponsive.
 class GeneratePdfButton extends StatefulWidget {
-  const GeneratePdfButton({super.key, required this.state, required this.client});
+  const GeneratePdfButton({
+    super.key,
+    required this.state,
+    required this.client,
+  });
 
   final ShippingCalculatorState state;
   final Client client;
@@ -329,7 +426,10 @@ class _GeneratePdfButtonState extends State<GeneratePdfButton> {
             ? const SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               )
             : const Icon(CupertinoIcons.arrow_down_doc, size: 16),
         onPressed: _generating ? null : _handleTap,
@@ -361,28 +461,44 @@ class _DialogHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: Text(
                     '${rateType.label.toUpperCase()} RATE',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.4,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(CupertinoIcons.arrow_down_circle_fill, size: 16, color: Colors.white),
+                    const Icon(
+                      CupertinoIcons.arrow_down_circle_fill,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 8),
                     const Flexible(
                       child: Text(
                         'Freight Breakdown',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -390,7 +506,13 @@ class _DialogHeader extends StatelessWidget {
               ],
             ),
           ),
-          Text(dateLabel, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.85))),
+          Text(
+            dateLabel,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.85),
+            ),
+          ),
         ],
       ),
     );
@@ -413,8 +535,15 @@ class _CloseButton extends StatelessWidget {
           width: 24,
           height: 24,
           alignment: Alignment.center,
-          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-          child: const Icon(CupertinoIcons.xmark, size: 12, color: Colors.white),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            CupertinoIcons.xmark,
+            size: 12,
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -453,7 +582,9 @@ class _ErrorBody extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: context.colors.destructive.withValues(alpha: 0.08),
-            border: Border.all(color: context.colors.destructive.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: context.colors.destructive.withValues(alpha: 0.3),
+            ),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
@@ -462,9 +593,21 @@ class _ErrorBody extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(CupertinoIcons.exclamationmark_triangle, size: 16, color: context.colors.destructive),
+                  Icon(
+                    CupertinoIcons.exclamationmark_triangle,
+                    size: 16,
+                    color: context.colors.destructive,
+                  ),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(message, style: TextStyle(fontSize: 13, color: context.colors.destructive))),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.colors.destructive,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -472,7 +615,12 @@ class _ErrorBody extends StatelessWidget {
         ),
         if (tiers.isNotEmpty || onEditRate != null) ...[
           const SizedBox(height: 12),
-          RouteTiersTable(origin: origin, destination: destination, tiers: tiers, onEdit: onEditRate),
+          RouteTiersTable(
+            origin: origin,
+            destination: destination,
+            tiers: tiers,
+            onEdit: onEditRate,
+          ),
         ],
       ],
     );
@@ -483,7 +631,13 @@ class _ErrorBody extends StatelessWidget {
 /// a calc error so the user can see what's actually configured on the route
 /// without leaving the dialog.
 class RouteTiersTable extends StatelessWidget {
-  const RouteTiersTable({super.key, required this.origin, required this.destination, required this.tiers, this.onEdit});
+  const RouteTiersTable({
+    super.key,
+    required this.origin,
+    required this.destination,
+    required this.tiers,
+    this.onEdit,
+  });
 
   final String origin;
   final String destination;
@@ -495,12 +649,22 @@ class RouteTiersTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    TextStyle headerLabelStyle(BuildContext context) =>
-        TextStyle(fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.2, color: context.colors.textMutedStrong);
-    TextStyle headerRangeStyle(BuildContext context) =>
-        TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: context.colors.textBody);
-    TextStyle cellStyle(BuildContext context) =>
-        TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.colors.textBody);
+    TextStyle headerLabelStyle(BuildContext context) => TextStyle(
+      fontSize: 9,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.2,
+      color: context.colors.textMutedStrong,
+    );
+    TextStyle headerRangeStyle(BuildContext context) => TextStyle(
+      fontSize: 10,
+      fontWeight: FontWeight.w600,
+      color: context.colors.textBody,
+    );
+    TextStyle cellStyle(BuildContext context) => TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+      color: context.colors.textBody,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -516,13 +680,20 @@ class RouteTiersTable extends StatelessWidget {
                 onTap: onEdit,
                 child: const Padding(
                   padding: EdgeInsets.all(7),
-                  child: Icon(CupertinoIcons.pencil, size: 16, color: Colors.white),
+                  child: Icon(
+                    CupertinoIcons.pencil,
+                    size: 16,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
           ),
         if (tiers.isEmpty)
-          Text('No breakweight tiers found for this route.', style: cellStyle(context).copyWith(color: context.colors.textMuted))
+          Text(
+            'No breakweight tiers found for this route.',
+            style: cellStyle(context).copyWith(color: context.colors.textMuted),
+          )
         else
           Container(
             clipBehavior: Clip.antiAlias,
@@ -547,11 +718,20 @@ class RouteTiersTable extends StatelessWidget {
                         child: Text('ROUTE', style: headerLabelStyle(context)),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        decoration: BoxDecoration(border: Border(top: BorderSide(color: context.colors.border))),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(color: context.colors.border),
+                          ),
+                        ),
                         child: Text(
                           '${origin.isEmpty ? '—' : origin} → ${destination.isEmpty ? '—' : destination}',
-                          style: cellStyle(context).copyWith(fontWeight: FontWeight.w700),
+                          style: cellStyle(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.w700),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -570,7 +750,9 @@ class RouteTiersTable extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 6),
                           decoration: BoxDecoration(
                             color: context.colors.surfaceSubtle,
-                            border: Border(left: BorderSide(color: context.colors.border)),
+                            border: Border(
+                              left: BorderSide(color: context.colors.border),
+                            ),
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -578,7 +760,9 @@ class RouteTiersTable extends StatelessWidget {
                               Text(
                                 i == 0 ? 'MINIMUM' : 'TIER ${i + 1}',
                                 style: i == 0
-                                    ? headerLabelStyle(context).copyWith(color: context.colors.primaryDeep)
+                                    ? headerLabelStyle(context).copyWith(
+                                        color: context.colors.primaryDeep,
+                                      )
                                     : headerLabelStyle(context),
                               ),
                               const SizedBox(height: 2),
@@ -593,7 +777,10 @@ class RouteTiersTable extends StatelessWidget {
                         ),
                         Container(
                           alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             border: Border(
                               top: BorderSide(color: context.colors.border),
@@ -601,14 +788,21 @@ class RouteTiersTable extends StatelessWidget {
                             ),
                           ),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: context.colors.primaryChipBg,
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               '₱${tiers[i].rate.toStringAsFixed(2)}',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.primaryDeep),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: context.colors.primaryDeep,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -635,7 +829,8 @@ class _ResultBody extends StatelessWidget {
     final result = state.calcResult!;
 
     num displayValue(num v) => state.roundedDisplay ? v.roundToDouble() : v;
-    String money(num? v) => v == null ? '—' : displayValue(v).toStringAsFixed(2);
+    String money(num? v) =>
+        v == null ? '—' : displayValue(v).toStringAsFixed(2);
 
     final grandTotal = displayValue(state.grandTotal);
 
@@ -679,7 +874,12 @@ class _ResultBody extends StatelessWidget {
         Center(
           child: Text(
             'FINAL CHARGEABLE BASIS',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: context.colors.textMuted),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.6,
+              color: context.colors.textMuted,
+            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -689,11 +889,20 @@ class _ResultBody extends StatelessWidget {
               children: [
                 TextSpan(
                   text: result.chargeableWeight?.toStringAsFixed(0) ?? '—',
-                  style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: context.colors.textBody, height: 1),
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    color: context.colors.textBody,
+                    height: 1,
+                  ),
                 ),
                 TextSpan(
                   text: ' kg',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: context.colors.textMuted),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: context.colors.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -705,10 +914,18 @@ class _ResultBody extends StatelessWidget {
         Center(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: context.colors.successBg, borderRadius: BorderRadius.circular(6)),
+            decoration: BoxDecoration(
+              color: context.colors.successBg,
+              borderRadius: BorderRadius.circular(6),
+            ),
             child: Text(
               'GRAND TOTAL PAYABLE',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: context.colors.successText),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+                color: context.colors.successText,
+              ),
             ),
           ),
         ),
@@ -717,10 +934,21 @@ class _ResultBody extends StatelessWidget {
           child: RichText(
             text: TextSpan(
               children: [
-                TextSpan(text: '₱', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.colors.primaryDeep)),
+                TextSpan(
+                  text: '₱',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.primaryDeep,
+                  ),
+                ),
                 TextSpan(
                   text: grandTotal.toStringAsFixed(2),
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: context.colors.primaryDeep),
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: context.colors.primaryDeep,
+                  ),
                 ),
               ],
             ),
@@ -738,56 +966,105 @@ class _ResultBody extends StatelessWidget {
         const SizedBox(height: 24),
         Row(
           children: [
-            Container(width: 6, height: 6, decoration: BoxDecoration(color: context.colors.primary, shape: BoxShape.circle)),
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: context.colors.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
             const SizedBox(width: 8),
-            Text('CHARGE DETAILS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: context.colors.textMutedStrong)),
+            Text(
+              'CHARGE DETAILS',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+                color: context.colors.textMutedStrong,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
-        _ChargeRow(label: 'Base Freight', value: money(result.baseFreight), bold: true),
-        if (result.fuelSurcharge != null) _ChargeRow(label: 'Fuel Surcharge', value: money(result.fuelSurcharge)),
-        for (final entry in result.flatFees.entries) _ChargeRow(label: entry.key, value: money(entry.value)),
+        _ChargeRow(
+          label: 'Base Freight',
+          value: money(result.baseFreight),
+          bold: true,
+        ),
+        if (result.fuelSurcharge != null)
+          _ChargeRow(
+            label: 'Fuel Surcharge',
+            value: money(result.fuelSurcharge),
+          ),
+        for (final entry in result.flatFees.entries)
+          _ChargeRow(label: entry.key, value: money(entry.value)),
         const SizedBox(height: 12),
         const Divider(height: 1),
         const SizedBox(height: 12),
-        _ChargeRow(label: 'Sub-Total', value: '₱${money(result.subTotal)}', bold: true),
+        _ChargeRow(
+          label: 'Sub-Total',
+          value: '₱${money(result.subTotal)}',
+          bold: true,
+        ),
         if (state.vatMode == VatMode.standard)
           _ChargeRow(
-            label: 'VAT (${(ShippingCalculatorState.vatRate * 100).toStringAsFixed(0)}%)',
+            label:
+                'VAT (${(ShippingCalculatorState.vatRate * 100).toStringAsFixed(0)}%)',
             value: '₱${money(state.vatAmount)}',
             valueColor: context.colors.primaryDeep,
             labelColor: context.colors.primaryDeep,
           ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 16,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _VatRadio(
-              label: 'VAT Exempt',
-              selected: state.vatMode == VatMode.exempt,
-              onTap: () => bloc.add(CalcVatModeChanged(state.vatMode == VatMode.exempt ? VatMode.standard : VatMode.exempt)),
-            ),
-            _VatRadio(
-              label: 'VAT Zero Rated',
-              selected: state.vatMode == VatMode.zeroRated,
-              onTap: () => bloc.add(CalcVatModeChanged(state.vatMode == VatMode.zeroRated ? VatMode.standard : VatMode.zeroRated)),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('VAT Inclusive?', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
-                const SizedBox(width: 8),
-                _SegmentedToggle(
-                  leftLabel: 'Inclusive',
-                  rightLabel: 'Exclusive',
-                  selectedLeft: state.vatInclusive,
-                  onSelect: (left) => bloc.add(CalcVatInclusiveToggled(left)),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ShadCheckbox(
+                value: state.vatMode == VatMode.exempt,
+                label: Text(
+                  'VAT Exempt',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.colors.textMutedStrong,
+                  ),
                 ),
-              ],
-            ),
-          ],
+                // Exempt/Zero Rated share one underlying VatMode — checking
+                // either clears the other, same mutual-exclusivity as before.
+                onChanged: (value) => bloc.add(
+                  CalcVatModeChanged(value ? VatMode.exempt : VatMode.standard),
+                ),
+              ),
+              const SizedBox(width: 20),
+              ShadCheckbox(
+                value: state.vatMode == VatMode.zeroRated,
+                label: Text(
+                  'VAT Zero Rated',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.colors.textMutedStrong,
+                  ),
+                ),
+                onChanged: (value) => bloc.add(
+                  CalcVatModeChanged(
+                    value ? VatMode.zeroRated : VatMode.standard,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              ShadCheckbox(
+                value: state.vatInclusive,
+                label: Text(
+                  'VAT Inclusive?',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.colors.textMutedStrong,
+                  ),
+                ),
+                onChanged: (value) => bloc.add(CalcVatInclusiveToggled(value)),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -809,7 +1086,11 @@ class _WeightStat extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: context.colors.textMutedStrong,
+          ),
         ),
       ],
     );
@@ -836,7 +1117,10 @@ class _ChargeBasisSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -869,12 +1153,23 @@ class _SegmentedToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(color: context.colors.surfaceMuted, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceMuted,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _SegmentButton(label: leftLabel, selected: selectedLeft, onTap: () => onSelect(true)),
-          _SegmentButton(label: rightLabel, selected: !selectedLeft, onTap: () => onSelect(false)),
+          _SegmentButton(
+            label: leftLabel,
+            selected: selectedLeft,
+            onTap: () => onSelect(true),
+          ),
+          _SegmentButton(
+            label: rightLabel,
+            selected: !selectedLeft,
+            onTap: () => onSelect(false),
+          ),
         ],
       ),
     );
@@ -882,7 +1177,11 @@ class _SegmentedToggle extends StatelessWidget {
 }
 
 class _SegmentButton extends StatelessWidget {
-  const _SegmentButton({required this.label, required this.selected, required this.onTap});
+  const _SegmentButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -909,37 +1208,6 @@ class _SegmentButton extends StatelessWidget {
               color: selected ? Colors.white : context.colors.textMutedStrong,
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _VatRadio extends StatelessWidget {
-  const _VatRadio({required this.label, required this.selected, required this.onTap});
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: onTap,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              selected ? CupertinoIcons.circle_fill : CupertinoIcons.circle,
-              size: 14,
-              color: selected ? context.colors.primary : context.colors.textFaint,
-            ),
-            const SizedBox(width: 6),
-            Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong)),
-          ],
         ),
       ),
     );
@@ -973,7 +1241,9 @@ class _ChargeRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-              color: labelColor ?? (bold ? context.colors.textBody : context.colors.textMuted),
+              color:
+                  labelColor ??
+                  (bold ? context.colors.textBody : context.colors.textMuted),
             ),
           ),
           Text(
@@ -981,7 +1251,11 @@ class _ChargeRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
-              color: valueColor ?? (bold ? context.colors.textBody : context.colors.textMutedStrong),
+              color:
+                  valueColor ??
+                  (bold
+                      ? context.colors.textBody
+                      : context.colors.textMutedStrong),
             ),
           ),
         ],

@@ -249,6 +249,18 @@ class ShippingCalculatorBloc
       addFlat('Documentation fee', addons.documentationFee);
       addFlat('Permit fees', addons.permitFeesNonVat);
       addFlat('Insurance', addons.insurance);
+      if (addons.valuation != null && addons.valuation != 0) {
+        final declaredValue = num.tryParse(state.declaredValue.trim()) ?? 0;
+        addFlat(
+          'Valuation',
+          // Percentage valuation is a percentage of the shipment's
+          // declared value, not of the base freight (unlike fuel
+          // surcharge, which IS a percentage of base freight).
+          addons.valuationType == 'percentage'
+              ? declaredValue * (addons.valuation! / 100)
+              : addons.valuation,
+        );
+      }
       addFlat('Delivery fee', addons.deliveryFee);
       addFlat('Crating fee', addons.cratingFee);
       addFlat('Packing fee', addons.packingFee);
