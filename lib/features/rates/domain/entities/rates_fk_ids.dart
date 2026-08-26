@@ -67,6 +67,36 @@ class RatesFkIds {
     PricingOption.minimumCummulativeBreakweight: 5,
     PricingOption.excessBreakweight: 6,
     PricingOption.minimumExcessBreakweight: 7,
+    PricingOption.routeBased: 16,
+    PricingOption.timeBased: 17,
+  };
+
+  static const List<PricingOption> _bracketPricingOptions = [
+    PricingOption.fixedBreakweight,
+    PricingOption.minimumFixedBreakweight,
+    PricingOption.flatBreakweight,
+    PricingOption.cummulativeBreakweight,
+    PricingOption.minimumCummulativeBreakweight,
+    PricingOption.excessBreakweight,
+    PricingOption.minimumExcessBreakweight,
+  ];
+
+  /// `types_charge_basis_charge_options` pivot — which [PricingOption]
+  /// values are valid for a given [ChargeBasis]. Confirmed against the
+  /// backend seeder (`RatrixSeeder.php`): Full Container Load only allows
+  /// Route-Based/Time-Based Pricing (ids 16-17); every other charge basis
+  /// currently wired in this app uses the 7 bracket-pricing options.
+  /// Full Truck Load's real valid set (ids 8-15, distance-based options) is
+  /// not modeled here yet — deliberately deferred, a separate follow-up.
+  static const Map<ChargeBasis, List<PricingOption>> pricingOptionsByChargeBasis = {
+    ChargeBasis.kilo: _bracketPricingOptions,
+    ChargeBasis.cbm: _bracketPricingOptions,
+    ChargeBasis.fullTruckLoad: _bracketPricingOptions,
+    ChargeBasis.ltlKilo: _bracketPricingOptions,
+    ChargeBasis.ltlCbm: _bracketPricingOptions,
+    ChargeBasis.fullContainerLoad: [PricingOption.routeBased, PricingOption.timeBased],
+    ChargeBasis.lclKilo: _bracketPricingOptions,
+    ChargeBasis.lclCbm: _bracketPricingOptions,
   };
 
   /// `types_freight_mode_charge_basis` pivot — which [ChargeBasis] values are

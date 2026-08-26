@@ -174,7 +174,7 @@ class _PulsingBorderCardState extends State<_PulsingBorderCard> with SingleTicke
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))..repeat(reverse: true);
   }
 
   @override
@@ -194,9 +194,9 @@ class _PulsingBorderCardState extends State<_PulsingBorderCard> with SingleTicke
             borderRadius: widget.borderRadius,
             boxShadow: [
               BoxShadow(
-                color: context.colors.primary.withValues(alpha: 0.35 * _controller.value),
-                blurRadius: 16,
-                spreadRadius: 1,
+                color: context.colors.primary.withValues(alpha: 0.2 * _controller.value),
+                blurRadius: 14,
+                spreadRadius: 0.5,
               ),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../../core/utils/breakpoints.dart';
@@ -77,7 +78,7 @@ class RateMatrixTable extends StatelessWidget {
   final void Function(int index) onRemoveBreakweight;
   final void Function(int rowIndex)? onRemoveRoute;
 
-  static const _headerHeight = 88.0;
+  static const _headerHeight = 104.0;
   static const _rowHeight = 64.0;
   static const _bwColWidth = 156.0;
   static const _leftPaneWidth = 560.0;
@@ -763,8 +764,20 @@ class _BreakweightHeaderCell extends StatelessWidget {
     vertical: 8,
   );
 
+  /// Min is locked/derived, so the only way to get an invalid tier is
+  /// typing a max at or below that same tier's own min — an empty max
+  /// isn't an error, it's just not filled in yet.
+  bool get _hasError {
+    if (breakweight.max.isEmpty) return false;
+    final min = num.tryParse(breakweight.min);
+    final max = num.tryParse(breakweight.max);
+    if (min == null || max == null) return false;
+    return max <= min;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasError = _hasError;
     return Container(
       width: width,
       height: height,
@@ -816,10 +829,18 @@ class _BreakweightHeaderCell extends StatelessWidget {
             children: [
               Expanded(
                 child: ShadInput(
+                  // `initialValue` only seeds the field's controller once
+                  // (on first build) and doesn't sync on rebuild — since
+                  // min is derived and can change from an edit to an
+                  // earlier tier's max, key on the value itself so Flutter
+                  // treats a changed min as a fresh field instead of
+                  // reusing the old controller's stale text.
+                  key: ValueKey('bw-min-$index-${breakweight.min}'),
                   placeholder: const Text('Min'),
                   initialValue: breakweight.min,
                   textAlign: TextAlign.center,
                   padding: _compactInputPadding,
+                  enabled: false,
                   onChanged: onMinChanged,
                 ),
               ),
@@ -833,11 +854,29 @@ class _BreakweightHeaderCell extends StatelessWidget {
                   initialValue: breakweight.max,
                   textAlign: TextAlign.center,
                   padding: _compactInputPadding,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: hasError
+                      ? ShadDecoration(
+                          border: ShadBorder.all(color: context.colors.destructive),
+                          focusedBorder: ShadBorder.all(color: context.colors.destructive, width: 2),
+                        )
+                      : null,
                   onChanged: onMaxChanged,
                 ),
               ),
             ],
           ),
+          if (hasError) ...[
+            const SizedBox(height: 3),
+            Text(
+              'Max must be greater than ${breakweight.min}',
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+              style: TextStyle(fontSize: 9.5, color: context.colors.destructive),
+            ),
+          ],
         ],
       ),
     );

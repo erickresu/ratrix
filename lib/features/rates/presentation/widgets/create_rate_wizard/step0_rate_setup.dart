@@ -42,6 +42,8 @@ class Step0RateSetup extends StatelessWidget {
     final chargeBasisOptions = state.freightMode == null
         ? ChargeBasis.values
         : RatesFkIds.chargeBasisOptionsByFreightMode[state.freightMode]!;
+    final pricingOptions =
+        RatesFkIds.pricingOptionsByChargeBasis[state.chargeBasis] ?? PricingOption.values;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,6 +349,7 @@ class Step0RateSetup extends StatelessWidget {
                       width: double.infinity,
                       height: _fieldHeight,
                       child: ShadSelect<PricingOption>(
+                        key: ValueKey('pricing-option-${state.chargeBasis}'),
                         initialValue: state.pricingOption,
                         selectedOptionBuilder: (context, value) =>
                             Text(value.label),
@@ -355,7 +358,7 @@ class Step0RateSetup extends StatelessWidget {
                             bloc.add(PricingOptionChanged(value));
                         },
                         options: [
-                          for (final p in PricingOption.values)
+                          for (final p in pricingOptions)
                             ShadOption(value: p, child: Text(p.label)),
                         ],
                       ),

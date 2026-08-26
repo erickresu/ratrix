@@ -41,7 +41,10 @@ enum PricingOption {
   cummulativeBreakweight('Cummulative Breakweight Pricing'),
   minimumCummulativeBreakweight('Minimum Cummulative Breakweight Pricing'),
   excessBreakweight('Excess Breakweight Pricing'),
-  minimumExcessBreakweight('Minimum Excess Breakweight Pricing');
+  minimumExcessBreakweight('Minimum Excess Breakweight Pricing'),
+  // Full Container Load-only (Sea) options — see RatesFkIds.chargeOptionIds.
+  routeBased('Route-Based Pricing'),
+  timeBased('Time-Based Pricing');
 
   const PricingOption(this.label);
   final String label;

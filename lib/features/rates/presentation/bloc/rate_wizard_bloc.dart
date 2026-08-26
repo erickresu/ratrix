@@ -55,24 +55,39 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
           RatesFkIds.serviceModeOptionsByFreightMode[event.mode]!;
       final validChargeBases =
           RatesFkIds.chargeBasisOptionsByFreightMode[event.mode]!;
+      final newChargeBasis = validChargeBases.contains(state.chargeBasis)
+          ? state.chargeBasis
+          : validChargeBases.first;
+      final validPricingOptions =
+          RatesFkIds.pricingOptionsByChargeBasis[newChargeBasis] ?? PricingOption.values;
       emit(
         state.copyWith(
           freightMode: event.mode,
           serviceMode: validServiceModes.contains(state.serviceMode)
               ? state.serviceMode
               : validServiceModes.first,
-          chargeBasis: validChargeBases.contains(state.chargeBasis)
-              ? state.chargeBasis
-              : validChargeBases.first,
+          chargeBasis: newChargeBasis,
+          pricingOption: validPricingOptions.contains(state.pricingOption)
+              ? state.pricingOption
+              : validPricingOptions.first,
         ),
       );
     });
     on<ServiceModeChanged>(
       (event, emit) => emit(state.copyWith(serviceMode: event.mode)),
     );
-    on<ChargeBasisChanged>(
-      (event, emit) => emit(state.copyWith(chargeBasis: event.basis)),
-    );
+    on<ChargeBasisChanged>((event, emit) {
+      final validPricingOptions =
+          RatesFkIds.pricingOptionsByChargeBasis[event.basis] ?? PricingOption.values;
+      emit(
+        state.copyWith(
+          chargeBasis: event.basis,
+          pricingOption: validPricingOptions.contains(state.pricingOption)
+              ? state.pricingOption
+              : validPricingOptions.first,
+        ),
+      );
+    });
     on<PricingOptionChanged>(
       (event, emit) => emit(state.copyWith(pricingOption: event.option)),
     );
@@ -276,16 +291,17 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
                 : e.value,
           )
           .toList();
-      // Editing a tier's max leaves the next tier's min stale — cascade it
-      // forward so the ranges stay contiguous instead of gapping/overlapping.
-      final nextIndex = event.index + 1;
-      if (nextIndex < list.length) {
-        final newMax = num.tryParse(event.value);
-        if (newMax != null) {
-          list[nextIndex] = list[nextIndex].copyWith(
-            min: _numToString(newMax + 1),
-          );
-        }
+      // Min is never user-edited — every tier's min is always derived from
+      // the previous tier's max — so changing an earlier tier's max must
+      // cascade all the way to the end, not just the next tier, or every
+      // tier after the immediate neighbor is left showing a stale min. Stop
+      // the cascade at the first invalid tier (max <= its own min) instead
+      // of deriving later tiers from a broken range.
+      for (var i = event.index + 1; i < list.length; i++) {
+        final prevMin = num.tryParse(list[i - 1].min);
+        final prevMax = num.tryParse(list[i - 1].max);
+        if (prevMax == null || (prevMin != null && prevMax <= prevMin)) break;
+        list[i] = list[i].copyWith(min: _numToString(prevMax + 1));
       }
       emit(state.copyWith(breakweights: list));
     });
@@ -411,16 +427,17 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
                 : e.value,
           )
           .toList();
-      // Editing a tier's max leaves the next tier's min stale — cascade it
-      // forward so the ranges stay contiguous instead of gapping/overlapping.
-      final nextIndex = event.index + 1;
-      if (nextIndex < list.length) {
-        final newMax = num.tryParse(event.value);
-        if (newMax != null) {
-          list[nextIndex] = list[nextIndex].copyWith(
-            min: _numToString(newMax + 1),
-          );
-        }
+      // Min is never user-edited — every tier's min is always derived from
+      // the previous tier's max — so changing an earlier tier's max must
+      // cascade all the way to the end, not just the next tier, or every
+      // tier after the immediate neighbor is left showing a stale min. Stop
+      // the cascade at the first invalid tier (max <= its own min) instead
+      // of deriving later tiers from a broken range.
+      for (var i = event.index + 1; i < list.length; i++) {
+        final prevMin = num.tryParse(list[i - 1].min);
+        final prevMax = num.tryParse(list[i - 1].max);
+        if (prevMax == null || (prevMin != null && prevMax <= prevMin)) break;
+        list[i] = list[i].copyWith(min: _numToString(prevMax + 1));
       }
       emit(state.copyWith(conditionalBreakweights: list));
     });
