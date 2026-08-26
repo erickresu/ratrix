@@ -10,43 +10,91 @@ import '../../domain/entities/rates_fk_ids.dart';
 part 'shipping_calculator_event.dart';
 part 'shipping_calculator_state.dart';
 
-class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalculatorState> {
+class ShippingCalculatorBloc
+    extends Bloc<ShippingCalculatorEvent, ShippingCalculatorState> {
   ShippingCalculatorBloc(this._ratesRepository, {required String clientId})
-      : _clientId = clientId,
-        super(const ShippingCalculatorState()) {
+    : _clientId = clientId,
+      super(const ShippingCalculatorState()) {
     on<CalcRatesRequested>(_onRatesRequested);
-    on<CalcRateCategoryChanged>((event, emit) => emit(state.copyWith(rateType: event.rateType, clearRateTable: true)));
-    on<CalcFreightModeChanged>((event, emit) => emit(state.copyWith(freightMode: event.mode, clearRateTable: true)));
-    on<CalcServiceModeChanged>((event, emit) => emit(state.copyWith(serviceMode: event.mode, clearRateTable: true)));
-    on<CalcServiceLevelChanged>((event, emit) => emit(state.copyWith(serviceLevel: event.level)));
+    on<CalcRateCategoryChanged>(
+      (event, emit) =>
+          emit(state.copyWith(rateType: event.rateType, clearRateTable: true)),
+    );
+    on<CalcFreightModeChanged>(
+      (event, emit) =>
+          emit(state.copyWith(freightMode: event.mode, clearRateTable: true)),
+    );
+    on<CalcServiceModeChanged>(
+      (event, emit) =>
+          emit(state.copyWith(serviceMode: event.mode, clearRateTable: true)),
+    );
+    on<CalcServiceLevelChanged>(
+      (event, emit) => emit(state.copyWith(serviceLevel: event.level)),
+    );
     on<CalcRateTableChanged>(_onRateTableChanged);
     on<CalcOriginChanged>(
-      (event, emit) => emit(state.copyWith(origin: event.value, destination: '', clearCalcResult: true)),
+      (event, emit) => emit(
+        state.copyWith(
+          origin: event.value,
+          destination: '',
+          clearCalcResult: true,
+        ),
+      ),
     );
     on<CalcDestinationChanged>(
-      (event, emit) => emit(state.copyWith(destination: event.value, clearCalcResult: true)),
+      (event, emit) =>
+          emit(state.copyWith(destination: event.value, clearCalcResult: true)),
     );
-    on<CalcLengthChanged>((event, emit) => emit(state.copyWith(length: event.value, clearCalcResult: true)));
-    on<CalcWidthChanged>((event, emit) => emit(state.copyWith(width: event.value, clearCalcResult: true)));
-    on<CalcHeightChanged>((event, emit) => emit(state.copyWith(height: event.value, clearCalcResult: true)));
-    on<CalcDivisorChanged>((event, emit) => emit(state.copyWith(divisor: event.value, clearCalcResult: true)));
-    on<CalcWeightChanged>((event, emit) => emit(state.copyWith(weight: event.value, clearCalcResult: true)));
+    on<CalcLengthChanged>(
+      (event, emit) =>
+          emit(state.copyWith(length: event.value, clearCalcResult: true)),
+    );
+    on<CalcWidthChanged>(
+      (event, emit) =>
+          emit(state.copyWith(width: event.value, clearCalcResult: true)),
+    );
+    on<CalcHeightChanged>(
+      (event, emit) =>
+          emit(state.copyWith(height: event.value, clearCalcResult: true)),
+    );
+    on<CalcDivisorChanged>(
+      (event, emit) =>
+          emit(state.copyWith(divisor: event.value, clearCalcResult: true)),
+    );
+    on<CalcWeightChanged>(
+      (event, emit) =>
+          emit(state.copyWith(weight: event.value, clearCalcResult: true)),
+    );
     on<CalcDeclaredValueChanged>(
-      (event, emit) => emit(state.copyWith(declaredValue: event.value, clearCalcResult: true)),
+      (event, emit) => emit(
+        state.copyWith(declaredValue: event.value, clearCalcResult: true),
+      ),
     );
     on<CalcChargeBasisChanged>((event, emit) {
       // Recompute in place rather than clearing the result — the breakdown
       // popup keeps this switch live, so toggling it shouldn't dismiss the
       // dialog the user is looking at.
       emit(state.copyWith(chargeBasis: event.basis));
-      if (state.calcResult != null) emit(state.copyWith(calcResult: _calculate()));
+      if (state.calcResult != null)
+        emit(state.copyWith(calcResult: _calculate()));
     });
     on<CalcSubmitRequested>(_onSubmitRequested);
-    on<CalcRoundedDisplayToggled>((event, emit) => emit(state.copyWith(roundedDisplay: event.rounded)));
-    on<CalcVatModeChanged>((event, emit) => emit(state.copyWith(vatMode: event.mode)));
-    on<CalcVatInclusiveToggled>((event, emit) => emit(state.copyWith(vatInclusive: event.inclusive)));
-    on<CalcResultDismissed>((event, emit) => emit(state.copyWith(clearCalcResult: true)));
-    on<CalcFormReset>((event, emit) => emit(ShippingCalculatorState(clientRates: state.clientRates)));
+    on<CalcRoundedDisplayToggled>(
+      (event, emit) => emit(state.copyWith(roundedDisplay: event.rounded)),
+    );
+    on<CalcVatModeChanged>(
+      (event, emit) => emit(state.copyWith(vatMode: event.mode)),
+    );
+    on<CalcVatInclusiveToggled>(
+      (event, emit) => emit(state.copyWith(vatInclusive: event.inclusive)),
+    );
+    on<CalcResultDismissed>(
+      (event, emit) => emit(state.copyWith(clearCalcResult: true)),
+    );
+    on<CalcFormReset>(
+      (event, emit) =>
+          emit(ShippingCalculatorState(clientRates: state.clientRates)),
+    );
 
     add(const CalcRatesRequested());
   }
@@ -54,7 +102,10 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
   final RatesRepository _ratesRepository;
   final String _clientId;
 
-  Future<void> _onRatesRequested(CalcRatesRequested event, Emitter<ShippingCalculatorState> emit) async {
+  Future<void> _onRatesRequested(
+    CalcRatesRequested event,
+    Emitter<ShippingCalculatorState> emit,
+  ) async {
     emit(state.copyWith(ratesLoading: true));
     List<ClientRate> rates = const [];
     try {
@@ -65,12 +116,17 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
     emit(state.copyWith(clientRates: rates, ratesLoading: false));
   }
 
-  Future<void> _onRateTableChanged(CalcRateTableChanged event, Emitter<ShippingCalculatorState> emit) async {
-    emit(state.copyWith(
-      selectedChargeCode: event.rate.chargeCode,
-      selectedRateId: event.rate.id,
-      routesLoading: true,
-    ));
+  Future<void> _onRateTableChanged(
+    CalcRateTableChanged event,
+    Emitter<ShippingCalculatorState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        selectedChargeCode: event.rate.chargeCode,
+        selectedRateId: event.rate.id,
+        routesLoading: true,
+      ),
+    );
     RatrixRate? fullRate;
     try {
       fullRate = await _ratesRepository.fetchRateById(event.rate.id);
@@ -83,11 +139,20 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
     emit(state.copyWith(selectedRate: fullRate, routesLoading: false));
   }
 
-  Future<void> _onSubmitRequested(CalcSubmitRequested event, Emitter<ShippingCalculatorState> emit) async {
-    if (state.selectedChargeCode == null || state.origin.isEmpty || state.destination.isEmpty || state.weight.trim().isEmpty) {
-      emit(state.copyWith(
-        submitError: 'Select a rate table, origin, destination, and weight before calculating.',
-      ));
+  Future<void> _onSubmitRequested(
+    CalcSubmitRequested event,
+    Emitter<ShippingCalculatorState> emit,
+  ) async {
+    if (state.selectedChargeCode == null ||
+        state.origin.isEmpty ||
+        state.destination.isEmpty ||
+        state.weight.trim().isEmpty) {
+      emit(
+        state.copyWith(
+          submitError:
+              'Select a rate table, origin, destination, and weight before calculating.',
+        ),
+      );
       return;
     }
 
@@ -100,41 +165,56 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
   /// differs per option — see `_freightFor`.
   CalcResult _calculate() {
     final rate = state.selectedRate;
-    if (rate == null) return const CalcResult(error: 'Rate details not loaded — try reselecting the rate table.');
+    if (rate == null)
+      return const CalcResult(
+        error: 'Rate details not loaded — try reselecting the rate table.',
+      );
 
-    final pricingOption = rate.chargeOption?.id != null ? RatesFkIds.pricingOptionFromId[rate.chargeOption!.id] : null;
+    final pricingOption = rate.chargeOption?.id != null
+        ? RatesFkIds.pricingOptionFromId[rate.chargeOption!.id]
+        : null;
     if (pricingOption == null) {
-      return const CalcResult(error: 'This rate has no recognized pricing option configured.');
+      return const CalcResult(
+        error: 'This rate has no recognized pricing option configured.',
+      );
     }
 
     RatrixRoute? route;
     for (final r in rate.routes) {
-      if (r.origin?.displayLabel == state.origin && r.destination?.displayLabel == state.destination) {
+      if (r.origin?.displayLabel == state.origin &&
+          r.destination?.displayLabel == state.destination) {
         route = r;
         break;
       }
     }
     if (route == null || route.breakweights.isEmpty) {
-      return const CalcResult(error: 'No breakweight tiers found for this route.');
+      return const CalcResult(
+        error: 'No breakweight tiers found for this route.',
+      );
     }
 
     final actualWeight = num.tryParse(state.weight.trim());
-    if (actualWeight == null) return const CalcResult(error: 'Enter a valid weight.');
+    if (actualWeight == null)
+      return const CalcResult(error: 'Enter a valid weight.');
 
     final length = num.tryParse(state.length.trim()) ?? 0;
     final width = num.tryParse(state.width.trim()) ?? 0;
     final height = num.tryParse(state.height.trim()) ?? 0;
     final divisor = num.tryParse(state.divisor.trim());
     final cbm = (length * width * height) / 1000000;
-    final volumetricWeight = (divisor != null && divisor > 0) ? (length * width * height) / divisor : 0;
+    final volumetricWeight = (divisor != null && divisor > 0)
+        ? (length * width * height) / divisor
+        : 0;
 
     final chargeableWeight = switch (state.chargeBasis) {
       CalcChargeBasis.actual => actualWeight,
       CalcChargeBasis.volumetric => volumetricWeight,
-      CalcChargeBasis.higher => actualWeight > volumetricWeight ? actualWeight : volumetricWeight,
+      CalcChargeBasis.higher =>
+        actualWeight > volumetricWeight ? actualWeight : volumetricWeight,
     };
 
-    final tiers = [...route.breakweights]..sort((a, b) => a.min.compareTo(b.min));
+    final tiers = [...route.breakweights]
+      ..sort((a, b) => a.min.compareTo(b.min));
 
     final freight = _freightFor(pricingOption, tiers, route, chargeableWeight);
     if (freight.error != null) {
@@ -172,13 +252,19 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
       addFlat('Delivery fee', addons.deliveryFee);
       addFlat('Crating fee', addons.cratingFee);
       addFlat('Packing fee', addons.packingFee);
-      addFlat('THC', rate.freightMode?.code == 'SEA' ? addons.seaThc : addons.airThc);
+      addFlat(
+        'THC',
+        rate.freightMode?.code == 'SEA' ? addons.seaThc : addons.airThc,
+      );
       addFlat('Demurrage/detention', addons.demurrageDetention);
       addFlat('Hazardous goods handling', addons.hazardousGoodsHandling);
       addFlat('Other fees', addons.othersNonVat);
     }
 
-    final subTotal = baseFreight + fuelSurcharge + flatFees.values.fold<num>(0, (sum, v) => sum + v);
+    final subTotal =
+        baseFreight +
+        fuelSurcharge +
+        flatFees.values.fold<num>(0, (sum, v) => sum + v);
 
     return CalcResult(
       actualWeight: actualWeight,
@@ -219,42 +305,81 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
       case PricingOption.fixedBreakweight:
         final tier = matchTier();
         if (tier == null) {
-          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+          return _FreightResult(
+            error:
+                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
+          );
         }
-        return _FreightResult(amount: chargeableWeight * tier.rate, tierMin: tier.min, tierMax: tier.max, tierRate: tier.rate);
+        return _FreightResult(
+          amount: chargeableWeight * tier.rate,
+          tierMin: tier.min,
+          tierMax: tier.max,
+          tierRate: tier.rate,
+        );
 
       case PricingOption.minimumFixedBreakweight:
         final tier = matchTier();
         if (tier == null) {
-          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+          return _FreightResult(
+            error:
+                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
+          );
         }
         // Within the first bracket: flat fee, no matter how light. Beyond
         // it: normal per-kg fixed pricing, same as the non-minimum variant.
-        final amount = identical(tier, tiers.first) ? tier.rate : chargeableWeight * tier.rate;
-        return _FreightResult(amount: amount, tierMin: tier.min, tierMax: tier.max, tierRate: tier.rate);
+        final amount = identical(tier, tiers.first)
+            ? tier.rate
+            : chargeableWeight * tier.rate;
+        return _FreightResult(
+          amount: amount,
+          tierMin: tier.min,
+          tierMax: tier.max,
+          tierRate: tier.rate,
+        );
 
       case PricingOption.flatBreakweight:
         final tier = matchTier();
         if (tier == null) {
-          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+          return _FreightResult(
+            error:
+                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
+          );
         }
-        return _FreightResult(amount: tier.rate, tierMin: tier.min, tierMax: tier.max, tierRate: tier.rate);
+        return _FreightResult(
+          amount: tier.rate,
+          tierMin: tier.min,
+          tierMax: tier.max,
+          tierRate: tier.rate,
+        );
 
       case PricingOption.cummulativeBreakweight:
         if (tiers.isEmpty || chargeableWeight > tiers.last.max) {
-          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+          return _FreightResult(
+            error:
+                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
+          );
         }
         num total = 0;
         for (final tier in tiers) {
           if (chargeableWeight <= tier.min) break;
-          final portion = (chargeableWeight < tier.max ? chargeableWeight : tier.max) - tier.min;
+          final portion =
+              (chargeableWeight < tier.max ? chargeableWeight : tier.max) -
+              tier.min;
           total += portion * tier.rate;
         }
-        return _FreightResult(amount: total, tierMin: tiers.first.min, tierMax: chargeableWeight, tierRate: null);
+        return _FreightResult(
+          amount: total,
+          tierMin: tiers.first.min,
+          tierMax: chargeableWeight,
+          tierRate: null,
+        );
 
       case PricingOption.minimumCummulativeBreakweight:
         if (tiers.isEmpty || chargeableWeight > tiers.last.max) {
-          return _FreightResult(error: 'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.');
+          return _FreightResult(
+            error:
+                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
+          );
         }
         num total = 0;
         for (var i = 0; i < tiers.length; i++) {
@@ -263,11 +388,18 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
           if (i == 0) {
             total += tier.rate; // flat entrance fee for the first bracket
           } else {
-            final portion = (chargeableWeight < tier.max ? chargeableWeight : tier.max) - tier.min;
+            final portion =
+                (chargeableWeight < tier.max ? chargeableWeight : tier.max) -
+                tier.min;
             total += portion * tier.rate;
           }
         }
-        return _FreightResult(amount: total, tierMin: tiers.first.min, tierMax: chargeableWeight, tierRate: null);
+        return _FreightResult(
+          amount: total,
+          tierMin: tiers.first.min,
+          tierMax: chargeableWeight,
+          tierRate: null,
+        );
 
       // Excess and Minimum Excess compute identically — the base bracket's
       // rate is already a flat amount in both, so there's nothing for
@@ -279,11 +411,30 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
         num amount = base.rate;
         if (chargeableWeight > base.max) {
           if (excessRate == null) {
-            return const _FreightResult(error: 'Route has no excess rate configured for this pricing option.');
+            return const _FreightResult(
+              error:
+                  'Route has no excess rate configured for this pricing option.',
+            );
           }
           amount += (chargeableWeight - base.max) * excessRate;
         }
-        return _FreightResult(amount: amount, tierMin: base.min, tierMax: base.max, tierRate: excessRate);
+        return _FreightResult(
+          amount: amount,
+          tierMin: base.min,
+          tierMax: base.max,
+          tierRate: excessRate,
+        );
+
+      // Route-Based/Time-Based Pricing (Full Container Load) don't use
+      // breakweight-tier math at all — no formula for either is
+      // implemented yet, so surface a clear error instead of silently
+      // running one of the breakweight formulas against the wrong pricing
+      // model.
+      case PricingOption.routeBased:
+      case PricingOption.timeBased:
+        return _FreightResult(
+          error: '${pricingOption.label} isn\'t supported by the calculator yet.',
+        );
     }
   }
 }
@@ -291,7 +442,13 @@ class ShippingCalculatorBloc extends Bloc<ShippingCalculatorEvent, ShippingCalcu
 /// Internal result of one breakweight pricing formula — either an [amount]
 /// (plus the tier bounds/rate to surface in [CalcResult]) or an [error].
 class _FreightResult {
-  const _FreightResult({this.amount, this.tierMin, this.tierMax, this.tierRate, this.error});
+  const _FreightResult({
+    this.amount,
+    this.tierMin,
+    this.tierMax,
+    this.tierRate,
+    this.error,
+  });
 
   final num? amount;
   final num? tierMin;

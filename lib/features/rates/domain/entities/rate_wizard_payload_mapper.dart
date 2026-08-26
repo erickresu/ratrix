@@ -40,12 +40,22 @@ class RateWizardPayloadMapper {
   /// wizard UI, so `MatrixRow.rates[i]` pairs with `breakweights[i]`
   /// losslessly.
   ///
-  /// When [original] is given (edit mode, row untouched since load), it's
-  /// used as the base map as-is — the server's own `id`/`origin`/
+  /// When [original] is given (edit mode) AND the row's current
+  /// origin/destination text still matches what [original] holds, it's
+  /// reused as the base map as-is — the server's own `id`/`origin`/
   /// `destination` come back byte-for-byte — with only `breakweights`
   /// replaced by the wizard's current rate values. This avoids resending a
   /// reconstructed (id-less) `origin`/`destination` for rows the user never
   /// touched, which the API's duplicate-route check can't disambiguate.
+  ///
+  /// If the origin or destination text no longer matches [original] — the
+  /// user edited it — [original] is NOT reused for that row; a fresh
+  /// `origin`/`destination` object is built from the row's current values
+  /// instead, so the edit is actually sent. Reusing `original` unconditionally
+  /// for every row with a `routeId` (regardless of whether it was actually
+  /// touched) was a real bug: it silently discarded any change to an
+  /// existing route's origin/destination, since `original`'s stale label
+  /// always won.
   static Map<String, dynamic> _mapRoute({
     required String origin,
     required String destination,
@@ -69,7 +79,14 @@ class RateWizardPayloadMapper {
       });
     }
 
-    if (original != null) {
+    final originalOrigin = original?['origin'];
+    final originalDestination = original?['destination'];
+    final originUnchanged = originalOrigin is Map<String, dynamic> &&
+        originalOrigin['label']?.toString() == origin.trim();
+    final destinationUnchanged = originalDestination is Map<String, dynamic> &&
+        originalDestination['label']?.toString() == destination.trim();
+
+    if (original != null && originUnchanged && destinationUnchanged) {
       return {
         ...original,
         if (breakweights.isNotEmpty) 'breakweights': breakweights,
@@ -79,15 +96,19 @@ class RateWizardPayloadMapper {
     return {
       if (routeId != null) 'id': routeId,
       if (origin.trim().isNotEmpty)
-        'origin': {
-          if (originId != null) 'id': originId,
-          'label': origin.trim(),
-        },
+        'origin': originUnchanged
+            ? originalOrigin
+            : {
+                if (originId != null) 'id': originId,
+                'label': origin.trim(),
+              },
       if (destination.trim().isNotEmpty)
-        'destination': {
-          if (destinationId != null) 'id': destinationId,
-          'label': destination.trim(),
-        },
+        'destination': destinationUnchanged
+            ? originalDestination
+            : {
+                if (destinationId != null) 'id': destinationId,
+                'label': destination.trim(),
+              },
       if (breakweights.isNotEmpty) 'breakweights': breakweights,
     };
   }

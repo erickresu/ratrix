@@ -49,6 +49,12 @@ class RateWizardState extends Equatable {
   final bool submitSucceeded;
   final bool lastSubmitStayedOnPage;
 
+  /// The `charge_code` of the rate as returned by the API on a successful
+  /// create/update — the API's success response has no message field at
+  /// all, so this is used to make the "saved" toast specific to the real
+  /// object the backend actually returned, rather than a generic string.
+  final String? savedChargeCode;
+
   const RateWizardState({
     required this.isCustom,
     this.clientId,
@@ -82,6 +88,7 @@ class RateWizardState extends Equatable {
     this.submitError,
     this.submitSucceeded = false,
     this.lastSubmitStayedOnPage = false,
+    this.savedChargeCode,
   });
 
   String get chargeCodePrefix =>
@@ -144,6 +151,7 @@ class RateWizardState extends Equatable {
     bool? submitSucceeded,
     bool clearSubmitSucceeded = false,
     bool? lastSubmitStayedOnPage,
+    String? savedChargeCode,
   }) {
     return RateWizardState(
       isCustom: isCustom,
@@ -186,6 +194,7 @@ class RateWizardState extends Equatable {
           : (submitSucceeded ?? this.submitSucceeded),
       lastSubmitStayedOnPage:
           lastSubmitStayedOnPage ?? this.lastSubmitStayedOnPage,
+      savedChargeCode: savedChargeCode ?? this.savedChargeCode,
     );
   }
 
@@ -223,5 +232,6 @@ class RateWizardState extends Equatable {
     submitError,
     submitSucceeded,
     lastSubmitStayedOnPage,
+    savedChargeCode,
   ];
 }

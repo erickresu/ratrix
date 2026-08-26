@@ -57,7 +57,14 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
           RatesFkIds.chargeBasisOptionsByFreightMode[event.mode]!;
       final newChargeBasis = validChargeBases.contains(state.chargeBasis)
           ? state.chargeBasis
-          : validChargeBases.first;
+          // Prefer a charge basis that's actually usable over one that's
+          // only listed as "valid for this freight mode" but not yet
+          // implemented (e.g. Full Truck Load) — otherwise switching to
+          // Land would default straight into a disabled Pricing Option.
+          : validChargeBases.firstWhere(
+              (b) => !RatesFkIds.chargeBasisNotYetImplemented.contains(b),
+              orElse: () => validChargeBases.first,
+            );
       final validPricingOptions =
           RatesFkIds.pricingOptionsByChargeBasis[newChargeBasis] ?? PricingOption.values;
       emit(
@@ -67,7 +74,11 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
               ? state.serviceMode
               : validServiceModes.first,
           chargeBasis: newChargeBasis,
-          pricingOption: validPricingOptions.contains(state.pricingOption)
+          // An empty valid list (e.g. Full Truck Load, whose real options
+          // aren't confirmed yet) means there's nothing to reset to — leave
+          // the current selection as-is; the UI disables the picker in
+          // that case so the stale value can't be submitted anyway.
+          pricingOption: validPricingOptions.isEmpty || validPricingOptions.contains(state.pricingOption)
               ? state.pricingOption
               : validPricingOptions.first,
         ),
@@ -82,7 +93,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       emit(
         state.copyWith(
           chargeBasis: event.basis,
-          pricingOption: validPricingOptions.contains(state.pricingOption)
+          pricingOption: validPricingOptions.isEmpty || validPricingOptions.contains(state.pricingOption)
               ? state.pricingOption
               : validPricingOptions.first,
         ),
@@ -486,6 +497,23 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       ),
     );
 
+    // Belt-and-suspenders: the Pricing Option picker is disabled in the UI
+    // for a charge basis with no known-valid options, but guard submit too
+    // in case a stale selection slips through some other path.
+    final validPricingOptions =
+        RatesFkIds.pricingOptionsByChargeBasis[state.chargeBasis];
+    if (validPricingOptions != null && validPricingOptions.isEmpty) {
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          submitError:
+              'Pricing options for ${state.chargeBasis.label} aren\'t available yet. '
+              'Choose a different charge basis to continue.',
+        ),
+      );
+      return;
+    }
+
     final originalRoutesById = {
       for (final r in _existingRate?.routes ?? const <RatrixRoute>[])
         if (r.id != null) r.id!: r,
@@ -545,16 +573,15 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
 
     try {
       final editingRateId = state.editingRateId;
-      if (editingRateId != null) {
-        await _ratesRepository.updateRate(editingRateId, payload);
-      } else {
-        await _ratesRepository.createRate(payload);
-      }
+      final savedRate = editingRateId != null
+          ? await _ratesRepository.updateRate(editingRateId, payload)
+          : await _ratesRepository.createRate(payload);
       emit(
         state.copyWith(
           isSubmitting: false,
           submitSucceeded: true,
           lastSubmitStayedOnPage: event.stayOnPage,
+          savedChargeCode: savedRate.chargeCode,
         ),
       );
     } on RatesApiException catch (e) {
@@ -567,6 +594,21 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
   /// Builds the wizard's initial state FROM an existing [RatrixRate], for
   /// edit mode. This is the reverse of [RateWizardPayloadMapper.buildPayload]
   /// — see the class doc there for the forward direction.
+  /// Infers which "match by" filter type an existing rate's saved
+  /// origin/destination was originally picked with. The API never stored
+  /// which filter was used — only the resolved address — so this is a
+  /// best-effort read of which id field is actually populated:
+  /// `cityId` set → City search; only `provinceId` set → Province search;
+  /// only `islandId` set → Island search. Falls back to Island (the
+  /// wizard's default) when nothing is set, e.g. a brand-new route.
+  static LocationSearchType _inferSearchType(RatrixAddress? address) {
+    if (address == null) return LocationSearchType.island;
+    if (address.cityId != null) return LocationSearchType.cityProvince;
+    if (address.provinceId != null) return LocationSearchType.province;
+    if (address.islandId != null) return LocationSearchType.island;
+    return LocationSearchType.island;
+  }
+
   static RateWizardState _buildStateFromExistingRate(
     RatrixRate rate, {
     required bool isCustom,
@@ -650,6 +692,13 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
           ]
         : const [MatrixRow()];
 
+    // Same "first route wins" tradeoff as the breakweight columns above —
+    // the wizard has one shared match-by filter per column, not per row, so
+    // infer it from the first route's saved address granularity.
+    final firstRoute = rate.routes.isNotEmpty ? rate.routes.first : null;
+    final originSearchType = _inferSearchType(firstRoute?.origin);
+    final destinationSearchType = _inferSearchType(firstRoute?.destination);
+
     // Addons: reverse of `RateWizardPayloadMapper.mapAddons` — only the flat
     // decimal fields it supports going wizard->API are reversed here.
     // `oda`/`pickup_fee` bracket-config pricing is skipped, same as the
@@ -712,6 +761,8 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       breakweights: breakweights,
       addonValues: addonValues,
       addonModes: addonModes,
+      originSearchType: originSearchType,
+      destinationSearchType: destinationSearchType,
     );
   }
 

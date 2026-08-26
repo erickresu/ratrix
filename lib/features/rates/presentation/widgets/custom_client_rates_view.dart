@@ -191,21 +191,37 @@ class CustomClientRatesView extends StatelessWidget {
             ],
           );
 
-    return BlocListener<RatesShellBloc, RatesShellState>(
-      listenWhen: (prev, curr) =>
-          curr.deleteRateError != null &&
-          prev.deleteRateError != curr.deleteRateError,
-      listener: (context, state) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              backgroundColor: context.colors.destructive,
-              content: Text(state.deleteRateError!),
-            ),
-          );
-        bloc.add(const DeleteRateErrorDismissed());
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<RatesShellBloc, RatesShellState>(
+          listenWhen: (prev, curr) =>
+              curr.deleteRateError != null &&
+              prev.deleteRateError != curr.deleteRateError,
+          listener: (context, state) {
+            ShadToaster.of(context).show(
+              ShadToast.destructive(
+                alignment: Alignment.bottomRight,
+                title: const Text('Delete failed'),
+                description: Text(state.deleteRateError!),
+              ),
+            );
+            bloc.add(const DeleteRateErrorDismissed());
+          },
+        ),
+        BlocListener<RatesShellBloc, RatesShellState>(
+          listenWhen: (prev, curr) =>
+              curr.deleteRateSucceeded && !prev.deleteRateSucceeded,
+          listener: (context, state) {
+            ShadToaster.of(context).show(
+              const ShadToast(
+                alignment: Alignment.bottomRight,
+                title: Text('Rate deleted'),
+              ),
+            );
+            bloc.add(const DeleteRateSuccessDismissed());
+          },
+        ),
+      ],
       child: Column(
         children: [
           Padding(

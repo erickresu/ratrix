@@ -257,6 +257,10 @@ class DeleteRateErrorDismissed extends RatesShellEvent {
   const DeleteRateErrorDismissed();
 }
 
+class DeleteRateSuccessDismissed extends RatesShellEvent {
+  const DeleteRateSuccessDismissed();
+}
+
 class AuditTrailRequested extends RatesShellEvent {
   const AuditTrailRequested();
 }

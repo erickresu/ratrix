@@ -9,6 +9,7 @@ import '../../../domain/entities/location_option.dart';
 import '../../../domain/entities/matrix_row.dart' as domain;
 import '../../../domain/entities/rates_enums.dart';
 import '../../rates_colors.dart';
+import 'change_match_by_dialog.dart';
 
 /// Two-pane rate matrix: a fixed origin/destination column on the left and a
 /// horizontally-scrollable set of breakweight/rate columns on the right.
@@ -648,7 +649,33 @@ class _LocationFieldState extends State<_LocationField> {
                   width: constraints.maxWidth * 0.3,
                   child: _MatchByLeading(
                     value: widget.matchByType!,
-                    onChanged: (type) {
+                    onChanged: (type) async {
+                      // The current value was resolved under the old
+                      // filter and won't make sense under the new one —
+                      // confirm before clearing it, but only for this
+                      // field; the filter itself still applies to the
+                      // whole column going forward.
+                      if (_controller.text.trim().isNotEmpty) {
+                        final confirmed = await showShadDialog<bool>(
+                          context: context,
+                          builder: (_) => const ChangeMatchByDialog(),
+                        );
+                        if (confirmed != true) return;
+                        if (!context.mounted) return;
+                        // Mirrors typing an empty string — the bloc's
+                        // OriginChanged/DestinationChanged handlers already
+                        // clear the row's resolved id whenever the text no
+                        // longer matches what it was resolved for. Suppress
+                        // the text listener during the clear — it would
+                        // otherwise fire a redundant query under the OLD
+                        // filter type, right before the explicit re-query
+                        // below fires again under the new one.
+                        _suppressTextListener = true;
+                        _controller.clear();
+                        _suppressTextListener = false;
+                        widget.onChanged('');
+                        _removeOverlay();
+                      }
                       widget.onMatchByChanged?.call(type);
                       // Re-request under the new type so a focused field
                       // (typed or empty) refreshes its menu immediately

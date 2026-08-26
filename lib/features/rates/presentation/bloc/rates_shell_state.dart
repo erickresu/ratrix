@@ -59,6 +59,11 @@ class RatesShellState extends Equatable {
   /// then fires `DeleteRateErrorDismissed` to clear it.
   final String? deleteRateError;
 
+  /// Set on a successful delete; a `BlocListener` shows it once (a toast)
+  /// then fires `DeleteRateSuccessDismissed` to clear it. Same one-shot
+  /// pattern as `deleteRateError`.
+  final bool deleteRateSucceeded;
+
   final List<AuditLog> auditLogs;
   final bool auditLogsLoading;
   final String auditLogSearch;
@@ -105,6 +110,7 @@ class RatesShellState extends Equatable {
     this.publishedRateSortByExpiry = false,
     this.deletingRateId,
     this.deleteRateError,
+    this.deleteRateSucceeded = false,
     this.auditLogs = const [],
     this.auditLogsLoading = false,
     this.auditLogSearch = '',
@@ -339,6 +345,7 @@ class RatesShellState extends Equatable {
     bool clearDeletingRateId = false,
     String? deleteRateError,
     bool clearDeleteRateError = false,
+    bool? deleteRateSucceeded,
     List<AuditLog>? auditLogs,
     bool? auditLogsLoading,
     String? auditLogSearch,
@@ -403,6 +410,7 @@ class RatesShellState extends Equatable {
       deleteRateError: clearDeleteRateError
           ? null
           : (deleteRateError ?? this.deleteRateError),
+      deleteRateSucceeded: deleteRateSucceeded ?? this.deleteRateSucceeded,
       auditLogs: auditLogs ?? this.auditLogs,
       auditLogsLoading: auditLogsLoading ?? this.auditLogsLoading,
       auditLogSearch: auditLogSearch ?? this.auditLogSearch,
@@ -452,6 +460,7 @@ class RatesShellState extends Equatable {
     publishedRateSortByExpiry,
     deletingRateId,
     deleteRateError,
+    deleteRateSucceeded,
     auditLogs,
     auditLogsLoading,
     auditLogSearch,

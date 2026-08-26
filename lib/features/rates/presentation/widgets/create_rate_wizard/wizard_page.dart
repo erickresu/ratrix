@@ -73,19 +73,45 @@ class _WizardView extends StatelessWidget {
               prev.submitSucceeded != curr.submitSucceeded,
           listener: (context, state) {
             if (state.submitError != null) {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(content: Text(state.submitError!)));
+              ShadToaster.of(context).show(
+                ShadToast.destructive(
+                  alignment: Alignment.bottomRight,
+                  title: const Text('Something went wrong'),
+                  description: Text(state.submitError!),
+                ),
+              );
             } else if (state.submitSucceeded) {
+              // The API's success response is just the raw saved rate — no
+              // message field at all — so the toast surfaces its real
+              // charge_code rather than a made-up generic string.
+              final chargeCode = state.savedChargeCode;
               if (state.lastSubmitStayedOnPage) {
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(
-                    const SnackBar(content: Text('Changes saved.')),
-                  );
+                ShadToaster.of(context).show(
+                  ShadToast(
+                    alignment: Alignment.bottomRight,
+                    title: Text(
+                      chargeCode != null ? 'Saved $chargeCode' : 'Changes saved',
+                    ),
+                  ),
+                );
+                // The rate list screens don't live-update — without this,
+                // the just-saved changes stay invisible there until some
+                // other action happens to trigger a refetch.
+                context.read<RatesShellBloc>().add(const RatesDataRequested());
               } else {
                 final shellBloc = context.read<RatesShellBloc>();
                 final wizardState = context.read<RateWizardBloc>().state;
+                final isEditing = wizardState.editingRateId != null;
+                ShadToaster.of(context).show(
+                  ShadToast(
+                    alignment: Alignment.bottomRight,
+                    title: Text(
+                      chargeCode == null
+                          ? (isEditing ? 'Rate updated' : 'Rate created')
+                          : (isEditing ? 'Updated $chargeCode' : 'Created $chargeCode'),
+                    ),
+                  ),
+                );
                 shellBloc.add(
                   WizardExitRequested(
                     fallback: wizardState.isCustom

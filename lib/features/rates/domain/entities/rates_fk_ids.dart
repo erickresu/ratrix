@@ -83,20 +83,39 @@ class RatesFkIds {
 
   /// `types_charge_basis_charge_options` pivot — which [PricingOption]
   /// values are valid for a given [ChargeBasis]. Confirmed against the
-  /// backend seeder (`RatrixSeeder.php`): Full Container Load only allows
-  /// Route-Based/Time-Based Pricing (ids 16-17); every other charge basis
-  /// currently wired in this app uses the 7 bracket-pricing options.
-  /// Full Truck Load's real valid set (ids 8-15, distance-based options) is
-  /// not modeled here yet — deliberately deferred, a separate follow-up.
+  /// live backend's validation logic (`RatrixRateController::
+  /// isValidChargeOptionForBasis`, which checks this exact DB table) for
+  /// Full Container Load (Route-Based/Time-Based, ids 16-17) and every
+  /// other charge basis using the 7 bracket-pricing options.
+  ///
+  /// Full Truck Load is deliberately left as an **empty list**, not a
+  /// guess: the RatrixSeeder.php file that would normally document its
+  /// real ids (8-15) is known to be stale/out of date with the live DB, so
+  /// there is currently no trustworthy source for what FTL's valid
+  /// options actually are. An empty list here means "no known-valid
+  /// options" — the UI disables the Pricing Option picker entirely for
+  /// this basis rather than guessing and risking another 422. Replace this
+  /// entry with the real list once confirmed against the live DB (query
+  /// `types_charge_basis_charge_options` where charge_basis_id = 3) or the
+  /// backend team.
   static const Map<ChargeBasis, List<PricingOption>> pricingOptionsByChargeBasis = {
     ChargeBasis.kilo: _bracketPricingOptions,
     ChargeBasis.cbm: _bracketPricingOptions,
-    ChargeBasis.fullTruckLoad: _bracketPricingOptions,
+    ChargeBasis.fullTruckLoad: [],
     ChargeBasis.ltlKilo: _bracketPricingOptions,
     ChargeBasis.ltlCbm: _bracketPricingOptions,
     ChargeBasis.fullContainerLoad: [PricingOption.routeBased, PricingOption.timeBased],
     ChargeBasis.lclKilo: _bracketPricingOptions,
     ChargeBasis.lclCbm: _bracketPricingOptions,
+  };
+
+  /// Charge bases with no known-valid pricing options yet (an empty entry
+  /// in [pricingOptionsByChargeBasis]) — the Charge Basis picker disables
+  /// and sorts these to the end instead of letting them be selected only
+  /// to hit a dead-end Pricing Option field.
+  static final Set<ChargeBasis> chargeBasisNotYetImplemented = {
+    for (final e in pricingOptionsByChargeBasis.entries)
+      if (e.value.isEmpty) e.key,
   };
 
   /// `types_freight_mode_charge_basis` pivot — which [ChargeBasis] values are

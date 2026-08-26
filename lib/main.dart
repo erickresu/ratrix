@@ -74,6 +74,10 @@ class App extends StatelessWidget {
                 darkTheme: AppTheme.dark,
                 themeMode: mode,
                 scrollBehavior: AppScrollBehavior(),
+                // Wraps every route so ShadToaster.of(context) works
+                // anywhere in the app — ShadApp.custom (unlike the plain
+                // ShadApp constructors) doesn't provide this automatically.
+                builder: (context, child) => ShadToaster(child: child!),
                 home: const _AuthGate(),
               );
             },

@@ -207,6 +207,9 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
     on<DeleteRateErrorDismissed>(
       (event, emit) => emit(state.copyWith(clearDeleteRateError: true)),
     );
+    on<DeleteRateSuccessDismissed>(
+      (event, emit) => emit(state.copyWith(deleteRateSucceeded: false)),
+    );
     on<AuditTrailRequested>(_onAuditTrailRequested);
     on<AuditLogSearchChanged>(
       (event, emit) =>
@@ -385,6 +388,7 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
       emit(
         state.copyWith(
           clearDeletingRateId: true,
+          deleteRateSucceeded: true,
           publishedRates: state.publishedRates
               .where((r) => r.id != event.rateId)
               .toList(),

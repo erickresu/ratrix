@@ -44,6 +44,7 @@ class Step0RateSetup extends StatelessWidget {
         : RatesFkIds.chargeBasisOptionsByFreightMode[state.freightMode]!;
     final pricingOptions =
         RatesFkIds.pricingOptionsByChargeBasis[state.chargeBasis] ?? PricingOption.values;
+    final pricingOptionUnavailable = pricingOptions.isEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,11 +297,51 @@ class Step0RateSetup extends StatelessWidget {
                       selectedOptionBuilder: (context, value) =>
                           Text(value.label),
                       onChanged: (value) {
-                        if (value != null) bloc.add(ChargeBasisChanged(value));
+                        // Full Truck Load's valid pricing options aren't
+                        // confirmed yet (see RatesFkIds.pricingOptionsByChargeBasis)
+                        // — block picking it here too, not just disabling the
+                        // Pricing Option field below, so it can't be selected
+                        // at all.
+                        if (value != null &&
+                            !RatesFkIds.chargeBasisNotYetImplemented.contains(value)) {
+                          bloc.add(ChargeBasisChanged(value));
+                        }
                       },
                       options: [
-                        for (final b in chargeBasisOptions)
-                          ShadOption(value: b, child: Text(b.label)),
+                        // Sort not-yet-implemented options (e.g. Full Truck
+                        // Load) to the end, greyed out, instead of mixed in
+                        // with the ones that actually work.
+                        for (final b in [...chargeBasisOptions]..sort(
+                            (a, b) => (RatesFkIds.chargeBasisNotYetImplemented.contains(a) ? 1 : 0)
+                                .compareTo(RatesFkIds.chargeBasisNotYetImplemented.contains(b) ? 1 : 0),
+                          ))
+                          IgnorePointer(
+                            // `ShadOption` has no built-in disabled state —
+                            // its internal tap handler calls
+                            // `inheritedSelect.select(...)` directly, ahead
+                            // of this widget's `onChanged`, so blocking the
+                            // value there isn't enough: the option still
+                            // visually highlights as picked. IgnorePointer
+                            // stops the tap from ever reaching that internal
+                            // handler in the first place.
+                            ignoring: RatesFkIds.chargeBasisNotYetImplemented.contains(b),
+                            child: ShadOption(
+                              value: b,
+                              child: RatesFkIds.chargeBasisNotYetImplemented.contains(b)
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(b.label, style: TextStyle(color: context.colors.textFaint)),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '(coming soon)',
+                                          style: TextStyle(fontSize: 11, color: context.colors.textFaint),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(b.label),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -350,6 +391,7 @@ class Step0RateSetup extends StatelessWidget {
                       height: _fieldHeight,
                       child: ShadSelect<PricingOption>(
                         key: ValueKey('pricing-option-${state.chargeBasis}'),
+                        enabled: !pricingOptionUnavailable,
                         initialValue: state.pricingOption,
                         selectedOptionBuilder: (context, value) =>
                             Text(value.label),
@@ -363,6 +405,16 @@ class Step0RateSetup extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (pricingOptionUnavailable) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Not available yet for ${state.chargeBasis.label}.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.colors.destructive,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
