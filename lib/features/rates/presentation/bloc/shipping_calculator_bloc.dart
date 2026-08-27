@@ -278,6 +278,12 @@ class ShippingCalculatorBloc
         fuelSurcharge +
         flatFees.values.fold<num>(0, (sum, v) => sum + v);
 
+    // "Other fees" (others_non_vat) is still part of the sub-total but is
+    // excluded from VAT — the API's own field name says non-VAT. Matched by
+    // the same display label used above (addFlat('Other fees', ...)) so
+    // this stays in sync without a second bookkeeping structure.
+    final nonVatableTotal = flatFees['Other fees'] ?? 0;
+
     return CalcResult(
       actualWeight: actualWeight,
       volumetricWeight: volumetricWeight,
@@ -289,6 +295,7 @@ class ShippingCalculatorBloc
       baseFreight: baseFreight,
       fuelSurcharge: fuelSurcharge,
       flatFees: flatFees,
+      nonVatableTotal: nonVatableTotal,
       subTotal: subTotal,
     );
   }
@@ -373,10 +380,15 @@ class ShippingCalculatorBloc
         }
         num total = 0;
         for (final tier in tiers) {
-          if (chargeableWeight <= tier.min) break;
+          // A bracket [min, max] is inclusive on both ends — e.g. [1, 50]
+          // spans 50 kg, not 49 — so the portion already covered by earlier
+          // brackets is (min - 1), not min. Using `min` directly undercounts
+          // every bracket by 1 (e.g. 85kg over [1,50]@100 + [51,100]@95
+          // should charge 50*100 + 35*95 = 8325, not 49*100 + 34*95 = 8130).
+          if (chargeableWeight < tier.min) break;
           final portion =
               (chargeableWeight < tier.max ? chargeableWeight : tier.max) -
-              tier.min;
+              (tier.min - 1);
           total += portion * tier.rate;
         }
         return _FreightResult(
@@ -396,13 +408,13 @@ class ShippingCalculatorBloc
         num total = 0;
         for (var i = 0; i < tiers.length; i++) {
           final tier = tiers[i];
-          if (chargeableWeight <= tier.min) break;
+          if (chargeableWeight < tier.min) break;
           if (i == 0) {
             total += tier.rate; // flat entrance fee for the first bracket
           } else {
             final portion =
                 (chargeableWeight < tier.max ? chargeableWeight : tier.max) -
-                tier.min;
+                (tier.min - 1);
             total += portion * tier.rate;
           }
         }

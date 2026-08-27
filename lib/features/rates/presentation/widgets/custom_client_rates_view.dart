@@ -14,6 +14,7 @@ import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 import 'back_pill.dart';
 import 'delete_rate_dialog.dart';
+import 'status_dialog.dart';
 
 const _kAllValue = '__all__';
 
@@ -198,12 +199,11 @@ class CustomClientRatesView extends StatelessWidget {
               curr.deleteRateError != null &&
               prev.deleteRateError != curr.deleteRateError,
           listener: (context, state) {
-            ShadToaster.of(context).show(
-              ShadToast.destructive(
-                alignment: Alignment.bottomRight,
-                title: const Text('Delete failed'),
-                description: Text(state.deleteRateError!),
-              ),
+            showStatusDialog(
+              context,
+              title: 'Delete failed',
+              description: state.deleteRateError,
+              isError: true,
             );
             bloc.add(const DeleteRateErrorDismissed());
           },
@@ -212,12 +212,7 @@ class CustomClientRatesView extends StatelessWidget {
           listenWhen: (prev, curr) =>
               curr.deleteRateSucceeded && !prev.deleteRateSucceeded,
           listener: (context, state) {
-            ShadToaster.of(context).show(
-              const ShadToast(
-                alignment: Alignment.bottomRight,
-                title: Text('Rate deleted'),
-              ),
-            );
+            showStatusDialog(context, title: 'Rate deleted');
             bloc.add(const DeleteRateSuccessDismissed());
           },
         ),

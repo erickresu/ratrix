@@ -58,7 +58,13 @@ class _BlurredBarrier extends StatelessWidget {
             child: Container(color: Colors.black.withValues(alpha: 0.45)),
           ),
         ),
-        Center(child: child),
+        Align(
+          alignment: const Alignment(0, -0.6),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: child,
+          ),
+        ),
       ],
     );
   }

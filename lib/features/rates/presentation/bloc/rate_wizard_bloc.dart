@@ -23,7 +23,6 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
     String? clientName,
     RatrixRate? existingRate,
   }) : _ratesRepository = ratesRepository,
-       _existingRate = existingRate,
        super(
          existingRate != null
              ? _buildStateFromExistingRate(
@@ -182,7 +181,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
         if (e.key != event.rowIndex) return e.value;
         return e.value.copyWith(
           origin: event.displayText,
-          originId: _resolveLocationId(event.option, state.originSearchType),
+          originOption: event.option,
         );
       }).toList();
       emit(state.copyWith(matrixRows: rows));
@@ -192,7 +191,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
         if (e.key != event.rowIndex) return e.value;
         return e.value.copyWith(
           destination: event.displayText,
-          destinationId: _resolveLocationId(event.option, state.destinationSearchType),
+          destinationOption: event.option,
         );
       }).toList();
       emit(state.copyWith(matrixRows: rows));
@@ -225,10 +224,11 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
     on<OriginChanged>((event, emit) {
       final rows = state.matrixRows.asMap().entries.map((e) {
         if (e.key != event.rowIndex) return e.value;
-        // Text no longer matches what `originId` was resolved for — clear
-        // it so submit doesn't send a stale id for a relabeled location.
+        // Text no longer matches what `originOption` was resolved for —
+        // clear it so submit doesn't send stale geography ids for a
+        // relabeled location.
         if (e.value.origin == event.value) return e.value;
-        return e.value.copyWith(origin: event.value, originId: null);
+        return e.value.copyWith(origin: event.value, originOption: null);
       }).toList();
       emit(state.copyWith(matrixRows: rows));
     });
@@ -236,7 +236,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       final rows = state.matrixRows.asMap().entries.map((e) {
         if (e.key != event.rowIndex) return e.value;
         if (e.value.destination == event.value) return e.value;
-        return e.value.copyWith(destination: event.value, destinationId: null);
+        return e.value.copyWith(destination: event.value, destinationOption: null);
       }).toList();
       emit(state.copyWith(matrixRows: rows));
     });
@@ -457,7 +457,6 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
   }
 
   final RatesRepository _ratesRepository;
-  final RatrixRate? _existingRate;
 
   Timer? _originSearchDebounce;
   Timer? _destinationSearchDebounce;
@@ -471,19 +470,6 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
     return super.close();
   }
 
-  /// `LocationOption.id` is a generic string, but `MatrixRow.originId`/
-  /// `destinationId` are typed `int?` — resolve the type-appropriate field
-  /// per the selected search type. The `iata`-mapped types' id field is a
-  /// best-effort guess (`option.id`) pending verification against the real
-  /// API response.
-  int? _resolveLocationId(LocationOption option, LocationSearchType type) => switch (type) {
-    LocationSearchType.island => option.islandId,
-    LocationSearchType.cityProvince => option.cityId,
-    LocationSearchType.province => option.provinceId,
-    LocationSearchType.internalCode ||
-    LocationSearchType.iataCode ||
-    LocationSearchType.seaPortCode => int.tryParse(option.id ?? ''),
-  };
 
   Future<void> _onSubmitRequested(
     RateSubmitRequested event,
@@ -513,11 +499,6 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       );
       return;
     }
-
-    final originalRoutesById = {
-      for (final r in _existingRate?.routes ?? const <RatrixRoute>[])
-        if (r.id != null) r.id!: r,
-    };
 
     final seenRoutes = <String>{};
     for (var i = 0; i < state.matrixRows.length; i++) {
@@ -553,15 +534,8 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
             origin: row.origin,
             destination: row.destination,
             rates: row.rates,
-            // Row untouched since load (still carries its original route id)
-            // — resend the server's own route/origin/destination JSON as-is
-            // instead of reconstructing an id-less version of it.
-            original: row.routeId != null
-                ? originalRoutesById[row.routeId]?.toJson()
-                : null,
-            routeId: row.routeId,
-            originId: row.originId,
-            destinationId: row.destinationId,
+            originOption: row.originOption,
+            destinationOption: row.destinationOption,
           ),
       ],
       breakweightBounds: [
@@ -607,6 +581,28 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
     if (address.provinceId != null) return LocationSearchType.province;
     if (address.islandId != null) return LocationSearchType.island;
     return LocationSearchType.island;
+  }
+
+  /// Rebuilds the `LocationOption` a saved route's address represents, so a
+  /// loaded-for-edit row carries the same shape a fresh search-and-select
+  /// would have produced — the payload mapper only ever reads
+  /// `MatrixRow.originOption`/`destinationOption`, so an edit-loaded row
+  /// needs one too, not just display text.
+  static LocationOption? _optionFromAddress(RatrixAddress? address) {
+    if (address == null) return null;
+    final name = address.displayLabel;
+    return LocationOption(
+      id: address.id?.toString(),
+      value: name,
+      label: name,
+      islandId: address.islandId,
+      regionId: address.regionId,
+      provinceId: address.provinceId,
+      cityId: address.cityId,
+      barangayId: address.barangayId,
+      zipcode: address.zipcode,
+      address1: address.address1,
+    );
   }
 
   static RateWizardState _buildStateFromExistingRate(
@@ -686,8 +682,8 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
                     _findMatchingRate(route.breakweights, slot),
                 ],
                 routeId: route.id,
-                originId: route.origin?.id,
-                destinationId: route.destination?.id,
+                originOption: _optionFromAddress(route.origin),
+                destinationOption: _optionFromAddress(route.destination),
               ),
           ]
         : const [MatrixRow()];

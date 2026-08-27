@@ -19,6 +19,7 @@ class CalcResult extends Equatable {
     this.baseFreight,
     this.fuelSurcharge,
     this.flatFees = const {},
+    this.nonVatableTotal = 0,
     this.subTotal,
     this.error,
     this.routeTiers = const [],
@@ -34,6 +35,11 @@ class CalcResult extends Equatable {
   final num? baseFreight;
   final num? fuelSurcharge;
   final Map<String, num> flatFees;
+
+  /// Portion of [subTotal] that's excluded from VAT — "Other fees"
+  /// (`others_non_vat`), which the API itself names as non-VAT. Still part
+  /// of the sub-total/grand total shown to the user, just not taxed.
+  final num nonVatableTotal;
 
   /// The resolved route's breakweight brackets — populated whenever a route
   /// was found for the origin/destination, even on error (e.g. "no tier
@@ -62,6 +68,7 @@ class CalcResult extends Equatable {
         baseFreight,
         fuelSurcharge,
         flatFees,
+        nonVatableTotal,
         subTotal,
         error,
         routeTiers,
@@ -197,13 +204,17 @@ class ShippingCalculatorState extends Equatable {
   static const vatRate = 0.12;
 
   /// VAT amount on top of [CalcResult.subTotal], per the current VAT
-  /// toggles — 0 for Exempt/Zero Rated, or 12% of the sub-total for
-  /// Exclusive, or the VAT already folded into an Inclusive sub-total
-  /// (backed out via subTotal / 1.12 * 0.12) for Inclusive.
+  /// toggles — 0 for Exempt/Zero Rated, or 12% of the VATable base for
+  /// Exclusive, or the VAT already folded into an Inclusive VATable base
+  /// (backed out via base / 1.12 * 0.12) for Inclusive. The base excludes
+  /// [CalcResult.nonVatableTotal] ("Other fees" / others_non_vat) — that
+  /// portion is never taxed, even though it's still part of the sub-total
+  /// shown to the user.
   num get vatAmount {
-    final subTotal = calcResult?.subTotal;
-    if (subTotal == null || vatMode != VatMode.standard) return 0;
-    return vatInclusive ? subTotal - (subTotal / (1 + vatRate)) : subTotal * vatRate;
+    final result = calcResult;
+    if (result?.subTotal == null || vatMode != VatMode.standard) return 0;
+    final vatableBase = result!.subTotal! - result.nonVatableTotal;
+    return vatInclusive ? vatableBase - (vatableBase / (1 + vatRate)) : vatableBase * vatRate;
   }
 
   num get grandTotal {

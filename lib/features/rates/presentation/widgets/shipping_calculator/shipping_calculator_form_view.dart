@@ -562,6 +562,7 @@ class _CargoDetailsCard extends StatelessWidget {
               origin: state.origin,
               destination: state.destination,
               tiers: state.selectedRouteTiers,
+              addons: state.selectedRate?.addons,
             ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,11 +663,12 @@ class _HigherWeightIndicator extends StatelessWidget {
 /// origin/destination and breakweight brackets so the user can check what's
 /// actually configured before hitting Calculate, not just after it errors.
 class _RouteTiersInfoButton extends StatelessWidget {
-  const _RouteTiersInfoButton({required this.origin, required this.destination, required this.tiers});
+  const _RouteTiersInfoButton({required this.origin, required this.destination, required this.tiers, this.addons});
 
   final String origin;
   final String destination;
   final List<RatrixBreakweight> tiers;
+  final RatrixAddons? addons;
 
   void _showDialog(BuildContext context) => showShadDialog<void>(
         context: context,
@@ -675,39 +677,55 @@ class _RouteTiersInfoButton extends StatelessWidget {
           backgroundColor: dialogContext.colors.surface,
           padding: EdgeInsets.zero,
           closeIcon: const SizedBox.shrink(),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(CupertinoIcons.square_stack_3d_up, size: 18, color: dialogContext.colors.primaryDeep),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Route Breakweights',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: dialogContext.colors.textBody),
-                      ),
-                    ),
-                    Material(
-                      color: dialogContext.colors.surfaceMuted,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: () => Navigator.of(dialogContext).pop(),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Icon(CupertinoIcons.xmark, size: 14, color: dialogContext.colors.textMuted),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 520),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(CupertinoIcons.square_stack_3d_up, size: 18, color: dialogContext.colors.primaryDeep),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Rate Details',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: dialogContext.colors.textBody),
                         ),
                       ),
+                      Material(
+                        color: dialogContext.colors.surfaceMuted,
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () => Navigator.of(dialogContext).pop(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(CupertinoIcons.xmark, size: 14, color: dialogContext.colors.textMuted),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RouteTiersTable(origin: origin, destination: destination, tiers: tiers),
+                          if (addons != null) ...[
+                            const SizedBox(height: 20),
+                            _AddonsSummary(addons: addons!),
+                          ],
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                RouteTiersTable(origin: origin, destination: destination, tiers: tiers),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -740,6 +758,89 @@ class _RouteTiersInfoButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Lists the rate's configured Add-on charges (fuel surcharge, insurance,
+/// valuation, etc) inside the Rate Details popup — same labels/percentage
+/// vs. flat handling as the freight breakdown's own fee list, just read
+/// straight from the rate instead of a computed `CalcResult`. Fields left
+/// null/zero on the rate are omitted rather than shown as "₱0.00".
+class _AddonsSummary extends StatelessWidget {
+  const _AddonsSummary({required this.addons});
+
+  final RatrixAddons addons;
+
+  @override
+  Widget build(BuildContext context) {
+    String money(num v) => v.toStringAsFixed(2);
+    String amountFor(num value, String? type) =>
+        type == 'percentage' ? '${money(value)}%' : '₱${money(value)}';
+
+    final rows = <(String, String)>[
+      if (addons.fuelSurcharge != null && addons.fuelSurcharge != 0)
+        ('Fuel Surcharge', amountFor(addons.fuelSurcharge!, addons.fuelSurchargeType)),
+      if (addons.securitySurcharge != null && addons.securitySurcharge != 0)
+        ('Security Surcharge', '₱${money(addons.securitySurcharge!)}'),
+      if (addons.waybillFee != null && addons.waybillFee != 0)
+        ('Waybill Fee', '₱${money(addons.waybillFee!)}'),
+      if (addons.bookingHandlingFee != null && addons.bookingHandlingFee != 0)
+        ('Booking/Handling Fee', '₱${money(addons.bookingHandlingFee!)}'),
+      if (addons.documentationFee != null && addons.documentationFee != 0)
+        ('Documentation Fee', '₱${money(addons.documentationFee!)}'),
+      if (addons.permitFeesNonVat != null && addons.permitFeesNonVat != 0)
+        ('Permit Fee', '₱${money(addons.permitFeesNonVat!)}'),
+      if (addons.insurance != null && addons.insurance != 0)
+        ('Insurance', '₱${money(addons.insurance!)}'),
+      if (addons.valuation != null && addons.valuation != 0)
+        ('Valuation', amountFor(addons.valuation!, addons.valuationType)),
+      if (addons.deliveryFee != null && addons.deliveryFee != 0)
+        ('Delivery Fee', '₱${money(addons.deliveryFee!)}'),
+      if (addons.cratingFee != null && addons.cratingFee != 0)
+        ('Crating Fee', '₱${money(addons.cratingFee!)}'),
+      if (addons.packingFee != null && addons.packingFee != 0)
+        ('Packing Fee', '₱${money(addons.packingFee!)}'),
+      if (addons.airThc != null && addons.airThc != 0)
+        ('Air THC', '₱${money(addons.airThc!)}'),
+      if (addons.seaThc != null && addons.seaThc != 0)
+        ('Sea THC', '₱${money(addons.seaThc!)}'),
+      if (addons.demurrageDetention != null && addons.demurrageDetention != 0)
+        ('Demurrage/Detention', '₱${money(addons.demurrageDetention!)}'),
+      if (addons.hazardousGoodsHandling != null && addons.hazardousGoodsHandling != 0)
+        ('Hazardous Goods Handling', '₱${money(addons.hazardousGoodsHandling!)}'),
+      if (addons.othersNonVat != null && addons.othersNonVat != 0)
+        ('Other Fees', '₱${money(addons.othersNonVat!)}'),
+    ];
+
+    if (rows.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(CupertinoIcons.tag, size: 15, color: context.colors.primaryDeep),
+            const SizedBox(width: 6),
+            Text(
+              'Add-on Charges',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.colors.textBody),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        for (final row in rows)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(row.$1, style: TextStyle(fontSize: 13, color: context.colors.textMuted)),
+                Text(row.$2, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textBody)),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

@@ -11,6 +11,7 @@ import '../../bloc/rate_wizard_bloc.dart';
 import '../../bloc/rates_shell_bloc.dart';
 import '../../rates_colors.dart';
 import '../back_pill.dart';
+import '../status_dialog.dart';
 import 'remove_route_dialog.dart';
 import 'step0_rate_setup.dart';
 import 'step1_rate_matrix.dart';
@@ -73,12 +74,11 @@ class _WizardView extends StatelessWidget {
               prev.submitSucceeded != curr.submitSucceeded,
           listener: (context, state) {
             if (state.submitError != null) {
-              ShadToaster.of(context).show(
-                ShadToast.destructive(
-                  alignment: Alignment.bottomRight,
-                  title: const Text('Something went wrong'),
-                  description: Text(state.submitError!),
-                ),
+              showStatusDialog(
+                context,
+                title: 'Something went wrong',
+                description: state.submitError,
+                isError: true,
               );
             } else if (state.submitSucceeded) {
               // The API's success response is just the raw saved rate — no
@@ -86,13 +86,9 @@ class _WizardView extends StatelessWidget {
               // charge_code rather than a made-up generic string.
               final chargeCode = state.savedChargeCode;
               if (state.lastSubmitStayedOnPage) {
-                ShadToaster.of(context).show(
-                  ShadToast(
-                    alignment: Alignment.bottomRight,
-                    title: Text(
-                      chargeCode != null ? 'Saved $chargeCode' : 'Changes saved',
-                    ),
-                  ),
+                showStatusDialog(
+                  context,
+                  title: chargeCode != null ? 'Saved $chargeCode' : 'Changes saved',
                 );
                 // The rate list screens don't live-update — without this,
                 // the just-saved changes stay invisible there until some
@@ -102,15 +98,11 @@ class _WizardView extends StatelessWidget {
                 final shellBloc = context.read<RatesShellBloc>();
                 final wizardState = context.read<RateWizardBloc>().state;
                 final isEditing = wizardState.editingRateId != null;
-                ShadToaster.of(context).show(
-                  ShadToast(
-                    alignment: Alignment.bottomRight,
-                    title: Text(
-                      chargeCode == null
-                          ? (isEditing ? 'Rate updated' : 'Rate created')
-                          : (isEditing ? 'Updated $chargeCode' : 'Created $chargeCode'),
-                    ),
-                  ),
+                showStatusDialog(
+                  context,
+                  title: chargeCode == null
+                      ? (isEditing ? 'Rate updated' : 'Rate created')
+                      : (isEditing ? 'Updated $chargeCode' : 'Created $chargeCode'),
                 );
                 shellBloc.add(
                   WizardExitRequested(
@@ -334,16 +326,18 @@ class _WizardFooter extends StatelessWidget {
       gradient: step == 3
           ? context.colors.accentButtonGradient
           : context.colors.primaryButtonGradient,
-      leading: step == 3 && isSubmitting
-          ? const SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-          : Icon(step == 3 ? CupertinoIcons.paperplane_fill : null, size: 16),
+      leading: step == 3
+          ? (isSubmitting
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(CupertinoIcons.paperplane_fill, size: 16))
+          : null,
       trailing: step == 3
           ? null
           : const Icon(CupertinoIcons.arrow_right, size: 16),

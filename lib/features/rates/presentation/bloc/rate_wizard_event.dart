@@ -132,7 +132,7 @@ class LocationSearchCleared extends RateWizardEvent {
 
 /// Fired when the user picks a suggestion from the Origin field's overlay.
 /// Carries the full [LocationOption] (not just its display string) so the
-/// bloc can resolve the correct typed id into `MatrixRow.originId`.
+/// bloc can store it on `MatrixRow.originOption` for the submit payload.
 class OriginLocationSelected extends RateWizardEvent {
   const OriginLocationSelected(this.rowIndex, this.option, this.displayText);
 

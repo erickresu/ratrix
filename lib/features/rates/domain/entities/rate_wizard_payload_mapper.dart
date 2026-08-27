@@ -1,3 +1,4 @@
+import 'location_option.dart';
 import 'rates_enums.dart';
 import 'rates_fk_ids.dart';
 
@@ -40,31 +41,23 @@ class RateWizardPayloadMapper {
   /// wizard UI, so `MatrixRow.rates[i]` pairs with `breakweights[i]`
   /// losslessly.
   ///
-  /// When [original] is given (edit mode) AND the row's current
-  /// origin/destination text still matches what [original] holds, it's
-  /// reused as the base map as-is — the server's own `id`/`origin`/
-  /// `destination` come back byte-for-byte — with only `breakweights`
-  /// replaced by the wizard's current rate values. This avoids resending a
-  /// reconstructed (id-less) `origin`/`destination` for rows the user never
-  /// touched, which the API's duplicate-route check can't disambiguate.
-  ///
-  /// If the origin or destination text no longer matches [original] — the
-  /// user edited it — [original] is NOT reused for that row; a fresh
-  /// `origin`/`destination` object is built from the row's current values
-  /// instead, so the edit is actually sent. Reusing `original` unconditionally
-  /// for every row with a `routeId` (regardless of whether it was actually
-  /// touched) was a real bug: it silently discarded any change to an
-  /// existing route's origin/destination, since `original`'s stale label
-  /// always won.
+  /// [originOption]/[destinationOption] carry whichever geography id
+  /// actually applies (city/province/region/island/barangay) from the
+  /// picked search result (or, in edit mode, reconstructed from the loaded
+  /// route's address) — these are sent as the real `*_id` fields the
+  /// backend's `Address` model reads. The backend has no "reuse an existing
+  /// address by id" path at all (`RatrixRateController::store`/`update` both
+  /// call `Address::create(...)` unconditionally for every route, and
+  /// `update()` deletes and recreates all routes first), so there is no
+  /// benefit to resending a route's own id here — only the geography ids +
+  /// label matter, every time.
   static Map<String, dynamic> _mapRoute({
     required String origin,
     required String destination,
     required List<String> rates,
     required List<({String min, String max})> breakweightBounds,
-    Map<String, dynamic>? original,
-    String? routeId,
-    int? originId,
-    int? destinationId,
+    LocationOption? originOption,
+    LocationOption? destinationOption,
   }) {
     final breakweights = <Map<String, dynamic>>[];
     for (var i = 0; i < breakweightBounds.length && i < rates.length; i++) {
@@ -79,36 +72,20 @@ class RateWizardPayloadMapper {
       });
     }
 
-    final originalOrigin = original?['origin'];
-    final originalDestination = original?['destination'];
-    final originUnchanged = originalOrigin is Map<String, dynamic> &&
-        originalOrigin['label']?.toString() == origin.trim();
-    final destinationUnchanged = originalDestination is Map<String, dynamic> &&
-        originalDestination['label']?.toString() == destination.trim();
-
-    if (original != null && originUnchanged && destinationUnchanged) {
-      return {
-        ...original,
-        if (breakweights.isNotEmpty) 'breakweights': breakweights,
-      };
-    }
+    Map<String, dynamic> address(String label, LocationOption? option) => {
+          if (option?.islandId != null) 'island_id': option!.islandId,
+          if (option?.regionId != null) 'region_id': option!.regionId,
+          if (option?.provinceId != null) 'province_id': option!.provinceId,
+          if (option?.cityId != null) 'city_id': option!.cityId,
+          if (option?.barangayId != null) 'barangay_id': option!.barangayId,
+          if (option?.zipcode != null) 'zipcode': option!.zipcode,
+          if (option?.address1 != null) 'address1': option!.address1,
+          'label': label,
+        };
 
     return {
-      if (routeId != null) 'id': routeId,
-      if (origin.trim().isNotEmpty)
-        'origin': originUnchanged
-            ? originalOrigin
-            : {
-                if (originId != null) 'id': originId,
-                'label': origin.trim(),
-              },
-      if (destination.trim().isNotEmpty)
-        'destination': destinationUnchanged
-            ? originalDestination
-            : {
-                if (destinationId != null) 'id': destinationId,
-                'label': destination.trim(),
-              },
+      if (origin.trim().isNotEmpty) 'origin': address(origin.trim(), originOption),
+      if (destination.trim().isNotEmpty) 'destination': address(destination.trim(), destinationOption),
       if (breakweights.isNotEmpty) 'breakweights': breakweights,
     };
   }
@@ -166,9 +143,10 @@ class RateWizardPayloadMapper {
   ///
   /// `matrixRows`/`breakweights` are the wizard's raw
   /// `List<MatrixRow>`/`List<Breakweight>` — typed loosely here (via the
-  /// `rows`/`bwBounds` record lists) so this file has no dependency on the
-  /// freezed model files; the wizard bloc adapts its state into these
-  /// shapes when calling in.
+  /// `rows`/`bwBounds` record lists) so this file stays free of a direct
+  /// `MatrixRow`/bloc-state dependency; the wizard bloc adapts its state
+  /// into these shapes when calling in. `LocationOption` (a peer domain
+  /// entity, not bloc state) is used directly for the geography-id fields.
   static Map<String, dynamic> buildPayload({
     required bool isCustom,
     required String? clientId,
@@ -178,7 +156,7 @@ class RateWizardPayloadMapper {
     required PricingOption pricingOption,
     required String fullChargeCode,
     required DateTime? expiryDate,
-    required List<({String origin, String destination, List<String> rates, Map<String, dynamic>? original, String? routeId, int? originId, int? destinationId})> rows,
+    required List<({String origin, String destination, List<String> rates, LocationOption? originOption, LocationOption? destinationOption})> rows,
     required List<({String min, String max})> breakweightBounds,
     required Map<String, String> addonValues,
     required Map<String, AddonMode> addonModes,
@@ -195,10 +173,8 @@ class RateWizardPayloadMapper {
           destination: row.destination,
           rates: row.rates,
           breakweightBounds: breakweightBounds,
-          original: row.original,
-          routeId: row.routeId,
-          originId: row.originId,
-          destinationId: row.destinationId,
+          originOption: row.originOption,
+          destinationOption: row.destinationOption,
         ),
     ];
 
