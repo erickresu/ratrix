@@ -74,31 +74,47 @@ class CalcDestinationChanged extends ShippingCalculatorEvent {
   List<Object?> get props => [value];
 }
 
-class CalcLengthChanged extends ShippingCalculatorEvent {
-  const CalcLengthChanged(this.value);
-
-  final String value;
-
-  @override
-  List<Object?> get props => [value];
+class CalcDimensionAdded extends ShippingCalculatorEvent {
+  const CalcDimensionAdded();
 }
 
-class CalcWidthChanged extends ShippingCalculatorEvent {
-  const CalcWidthChanged(this.value);
+class CalcDimensionRemoved extends ShippingCalculatorEvent {
+  const CalcDimensionRemoved(this.index);
 
-  final String value;
+  final int index;
 
   @override
-  List<Object?> get props => [value];
+  List<Object?> get props => [index];
 }
 
-class CalcHeightChanged extends ShippingCalculatorEvent {
-  const CalcHeightChanged(this.value);
+class CalcDimensionLengthChanged extends ShippingCalculatorEvent {
+  const CalcDimensionLengthChanged(this.index, this.value);
 
+  final int index;
   final String value;
 
   @override
-  List<Object?> get props => [value];
+  List<Object?> get props => [index, value];
+}
+
+class CalcDimensionWidthChanged extends ShippingCalculatorEvent {
+  const CalcDimensionWidthChanged(this.index, this.value);
+
+  final int index;
+  final String value;
+
+  @override
+  List<Object?> get props => [index, value];
+}
+
+class CalcDimensionHeightChanged extends ShippingCalculatorEvent {
+  const CalcDimensionHeightChanged(this.index, this.value);
+
+  final int index;
+  final String value;
+
+  @override
+  List<Object?> get props => [index, value];
 }
 
 class CalcDivisorChanged extends ShippingCalculatorEvent {
@@ -119,6 +135,12 @@ class CalcWeightChanged extends ShippingCalculatorEvent {
   List<Object?> get props => [value];
 }
 
+/// "Use this value" in the CBM popup — copies the computed volumetric
+/// weight into the main Chargeable Weight field.
+class CalcCbmResultApplied extends ShippingCalculatorEvent {
+  const CalcCbmResultApplied();
+}
+
 class CalcDeclaredValueChanged extends ShippingCalculatorEvent {
   const CalcDeclaredValueChanged(this.value);
 
@@ -126,15 +148,6 @@ class CalcDeclaredValueChanged extends ShippingCalculatorEvent {
 
   @override
   List<Object?> get props => [value];
-}
-
-class CalcChargeBasisChanged extends ShippingCalculatorEvent {
-  const CalcChargeBasisChanged(this.basis);
-
-  final CalcChargeBasis basis;
-
-  @override
-  List<Object?> get props => [basis];
 }
 
 class CalcSubmitRequested extends ShippingCalculatorEvent {

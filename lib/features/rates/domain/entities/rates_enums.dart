@@ -139,13 +139,3 @@ enum ServiceLevel {
   final String label;
 }
 
-/// How the calculator picks between actual (physical) weight and
-/// volumetric weight when computing the chargeable rate.
-enum CalcChargeBasis {
-  higher('Whichever is Higher'),
-  actual('Actual Weight'),
-  volumetric('Volumetric Weight');
-
-  const CalcChargeBasis(this.label);
-  final String label;
-}

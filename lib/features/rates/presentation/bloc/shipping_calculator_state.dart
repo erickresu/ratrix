@@ -3,13 +3,33 @@ part of 'shipping_calculator_bloc.dart';
 /// Distinct origin/destination pair pulled from a rate's routes.
 typedef RouteChoice = ({String origin, String destination});
 
+/// One piece's L x W x H — the cargo can have multiple pieces, each with
+/// its own dimensions, and volumetric weight sums across all of them.
+class CalcDimension extends Equatable {
+  const CalcDimension({this.length = '', this.width = '', this.height = ''});
+
+  final String length;
+  final String width;
+  final String height;
+
+  CalcDimension copyWith({String? length, String? width, String? height}) {
+    return CalcDimension(
+      length: length ?? this.length,
+      width: width ?? this.width,
+      height: height ?? this.height,
+    );
+  }
+
+  @override
+  List<Object?> get props => [length, width, height];
+}
+
 /// Result of a breakweight pricing calculation — covers all 7 bracket-pricing
 /// options (Fixed/Flat/Cumulative/Excess, each with a "Minimum …" floor
 /// variant). [tierRate] is null for Cumulative variants, which span multiple
 /// tiers rather than pricing off a single one.
 class CalcResult extends Equatable {
   const CalcResult({
-    this.actualWeight,
     this.volumetricWeight,
     this.cbm,
     this.chargeableWeight,
@@ -25,7 +45,6 @@ class CalcResult extends Equatable {
     this.routeTiers = const [],
   });
 
-  final num? actualWeight;
   final num? volumetricWeight;
   final num? cbm;
   final num? chargeableWeight;
@@ -58,7 +77,6 @@ class CalcResult extends Equatable {
 
   @override
   List<Object?> get props => [
-        actualWeight,
         volumetricWeight,
         cbm,
         chargeableWeight,
@@ -103,13 +121,22 @@ class ShippingCalculatorState extends Equatable {
   final String origin;
   final String destination;
 
-  final String length;
-  final String width;
-  final String height;
-  final String divisor;
+  /// What's actually billed — freely typed on the main screen, or filled in
+  /// via the CBM popup's "Use this value" action (whichever of actual vs
+  /// volumetric weight was higher there).
   final String weight;
+
+  /// Bumped only when the CBM popup's "Use this value" overwrites [weight]
+  /// externally — the weight field is keyed on this (not on [weight]
+  /// itself) so it remounts and picks up the new value only for that case,
+  /// not on every normal keystroke while typing.
+  final int weightAppliedFromCbm;
+
+  /// Scratch inputs for the CBM popup only — not read by pricing directly;
+  /// the popup computes from these and the result is copied into [weight].
+  final List<CalcDimension> dimensions;
+  final String divisor;
   final String declaredValue;
-  final CalcChargeBasis chargeBasis;
 
   final bool resultComputed;
   final String? submitError;
@@ -131,13 +158,11 @@ class ShippingCalculatorState extends Equatable {
     this.vatInclusive = false,
     this.origin = '',
     this.destination = '',
-    this.length = '',
-    this.width = '',
-    this.height = '',
-    this.divisor = '6000',
     this.weight = '',
+    this.weightAppliedFromCbm = 0,
+    this.dimensions = const [CalcDimension()],
+    this.divisor = '6000',
     this.declaredValue = '',
-    this.chargeBasis = CalcChargeBasis.higher,
     this.resultComputed = false,
     this.submitError,
   });
@@ -201,6 +226,22 @@ class ShippingCalculatorState extends Equatable {
     }.contains(pricingOption);
   }
 
+  /// Sum of `(L × W × H) / divisor` across every dimension entry in the CBM
+  /// popup — `null` when the divisor isn't a usable positive number yet.
+  /// Popup-only preview; pricing itself reads [weight] directly, not this.
+  num? get popupVolumetricWeight {
+    final divisor = num.tryParse(this.divisor.trim());
+    if (divisor == null || divisor <= 0) return null;
+    num total = 0;
+    for (final d in dimensions) {
+      final length = num.tryParse(d.length.trim()) ?? 0;
+      final width = num.tryParse(d.width.trim()) ?? 0;
+      final height = num.tryParse(d.height.trim()) ?? 0;
+      total += (length * width * height) / divisor;
+    }
+    return total;
+  }
+
   static const vatRate = 0.12;
 
   /// VAT amount on top of [CalcResult.subTotal], per the current VAT
@@ -241,13 +282,11 @@ class ShippingCalculatorState extends Equatable {
     bool? vatInclusive,
     String? origin,
     String? destination,
-    String? length,
-    String? width,
-    String? height,
-    String? divisor,
     String? weight,
+    int? weightAppliedFromCbm,
+    List<CalcDimension>? dimensions,
+    String? divisor,
     String? declaredValue,
-    CalcChargeBasis? chargeBasis,
     bool? resultComputed,
     String? submitError,
     bool clearSubmitError = false,
@@ -269,13 +308,11 @@ class ShippingCalculatorState extends Equatable {
       vatInclusive: vatInclusive ?? this.vatInclusive,
       origin: clearRateTable ? '' : (origin ?? this.origin),
       destination: clearRateTable ? '' : (destination ?? this.destination),
-      length: length ?? this.length,
-      width: width ?? this.width,
-      height: height ?? this.height,
-      divisor: divisor ?? this.divisor,
       weight: weight ?? this.weight,
+      weightAppliedFromCbm: weightAppliedFromCbm ?? this.weightAppliedFromCbm,
+      dimensions: dimensions ?? this.dimensions,
+      divisor: divisor ?? this.divisor,
       declaredValue: declaredValue ?? this.declaredValue,
-      chargeBasis: chargeBasis ?? this.chargeBasis,
       resultComputed: resultComputed ?? this.resultComputed,
       submitError: clearSubmitError ? null : (submitError ?? this.submitError),
     );
@@ -299,13 +336,11 @@ class ShippingCalculatorState extends Equatable {
         vatInclusive,
         origin,
         destination,
-        length,
-        width,
-        height,
-        divisor,
         weight,
+        weightAppliedFromCbm,
+        dimensions,
+        divisor,
         declaredValue,
-        chargeBasis,
         resultComputed,
         submitError,
       ];

@@ -45,39 +45,62 @@ class ShippingCalculatorBloc
       (event, emit) =>
           emit(state.copyWith(destination: event.value, clearCalcResult: true)),
     );
-    on<CalcLengthChanged>(
-      (event, emit) =>
-          emit(state.copyWith(length: event.value, clearCalcResult: true)),
+    // Dimension/divisor/actual-weight fields live only in the CBM popup —
+    // they're scratch inputs for that calculator, not the priced value
+    // itself, so changing them doesn't invalidate an existing calc result.
+    on<CalcDimensionAdded>(
+      (event, emit) => emit(
+        state.copyWith(dimensions: [...state.dimensions, const CalcDimension()]),
+      ),
     );
-    on<CalcWidthChanged>(
-      (event, emit) =>
-          emit(state.copyWith(width: event.value, clearCalcResult: true)),
-    );
-    on<CalcHeightChanged>(
-      (event, emit) =>
-          emit(state.copyWith(height: event.value, clearCalcResult: true)),
-    );
+    on<CalcDimensionRemoved>((event, emit) {
+      if (state.dimensions.length <= 1) return;
+      emit(state.copyWith(dimensions: [...state.dimensions]..removeAt(event.index)));
+    });
+    on<CalcDimensionLengthChanged>((event, emit) {
+      final dimensions = [...state.dimensions];
+      dimensions[event.index] = dimensions[event.index].copyWith(
+        length: event.value,
+      );
+      emit(state.copyWith(dimensions: dimensions));
+    });
+    on<CalcDimensionWidthChanged>((event, emit) {
+      final dimensions = [...state.dimensions];
+      dimensions[event.index] = dimensions[event.index].copyWith(
+        width: event.value,
+      );
+      emit(state.copyWith(dimensions: dimensions));
+    });
+    on<CalcDimensionHeightChanged>((event, emit) {
+      final dimensions = [...state.dimensions];
+      dimensions[event.index] = dimensions[event.index].copyWith(
+        height: event.value,
+      );
+      emit(state.copyWith(dimensions: dimensions));
+    });
     on<CalcDivisorChanged>(
-      (event, emit) =>
-          emit(state.copyWith(divisor: event.value, clearCalcResult: true)),
+      (event, emit) => emit(state.copyWith(divisor: event.value)),
     );
     on<CalcWeightChanged>(
       (event, emit) =>
           emit(state.copyWith(weight: event.value, clearCalcResult: true)),
     );
+    on<CalcCbmResultApplied>((event, emit) {
+      final result = state.popupVolumetricWeight;
+      if (result == null) return;
+      emit(
+        state.copyWith(
+          weight: result.toStringAsFixed(2),
+          weightAppliedFromCbm: state.weightAppliedFromCbm + 1,
+          clearCalcResult: true,
+        ),
+      );
+    });
     on<CalcDeclaredValueChanged>(
       (event, emit) => emit(
         state.copyWith(declaredValue: event.value, clearCalcResult: true),
       ),
     );
-    on<CalcChargeBasisChanged>((event, emit) {
-      // Recompute in place rather than clearing the result — the breakdown
-      // popup keeps this switch live, so toggling it shouldn't dismiss the
-      // dialog the user is looking at.
-      emit(state.copyWith(chargeBasis: event.basis));
-      if (state.calcResult != null)
-        emit(state.copyWith(calcResult: _calculate()));
-    });
     on<CalcSubmitRequested>(_onSubmitRequested);
     on<CalcRoundedDisplayToggled>(
       (event, emit) => emit(state.copyWith(roundedDisplay: event.rounded)),
@@ -193,25 +216,21 @@ class ShippingCalculatorBloc
       );
     }
 
-    final actualWeight = num.tryParse(state.weight.trim());
-    if (actualWeight == null)
-      return const CalcResult(error: 'Enter a valid weight.');
+    final chargeableWeight = num.tryParse(state.weight.trim());
+    if (chargeableWeight == null)
+      return const CalcResult(error: 'Enter a valid chargeable weight.');
 
-    final length = num.tryParse(state.length.trim()) ?? 0;
-    final width = num.tryParse(state.width.trim()) ?? 0;
-    final height = num.tryParse(state.height.trim()) ?? 0;
-    final divisor = num.tryParse(state.divisor.trim());
-    final cbm = (length * width * height) / 1000000;
-    final volumetricWeight = (divisor != null && divisor > 0)
-        ? (length * width * height) / divisor
-        : 0;
-
-    final chargeableWeight = switch (state.chargeBasis) {
-      CalcChargeBasis.actual => actualWeight,
-      CalcChargeBasis.volumetric => volumetricWeight,
-      CalcChargeBasis.higher =>
-        actualWeight > volumetricWeight ? actualWeight : volumetricWeight,
-    };
+    // Volumetric/CBM are informational only, sourced from the CBM popup's
+    // scratch dimension fields — blank ("—" in the breakdown) unless the
+    // user opened that popup at least once for this calculation.
+    num cbm = 0;
+    for (final d in state.dimensions) {
+      final length = num.tryParse(d.length.trim()) ?? 0;
+      final width = num.tryParse(d.width.trim()) ?? 0;
+      final height = num.tryParse(d.height.trim()) ?? 0;
+      cbm += (length * width * height) / 1000000;
+    }
+    final volumetricWeight = state.popupVolumetricWeight;
 
     final tiers = [...route.breakweights]
       ..sort((a, b) => a.min.compareTo(b.min));
@@ -219,7 +238,6 @@ class ShippingCalculatorBloc
     final freight = _freightFor(pricingOption, tiers, route, chargeableWeight);
     if (freight.error != null) {
       return CalcResult(
-        actualWeight: actualWeight,
         volumetricWeight: volumetricWeight,
         cbm: cbm,
         chargeableWeight: chargeableWeight,
@@ -285,7 +303,6 @@ class ShippingCalculatorBloc
     final nonVatableTotal = flatFees['Other fees'] ?? 0;
 
     return CalcResult(
-      actualWeight: actualWeight,
       volumetricWeight: volumetricWeight,
       cbm: cbm,
       chargeableWeight: chargeableWeight,
@@ -425,14 +442,18 @@ class ShippingCalculatorBloc
           tierRate: null,
         );
 
-      // Excess and Minimum Excess compute identically — the base bracket's
-      // rate is already a flat amount in both, so there's nothing for
-      // "minimum" to change.
+      // Excess: base bracket priced per-kg (chargeableWeight × rate) same as
+      // Fixed, then weight beyond base.max is "excess", billed at
+      // route.excessRate. Minimum Excess: base bracket is a flat fee
+      // instead (no multiplier) — e.g. first 50kg = flat ₱4,500 regardless
+      // of actual weight within it — then the same excess-rate overage.
       case PricingOption.excessBreakweight:
       case PricingOption.minimumExcessBreakweight:
         final base = tiers.first;
         final excessRate = route.excessRate;
-        num amount = base.rate;
+        num amount = pricingOption == PricingOption.minimumExcessBreakweight
+            ? base.rate
+            : chargeableWeight * base.rate;
         if (chargeableWeight > base.max) {
           if (excessRate == null) {
             return const _FreightResult(
@@ -457,7 +478,8 @@ class ShippingCalculatorBloc
       case PricingOption.routeBased:
       case PricingOption.timeBased:
         return _FreightResult(
-          error: '${pricingOption.label} isn\'t supported by the calculator yet.',
+          error:
+              '${pricingOption.label} isn\'t supported by the calculator yet.',
         );
     }
   }

@@ -847,10 +847,10 @@ class _ResultBody extends StatelessWidget {
           children: [
             Expanded(
               child: _WeightStat(
-                label: 'ACT',
-                value: result.actualWeight == null
+                label: 'WT',
+                value: result.chargeableWeight == null
                     ? '—'
-                    : '${displayValue(result.actualWeight!).toStringAsFixed(state.roundedDisplay ? 0 : 1)}KG',
+                    : '${displayValue(result.chargeableWeight!).toStringAsFixed(state.roundedDisplay ? 0 : 1)}KG',
               ),
             ),
             Expanded(
@@ -868,13 +868,6 @@ class _ResultBody extends StatelessWidget {
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 16),
-        Center(
-          child: _ChargeBasisSwitch(
-            value: state.chargeBasis,
-            onChanged: (basis) => bloc.add(CalcChargeBasisChanged(basis)),
-          ),
         ),
         const SizedBox(height: 16),
         Center(
@@ -1099,45 +1092,6 @@ class _WeightStat extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// 3-way switch for [CalcChargeBasis], live inside the dialog — picking a
-/// basis here recomputes the same result in place (see
-/// `ShippingCalculatorBloc`'s `CalcChargeBasisChanged` handler) rather than
-/// closing and reopening the dialog.
-class _ChargeBasisSwitch extends StatelessWidget {
-  const _ChargeBasisSwitch({required this.value, required this.onChanged});
-
-  final CalcChargeBasis value;
-  final ValueChanged<CalcChargeBasis> onChanged;
-
-  static const _shortLabels = {
-    CalcChargeBasis.actual: 'Actual',
-    CalcChargeBasis.volumetric: 'Volumetric',
-    CalcChargeBasis.higher: 'Higher',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: context.colors.surfaceMuted,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final basis in CalcChargeBasis.values)
-            _SegmentButton(
-              label: _shortLabels[basis]!,
-              selected: value == basis,
-              onTap: () => onChanged(basis),
-            ),
-        ],
-      ),
     );
   }
 }

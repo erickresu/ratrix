@@ -43,22 +43,22 @@ class _CalculatorView extends StatelessWidget {
     final shellBloc = context.read<RatesShellBloc>();
     final isMobile = Breakpoints.isMobile(context);
 
-    final routingAndCargo = isMobile
+    final serviceFreightAndRouting = isMobile
         ? const Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _RoutingCard(),
+              _ServiceFreightCard(),
               SizedBox(height: 20),
-              _CargoDetailsCard(),
+              _RoutingCard(),
             ],
           )
         : IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(child: _RoutingCard()),
+                Expanded(flex: 3, child: _ServiceFreightCard()),
                 const SizedBox(width: 20),
-                Expanded(child: _CargoDetailsCard()),
+                Expanded(flex: 2, child: _RoutingCard()),
               ],
             ),
           );
@@ -100,9 +100,9 @@ class _CalculatorView extends StatelessWidget {
     final formColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _ServiceFreightCard(),
+        serviceFreightAndRouting,
         const SizedBox(height: 20),
-        routingAndCargo,
+        const _CargoDetailsCard(),
         const SizedBox(height: 20),
         const _SubmitButton(),
       ],
@@ -126,9 +126,9 @@ class _CalculatorView extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _ServiceFreightCard(),
+                    serviceFreightAndRouting,
                     const SizedBox(height: 20),
-                    routingAndCargo,
+                    const _CargoDetailsCard(),
                   ],
                 ),
                 const Padding(padding: EdgeInsets.only(top: 20), child: _SubmitButton()),
@@ -467,23 +467,14 @@ class _CargoDetailsCard extends StatelessWidget {
     final state = context.watch<ShippingCalculatorBloc>().state;
     final isMobile = Breakpoints.isMobile(context);
 
-    final divisorField = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _FieldLabel('Divisor'),
-        ShadInput(
-          initialValue: state.divisor,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          onChanged: (v) => bloc.add(CalcDivisorChanged(v)),
-        ),
-      ],
-    );
+    final firstTier = state.selectedRouteTiers.isEmpty ? null : state.selectedRouteTiers.first;
 
     final weightField = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FieldLabel('Weight (kg)'),
+        const _FieldLabel('Chargeable Weight (kg)'),
         ShadInput(
+          key: ValueKey('calc-weight-${state.weightAppliedFromCbm}'),
           placeholder: const Text('0.00'),
           initialValue: state.weight,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -492,43 +483,32 @@ class _CargoDetailsCard extends StatelessWidget {
       ],
     );
 
+    final hasValuation = state.selectedRate?.addons?.valuation != null && state.selectedRate!.addons!.valuation != 0;
+
     final declaredValueField = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _FieldLabel('Declared Value (₱)'),
-        ShadInput(
-          placeholder: const Text('0.00'),
-          initialValue: state.declaredValue,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          onChanged: (v) => bloc.add(CalcDeclaredValueChanged(v)),
-        ),
-      ],
-    );
-
-    final chargeBasisField = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _FieldLabel('Charge Basis'),
         SizedBox(
           width: double.infinity,
           height: _fieldHeight,
-          child: ShadSelect<CalcChargeBasis>(
-            initialValue: state.chargeBasis,
-            selectedOptionBuilder: (context, value) => Text(value.label),
-            onChanged: (value) {
-              if (value != null) bloc.add(CalcChargeBasisChanged(value));
-            },
-            options: [for (final b in CalcChargeBasis.values) ShadOption(value: b, child: Text(b.label))],
-          ),
+          child: hasValuation
+              ? ShadInput(
+                  placeholder: const Text('0.00'),
+                  initialValue: state.declaredValue,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (v) => bloc.add(CalcDeclaredValueChanged(v)),
+                )
+              : const _DisabledField(text: 'No valuation on this rate'),
         ),
       ],
     );
 
-    Widget fieldRow3(Widget a, Widget b, Widget c) {
+    Widget fieldRow2(Widget a, Widget b) {
       if (isMobile) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [a, const SizedBox(height: 20), b, const SizedBox(height: 20), c],
+          children: [a, const SizedBox(height: 20), b],
         );
       }
       return Row(
@@ -537,21 +517,9 @@ class _CargoDetailsCard extends StatelessWidget {
           Expanded(child: a),
           const SizedBox(width: 20),
           Expanded(child: b),
-          const SizedBox(width: 20),
-          Expanded(child: c),
         ],
       );
     }
-
-    // Live actual-vs-volumetric comparison so the user can see which basis
-    // will bite before they even submit — independent of `chargeBasis`
-    // itself (that's now picked inside the result popup).
-    final length = num.tryParse(state.length.trim()) ?? 0;
-    final width = num.tryParse(state.width.trim()) ?? 0;
-    final height = num.tryParse(state.height.trim()) ?? 0;
-    final divisorValue = num.tryParse(state.divisor.trim());
-    final actualWeight = num.tryParse(state.weight.trim());
-    final volumetricWeight = (divisorValue != null && divisorValue > 0) ? (length * width * height) / divisorValue : null;
 
     return _SectionCard(
       icon: Icons.inventory_2_outlined,
@@ -567,93 +535,228 @@ class _CargoDetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _FieldLabel('Dimensions (L x W x H cm)'),
-          Row(
-            children: [
-              Expanded(
-                child: ShadInput(
-                  placeholder: const Text('L'),
-                  initialValue: state.length,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (v) => bloc.add(CalcLengthChanged(v)),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ShadInput(
-                  placeholder: const Text('W'),
-                  initialValue: state.width,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (v) => bloc.add(CalcWidthChanged(v)),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ShadInput(
-                  placeholder: const Text('H'),
-                  initialValue: state.height,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (v) => bloc.add(CalcHeightChanged(v)),
-                ),
-              ),
-            ],
+          fieldRow2(weightField, declaredValueField),
+          const SizedBox(height: 12),
+          ShadButton.outline(
+            leading: const Icon(CupertinoIcons.cube_box, size: 15),
+            onPressed: () => _showCbmDialog(context, bloc),
+            child: const Text('Calculate from dimensions (CBM)'),
           ),
-          const SizedBox(height: 20),
-          fieldRow3(divisorField, weightField, declaredValueField),
-          const SizedBox(height: 20),
-          chargeBasisField,
-          if (actualWeight != null && volumetricWeight != null) ...[
-            const SizedBox(height: 12),
-            _HigherWeightIndicator(actualWeight: actualWeight, volumetricWeight: volumetricWeight),
-          ],
           if (state.requiresMinimumCharge) ...[
             const SizedBox(height: 20),
-            Text(
-              'This rate charges a flat fee for the first breakweight bracket '
-              '(no per-kg multiplication) and per-kg rates beyond it.',
-              style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+            RichText(
+              text: firstTier == null
+                  ? TextSpan(
+                      style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                      text: 'This rate charges a flat fee for the first breakweight bracket '
+                          '(no per-kg multiplication) and per-kg rates beyond it.',
+                    )
+                  : TextSpan(
+                      style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                      children: [
+                        const TextSpan(text: 'This rate charges a flat fee of '),
+                        TextSpan(
+                          text: '₱${firstTier.rate.toStringAsFixed(2)}',
+                          style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.primaryDeep),
+                        ),
+                        const TextSpan(text: ' for the first '),
+                        TextSpan(
+                          text: '${firstTier.min.toStringAsFixed(0)}–${firstTier.max.toStringAsFixed(0)}kg',
+                          style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.primaryDeep),
+                        ),
+                        const TextSpan(text: ' bracket (no per-kg multiplication) and per-kg rates beyond it.'),
+                      ],
+                    ),
             ),
           ],
         ],
       ),
     );
   }
+
+  void _showCbmDialog(BuildContext context, ShippingCalculatorBloc bloc) {
+    showShadDialog<void>(
+      context: context,
+      builder: (dialogContext) => BlocProvider.value(
+        value: bloc,
+        child: const _CbmCalculatorDialog(),
+      ),
+    );
+  }
 }
 
-/// Live actual-vs-volumetric comparison, shown outside the freight-breakdown
-/// popup (right under the fields it depends on) so the user can see which
-/// basis will bite before they even submit.
-class _HigherWeightIndicator extends StatelessWidget {
-  const _HigherWeightIndicator({required this.actualWeight, required this.volumetricWeight});
-
-  final num actualWeight;
-  final num volumetricWeight;
+/// Popup CBM/volumetric-weight calculator — dimensions, divisor, and a
+/// scratch actual-weight field for comparison. "Use this value" copies
+/// whichever of the two is higher into the main Chargeable Weight field.
+class _CbmCalculatorDialog extends StatelessWidget {
+  const _CbmCalculatorDialog();
 
   @override
   Widget build(BuildContext context) {
-    final volHigher = volumetricWeight > actualWeight;
-    final label = volHigher
-        ? 'Volumetric weight is higher (${volumetricWeight.toStringAsFixed(1)}kg vs ${actualWeight.toStringAsFixed(1)}kg actual)'
-        : 'Actual weight is higher (${actualWeight.toStringAsFixed(1)}kg vs ${volumetricWeight.toStringAsFixed(1)}kg volumetric)';
+    final bloc = context.read<ShippingCalculatorBloc>();
+    final state = context.watch<ShippingCalculatorBloc>().state;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: context.colors.primarySoftBg,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(CupertinoIcons.arrow_up_right, size: 13, color: context.colors.primaryDeep),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.primaryDeep),
-            ),
+    return ShadDialog(
+      radius: BorderRadius.circular(16),
+      backgroundColor: context.colors.surface,
+      padding: EdgeInsets.zero,
+      closeIcon: const SizedBox.shrink(),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540, maxHeight: 620),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(CupertinoIcons.cube_box, size: 20, color: context.colors.primaryDeep),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Calculate from Dimensions',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textBody),
+                    ),
+                  ),
+                  Material(
+                    color: context.colors.surfaceMuted,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(CupertinoIcons.xmark, size: 15, color: context.colors.textMuted),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _FieldLabel('Dimensions (cm)'),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Length',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Text(
+                              'Width',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Text(
+                              'Height',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
+                            ),
+                          ),
+                          if (state.dimensions.length > 1) const SizedBox(width: 42),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      for (var i = 0; i < state.dimensions.length; i++) ...[
+                        if (i > 0) const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ShadInput(
+                                key: ValueKey('calc-dim-l-$i'),
+                                placeholder: const Text('0'),
+                                initialValue: state.dimensions[i].length,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                onChanged: (v) => bloc.add(CalcDimensionLengthChanged(i, v)),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: ShadInput(
+                                key: ValueKey('calc-dim-w-$i'),
+                                placeholder: const Text('0'),
+                                initialValue: state.dimensions[i].width,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                onChanged: (v) => bloc.add(CalcDimensionWidthChanged(i, v)),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: ShadInput(
+                                key: ValueKey('calc-dim-h-$i'),
+                                placeholder: const Text('0'),
+                                initialValue: state.dimensions[i].height,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                onChanged: (v) => bloc.add(CalcDimensionHeightChanged(i, v)),
+                              ),
+                            ),
+                            if (state.dimensions.length > 1) ...[
+                              const SizedBox(width: 10),
+                              SizedBox(
+                                height: _fieldHeight,
+                                child: IconButton(
+                                  icon: Icon(CupertinoIcons.trash, size: 16, color: context.colors.destructive),
+                                  tooltip: 'Remove dimension',
+                                  onPressed: () => bloc.add(CalcDimensionRemoved(i)),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 14),
+                      ShadButton.outline(
+                        leading: const Icon(CupertinoIcons.add, size: 14),
+                        onPressed: () => bloc.add(const CalcDimensionAdded()),
+                        child: const Text('Add dimension'),
+                      ),
+                      const SizedBox(height: 28),
+                      const _FieldLabel('Divisor'),
+                      ShadInput(
+                        initialValue: state.divisor,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        onChanged: (v) => bloc.add(CalcDivisorChanged(v)),
+                      ),
+                      const SizedBox(height: 24),
+                      const _FieldLabel('Computed Weight (kg)'),
+                      SizedBox(
+                        width: double.infinity,
+                        height: _fieldHeight,
+                        child: _DisabledField(
+                          text: state.popupVolumetricWeight == null
+                              ? 'Enter dimensions and divisor above'
+                              : '${state.popupVolumetricWeight!.toStringAsFixed(2)} kg',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+              Align(
+                alignment: Alignment.centerRight,
+                child: ShadButton(
+                  gradient: context.colors.primaryButtonGradient,
+                  enabled: state.popupVolumetricWeight != null,
+                  onPressed: () {
+                    bloc.add(const CalcCbmResultApplied());
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Use this value'),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -678,21 +781,21 @@ class _RouteTiersInfoButton extends StatelessWidget {
           padding: EdgeInsets.zero,
           closeIcon: const SizedBox.shrink(),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 520),
+            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 600),
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(28),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(CupertinoIcons.square_stack_3d_up, size: 18, color: dialogContext.colors.primaryDeep),
-                      const SizedBox(width: 8),
+                      Icon(CupertinoIcons.square_stack_3d_up, size: 20, color: dialogContext.colors.primaryDeep),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           'Rate Details',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: dialogContext.colors.textBody),
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: dialogContext.colors.textBody),
                         ),
                       ),
                       Material(
@@ -702,14 +805,14 @@ class _RouteTiersInfoButton extends StatelessWidget {
                           customBorder: const CircleBorder(),
                           onTap: () => Navigator.of(dialogContext).pop(),
                           child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: Icon(CupertinoIcons.xmark, size: 14, color: dialogContext.colors.textMuted),
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(CupertinoIcons.xmark, size: 15, color: dialogContext.colors.textMuted),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Flexible(
                     child: SingleChildScrollView(
                       child: Column(
@@ -717,7 +820,7 @@ class _RouteTiersInfoButton extends StatelessWidget {
                         children: [
                           RouteTiersTable(origin: origin, destination: destination, tiers: tiers),
                           if (addons != null) ...[
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 28),
                             _AddonsSummary(addons: addons!),
                           ],
                         ],
@@ -828,10 +931,10 @@ class _AddonsSummary extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
         for (final row in rows)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

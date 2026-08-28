@@ -77,7 +77,7 @@ Future<void> generateInvoicePdf({
               _fieldPair('Origin', state.origin, 'Destination', state.destination),
               _fieldPair(
                 'Dims',
-                '${state.length} × ${state.width} × ${state.height} cm',
+                '${state.dimensions.map((d) => '${d.length}×${d.width}×${d.height}').join(', ')} cm',
                 'Weight',
                 '${state.weight} kg',
               ),
