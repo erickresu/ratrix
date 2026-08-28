@@ -442,32 +442,48 @@ class ShippingCalculatorBloc
           tierRate: null,
         );
 
-      // Excess: base bracket priced per-kg (chargeableWeight × rate) same as
-      // Fixed, then weight beyond base.max is "excess", billed at
-      // route.excessRate. Minimum Excess: base bracket is a flat fee
+      // Excess: base bracket (tier 1) priced per-kg (chargeableWeight ×
+      // rate) same as Fixed. Minimum Excess: base bracket is a flat fee
       // instead (no multiplier) — e.g. first 50kg = flat ₱4,500 regardless
-      // of actual weight within it — then the same excess-rate overage.
+      // of actual weight within it. In both cases, once chargeableWeight
+      // exceeds the base bracket's max, whichever LATER breakweight tier's
+      // [min, max] range actually covers the weight supplies the "excess"
+      // per-kg rate — applied only to the portion beyond base.max, not the
+      // whole weight (that portion is already covered by the base charge
+      // above). There's no separate standalone excess-rate field: the
+      // second/third/etc. breakweight tier's own `rate` IS the excess rate
+      // for that range, same as how the wizard's "Add breakweight" already
+      // lets a rate carry multiple tiers.
       case PricingOption.excessBreakweight:
       case PricingOption.minimumExcessBreakweight:
         final base = tiers.first;
-        final excessRate = route.excessRate;
-        num amount = pricingOption == PricingOption.minimumExcessBreakweight
-            ? base.rate
-            : chargeableWeight * base.rate;
-        if (chargeableWeight > base.max) {
-          if (excessRate == null) {
-            return const _FreightResult(
-              error:
-                  'Route has no excess rate configured for this pricing option.',
-            );
-          }
-          amount += (chargeableWeight - base.max) * excessRate;
+        final isMinimum = pricingOption == PricingOption.minimumExcessBreakweight;
+
+        if (chargeableWeight <= base.max) {
+          final amount = isMinimum ? base.rate : chargeableWeight * base.rate;
+          return _FreightResult(
+            amount: amount,
+            tierMin: base.min,
+            tierMax: base.max,
+            tierRate: base.rate,
+          );
         }
+
+        final excessTier = matchTier();
+        if (excessTier == null || identical(excessTier, base)) {
+          return _FreightResult(
+            error:
+                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
+          );
+        }
+        final baseAmount = isMinimum ? base.rate : base.max * base.rate;
+        final amount =
+            baseAmount + (chargeableWeight - base.max) * excessTier.rate;
         return _FreightResult(
           amount: amount,
           tierMin: base.min,
-          tierMax: base.max,
-          tierRate: excessRate,
+          tierMax: excessTier.max,
+          tierRate: excessTier.rate,
         );
 
       // Route-Based/Time-Based Pricing (Full Container Load) don't use
