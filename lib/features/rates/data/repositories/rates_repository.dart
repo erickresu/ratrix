@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/api/app_logger.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../domain/entities/client_rate.dart';
 import '../../domain/entities/location_option.dart';
@@ -27,10 +28,6 @@ class RatesRepository {
   RatesRepository(this._dataSource);
 
   final RatesDataSource _dataSource;
-
-  // ---------------------------------------------------------------------
-  // Reads
-  // ---------------------------------------------------------------------
 
   Future<List<RatrixRate>> _fetchAllRates({
     String? rateType,
@@ -200,31 +197,42 @@ class RatesRepository {
   }
 
   PublishedRate _mapPublishedRate(RatrixRate rate) {
-    final freightMode =
-        _freightModeFromCode(rate.freightMode?.code) ?? FreightMode.air;
-    final serviceMode =
-        _serviceModeFromCode(rate.serviceMode?.code) ?? ServiceMode.doorToDoor;
-    final isExpired = rate.isExpired;
-    final expiryLabel = rate.rateExpiry == null
-        ? (isExpired ? 'Expired' : 'Active')
-        : (isExpired
-              ? 'Expired ${_formatDate(rate.rateExpiry!)}'
-              : 'Active until ${_formatDate(rate.rateExpiry!)}');
-
+    final common = _mapCommonRateFields(rate);
     return PublishedRate(
       id: rate.id,
       chargeCode: rate.chargeCode ?? '—',
-      freightMode: freightMode,
-      serviceMode: serviceMode,
+      freightMode: common.freightMode,
+      serviceMode: common.serviceMode,
       routeLabel: rate.routes.isNotEmpty ? rate.routes.first.routeLabel : '—',
       routeCount: rate.routes.length,
-      status: isExpired ? RateStatus.expired : RateStatus.active,
-      expiryLabel: expiryLabel,
+      status: common.status,
+      expiryLabel: common.expiryLabel,
       expiryDate: rate.rateExpiry,
     );
   }
 
   ClientRate _mapClientRate(RatrixRate rate, String clientId) {
+    final common = _mapCommonRateFields(rate);
+    return ClientRate(
+      id: rate.id,
+      clientId: clientId,
+      chargeCode: rate.chargeCode ?? '—',
+      freightMode: common.freightMode,
+      serviceMode: common.serviceMode,
+      routeCount: rate.routes.length,
+      status: common.status,
+      expiryLabel: common.expiryLabel,
+      expiryDate: rate.rateExpiry,
+    );
+  }
+
+  ({
+    FreightMode freightMode,
+    ServiceMode serviceMode,
+    RateStatus status,
+    String expiryLabel,
+  })
+  _mapCommonRateFields(RatrixRate rate) {
     final freightMode =
         _freightModeFromCode(rate.freightMode?.code) ?? FreightMode.air;
     final serviceMode =
@@ -235,17 +243,11 @@ class RatesRepository {
         : (isExpired
               ? 'Expired ${_formatDate(rate.rateExpiry!)}'
               : 'Active until ${_formatDate(rate.rateExpiry!)}');
-
-    return ClientRate(
-      id: rate.id,
-      clientId: clientId,
-      chargeCode: rate.chargeCode ?? '—',
+    return (
       freightMode: freightMode,
       serviceMode: serviceMode,
-      routeCount: rate.routes.length,
       status: isExpired ? RateStatus.expired : RateStatus.active,
       expiryLabel: expiryLabel,
-      expiryDate: rate.rateExpiry,
     );
   }
 
@@ -341,13 +343,9 @@ class RatesRepository {
       } else if (body is List) {
         rows = body;
       }
-      // TEMP DEBUG — remove once the iata-type response shape is confirmed.
-      // ignore: avoid_print
-      print('[searchLocations] q=$q type=$type rawRows=$rows');
       return rows.whereType<Map<String, dynamic>>().map(LocationOption.fromJson).toList();
-    } catch (e) {
-      // ignore: avoid_print
-      print('[searchLocations] EXCEPTION: $e');
+    } catch (e, st) {
+      appLogger.e('Location search failed', error: e, stackTrace: st);
       return const [];
     }
   }
@@ -378,10 +376,6 @@ class RatesRepository {
     final data = res.data;
     return data is Map<String, dynamic> ? AuditLog.fromJson(data) : null;
   }
-
-  // ---------------------------------------------------------------------
-  // Writes
-  // ---------------------------------------------------------------------
 
   Future<RatrixRate> createRate(Map<String, dynamic> payload) async {
     try {

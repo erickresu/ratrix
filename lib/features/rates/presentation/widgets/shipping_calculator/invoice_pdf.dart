@@ -18,7 +18,6 @@ const _white = PdfColor.fromInt(0xFFFFFFFF);
 // for the logo to blend in rather than showing as a box.
 const _brandNavy = PdfColor.fromInt(0xFF0F1B2E);
 
-/// One row of the charges item table.
 typedef _ChargeItem = ({String description, String rate, String qty, num total});
 
 /// Builds and opens the print/save dialog (`Printing.layoutPdf`) for a

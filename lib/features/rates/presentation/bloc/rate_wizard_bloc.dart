@@ -64,8 +64,6 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
               (b) => !RatesFkIds.chargeBasisNotYetImplemented.contains(b),
               orElse: () => validChargeBases.first,
             );
-      final validPricingOptions =
-          RatesFkIds.pricingOptionsByChargeBasis[newChargeBasis] ?? PricingOption.values;
       emit(
         state.copyWith(
           freightMode: event.mode,
@@ -73,13 +71,10 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
               ? state.serviceMode
               : validServiceModes.first,
           chargeBasis: newChargeBasis,
-          // An empty valid list (e.g. Full Truck Load, whose real options
-          // aren't confirmed yet) means there's nothing to reset to — leave
-          // the current selection as-is; the UI disables the picker in
-          // that case so the stale value can't be submitted anyway.
-          pricingOption: validPricingOptions.isEmpty || validPricingOptions.contains(state.pricingOption)
-              ? state.pricingOption
-              : validPricingOptions.first,
+          pricingOption: _resolvePricingOption(
+            newChargeBasis,
+            state.pricingOption,
+          ),
         ),
       );
     });
@@ -87,14 +82,13 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       (event, emit) => emit(state.copyWith(serviceMode: event.mode)),
     );
     on<ChargeBasisChanged>((event, emit) {
-      final validPricingOptions =
-          RatesFkIds.pricingOptionsByChargeBasis[event.basis] ?? PricingOption.values;
       emit(
         state.copyWith(
           chargeBasis: event.basis,
-          pricingOption: validPricingOptions.isEmpty || validPricingOptions.contains(state.pricingOption)
-              ? state.pricingOption
-              : validPricingOptions.first,
+          pricingOption: _resolvePricingOption(
+            event.basis,
+            state.pricingOption,
+          ),
         ),
       );
     });
@@ -177,23 +171,22 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       }
     });
     on<OriginLocationSelected>((event, emit) {
-      final rows = state.matrixRows.asMap().entries.map((e) {
-        if (e.key != event.rowIndex) return e.value;
-        return e.value.copyWith(
-          origin: event.displayText,
-          originOption: event.option,
-        );
-      }).toList();
+      final rows = _updateAt(
+        state.matrixRows,
+        event.rowIndex,
+        (r) => r.copyWith(origin: event.displayText, originOption: event.option),
+      );
       emit(state.copyWith(matrixRows: rows));
     });
     on<DestinationLocationSelected>((event, emit) {
-      final rows = state.matrixRows.asMap().entries.map((e) {
-        if (e.key != event.rowIndex) return e.value;
-        return e.value.copyWith(
+      final rows = _updateAt(
+        state.matrixRows,
+        event.rowIndex,
+        (r) => r.copyWith(
           destination: event.displayText,
           destinationOption: event.option,
-        );
-      }).toList();
+        ),
+      );
       emit(state.copyWith(matrixRows: rows));
     });
 
@@ -222,31 +215,34 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
     });
 
     on<OriginChanged>((event, emit) {
-      final rows = state.matrixRows.asMap().entries.map((e) {
-        if (e.key != event.rowIndex) return e.value;
-        // Text no longer matches what `originOption` was resolved for —
-        // clear it so submit doesn't send stale geography ids for a
-        // relabeled location.
-        if (e.value.origin == event.value) return e.value;
-        return e.value.copyWith(origin: event.value, originOption: null);
-      }).toList();
+      // Text no longer matches what `originOption` was resolved for — clear
+      // it so submit doesn't send stale geography ids for a relabeled
+      // location.
+      final rows = _updateAt(
+        state.matrixRows,
+        event.rowIndex,
+        (r) => r.origin == event.value
+            ? r
+            : r.copyWith(origin: event.value, originOption: null),
+      );
       emit(state.copyWith(matrixRows: rows));
     });
     on<DestinationChanged>((event, emit) {
-      final rows = state.matrixRows.asMap().entries.map((e) {
-        if (e.key != event.rowIndex) return e.value;
-        if (e.value.destination == event.value) return e.value;
-        return e.value.copyWith(destination: event.value, destinationOption: null);
-      }).toList();
+      final rows = _updateAt(
+        state.matrixRows,
+        event.rowIndex,
+        (r) => r.destination == event.value
+            ? r
+            : r.copyWith(destination: event.value, destinationOption: null),
+      );
       emit(state.copyWith(matrixRows: rows));
     });
     on<CellChanged>((event, emit) {
-      final rows = state.matrixRows.asMap().entries.map((e) {
-        if (e.key != event.rowIndex) return e.value;
-        final rates = [...e.value.rates];
+      final rows = _updateAt(state.matrixRows, event.rowIndex, (r) {
+        final rates = [...r.rates];
         rates[event.breakweightIndex] = event.value;
-        return e.value.copyWith(rates: rates);
-      }).toList();
+        return r.copyWith(rates: rates);
+      });
       emit(state.copyWith(matrixRows: rows));
     });
 
@@ -281,39 +277,20 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       );
     });
     on<BreakweightMinChanged>((event, emit) {
-      final list = state.breakweights
-          .asMap()
-          .entries
-          .map(
-            (e) => e.key == event.index
-                ? e.value.copyWith(min: event.value)
-                : e.value,
-          )
-          .toList();
+      final list = _updateAt(
+        state.breakweights,
+        event.index,
+        (b) => b.copyWith(min: event.value),
+      );
       emit(state.copyWith(breakweights: list));
     });
     on<BreakweightMaxChanged>((event, emit) {
-      final list = state.breakweights
-          .asMap()
-          .entries
-          .map(
-            (e) => e.key == event.index
-                ? e.value.copyWith(max: event.value)
-                : e.value,
-          )
-          .toList();
-      // Min is never user-edited — every tier's min is always derived from
-      // the previous tier's max — so changing an earlier tier's max must
-      // cascade all the way to the end, not just the next tier, or every
-      // tier after the immediate neighbor is left showing a stale min. Stop
-      // the cascade at the first invalid tier (max <= its own min) instead
-      // of deriving later tiers from a broken range.
-      for (var i = event.index + 1; i < list.length; i++) {
-        final prevMin = num.tryParse(list[i - 1].min);
-        final prevMax = num.tryParse(list[i - 1].max);
-        if (prevMax == null || (prevMin != null && prevMax <= prevMin)) break;
-        list[i] = list[i].copyWith(min: _numToString(prevMax + 1));
-      }
+      final list = _updateAt(
+        state.breakweights,
+        event.index,
+        (b) => b.copyWith(max: event.value),
+      );
+      _cascadeBreakweightMins(list, event.index + 1);
       emit(state.copyWith(breakweights: list));
     });
 
@@ -352,36 +329,27 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       );
     });
     on<ConditionalOriginChanged>((event, emit) {
-      final rows = state.conditionalMatrixRows
-          .asMap()
-          .entries
-          .map(
-            (e) => e.key == event.rowIndex
-                ? e.value.copyWith(origin: event.value)
-                : e.value,
-          )
-          .toList();
+      final rows = _updateAt(
+        state.conditionalMatrixRows,
+        event.rowIndex,
+        (r) => r.copyWith(origin: event.value),
+      );
       emit(state.copyWith(conditionalMatrixRows: rows));
     });
     on<ConditionalDestinationChanged>((event, emit) {
-      final rows = state.conditionalMatrixRows
-          .asMap()
-          .entries
-          .map(
-            (e) => e.key == event.rowIndex
-                ? e.value.copyWith(destination: event.value)
-                : e.value,
-          )
-          .toList();
+      final rows = _updateAt(
+        state.conditionalMatrixRows,
+        event.rowIndex,
+        (r) => r.copyWith(destination: event.value),
+      );
       emit(state.copyWith(conditionalMatrixRows: rows));
     });
     on<ConditionalCellChanged>((event, emit) {
-      final rows = state.conditionalMatrixRows.asMap().entries.map((e) {
-        if (e.key != event.rowIndex) return e.value;
-        final rates = [...e.value.rates];
+      final rows = _updateAt(state.conditionalMatrixRows, event.rowIndex, (r) {
+        final rates = [...r.rates];
         rates[event.breakweightIndex] = event.value;
-        return e.value.copyWith(rates: rates);
-      }).toList();
+        return r.copyWith(rates: rates);
+      });
       emit(state.copyWith(conditionalMatrixRows: rows));
     });
 
@@ -417,39 +385,20 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       );
     });
     on<ConditionalBreakweightMinChanged>((event, emit) {
-      final list = state.conditionalBreakweights
-          .asMap()
-          .entries
-          .map(
-            (e) => e.key == event.index
-                ? e.value.copyWith(min: event.value)
-                : e.value,
-          )
-          .toList();
+      final list = _updateAt(
+        state.conditionalBreakweights,
+        event.index,
+        (b) => b.copyWith(min: event.value),
+      );
       emit(state.copyWith(conditionalBreakweights: list));
     });
     on<ConditionalBreakweightMaxChanged>((event, emit) {
-      final list = state.conditionalBreakweights
-          .asMap()
-          .entries
-          .map(
-            (e) => e.key == event.index
-                ? e.value.copyWith(max: event.value)
-                : e.value,
-          )
-          .toList();
-      // Min is never user-edited — every tier's min is always derived from
-      // the previous tier's max — so changing an earlier tier's max must
-      // cascade all the way to the end, not just the next tier, or every
-      // tier after the immediate neighbor is left showing a stale min. Stop
-      // the cascade at the first invalid tier (max <= its own min) instead
-      // of deriving later tiers from a broken range.
-      for (var i = event.index + 1; i < list.length; i++) {
-        final prevMin = num.tryParse(list[i - 1].min);
-        final prevMax = num.tryParse(list[i - 1].max);
-        if (prevMax == null || (prevMin != null && prevMax <= prevMin)) break;
-        list[i] = list[i].copyWith(min: _numToString(prevMax + 1));
-      }
+      final list = _updateAt(
+        state.conditionalBreakweights,
+        event.index,
+        (b) => b.copyWith(max: event.value),
+      );
+      _cascadeBreakweightMins(list, event.index + 1);
       emit(state.copyWith(conditionalBreakweights: list));
     });
 
@@ -775,6 +724,45 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
         return _numToString(bw.rate);
     }
     return '';
+  }
+
+  static List<T> _updateAt<T>(List<T> list, int index, T Function(T) update) {
+    return list
+        .asMap()
+        .entries
+        .map((e) => e.key == index ? update(e.value) : e.value)
+        .toList();
+  }
+
+  // A charge basis change can leave the current pricing option invalid for
+  // the new basis — fall back to the new basis's first option, unless it has
+  // no known-valid options yet (e.g. Full Truck Load), in which case the UI
+  // disables the picker and the stale value is left in place since it can't
+  // be submitted anyway.
+  static PricingOption _resolvePricingOption(
+    ChargeBasis basis,
+    PricingOption current,
+  ) {
+    final validOptions =
+        RatesFkIds.pricingOptionsByChargeBasis[basis] ?? PricingOption.values;
+    return validOptions.isEmpty || validOptions.contains(current)
+        ? current
+        : validOptions.first;
+  }
+
+  // Min is never user-edited — every tier's min is always derived from the
+  // previous tier's max — so changing an earlier tier's max must cascade all
+  // the way to the end, not just the next tier, or every tier after the
+  // immediate neighbor is left showing a stale min. Stops at the first
+  // invalid tier (max <= its own min) instead of deriving later tiers from a
+  // broken range.
+  static void _cascadeBreakweightMins(List<Breakweight> list, int fromIndex) {
+    for (var i = fromIndex; i < list.length; i++) {
+      final prevMin = num.tryParse(list[i - 1].min);
+      final prevMax = num.tryParse(list[i - 1].max);
+      if (prevMax == null || (prevMin != null && prevMax <= prevMin)) break;
+      list[i] = list[i].copyWith(min: _numToString(prevMax + 1));
+    }
   }
 
   static String _numToString(num value) {

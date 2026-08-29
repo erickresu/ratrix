@@ -1,5 +1,33 @@
 part of 'rates_shell_bloc.dart';
 
+int _pageCount(int totalItems, int perPage) =>
+    (totalItems / perPage).ceil().clamp(1, 1 << 30);
+
+List<T> _paginate<T>(List<T> items, int page, int perPage) {
+  final start = page * perPage;
+  if (start >= items.length) return const [];
+  final end = (start + perPage).clamp(0, items.length);
+  return items.sublist(start, end);
+}
+
+List<Client> _searchClients(List<Client> clients, String query) {
+  final list = query.isEmpty
+      ? clients
+      : clients
+            .where((c) => c.name.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+  return [...list]
+    ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+}
+
+Client? _findClientById(List<Client> clients, String? id) {
+  if (id == null) return null;
+  for (final c in clients) {
+    if (c.id == id) return c;
+  }
+  return null;
+}
+
 class RatesShellState extends Equatable {
   final bool isLoading;
   final RatesView view;
@@ -123,68 +151,27 @@ class RatesShellState extends Equatable {
   static const publishedRatesPerPage = 5;
   static const auditLogsPerPage = 8;
 
-  List<Client> get filteredClients {
-    final list = clientSearch.isEmpty
-        ? clients
-        : clients
-              .where(
-                (c) =>
-                    c.name.toLowerCase().contains(clientSearch.toLowerCase()),
-              )
-              .toList();
-    return [...list]
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-  }
+  List<Client> get filteredClients => _searchClients(clients, clientSearch);
 
   int get clientPageCount =>
-      (filteredClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);
+      _pageCount(filteredClients.length, clientsPerPage);
 
-  List<Client> get pagedClients {
-    final start = clientPage * clientsPerPage;
-    if (start >= filteredClients.length) return const [];
-    final end = (start + clientsPerPage).clamp(0, filteredClients.length);
-    return filteredClients.sublist(start, end);
-  }
+  List<Client> get pagedClients =>
+      _paginate(filteredClients, clientPage, clientsPerPage);
 
-  Client? get selectedClient {
-    if (selectedClientId == null) return null;
-    for (final c in clients) {
-      if (c.id == selectedClientId) return c;
-    }
-    return null;
-  }
+  Client? get selectedClient => _findClientById(clients, selectedClientId);
 
-  List<Client> get filteredCalcClients {
-    final list = calcClientSearch.isEmpty
-        ? clients
-        : clients
-              .where(
-                (c) => c.name.toLowerCase().contains(
-                  calcClientSearch.toLowerCase(),
-                ),
-              )
-              .toList();
-    return [...list]
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-  }
+  List<Client> get filteredCalcClients =>
+      _searchClients(clients, calcClientSearch);
 
   int get calcClientPageCount =>
-      (filteredCalcClients.length / clientsPerPage).ceil().clamp(1, 1 << 30);
+      _pageCount(filteredCalcClients.length, clientsPerPage);
 
-  List<Client> get pagedCalcClients {
-    final start = calcClientPage * clientsPerPage;
-    if (start >= filteredCalcClients.length) return const [];
-    final end = (start + clientsPerPage).clamp(0, filteredCalcClients.length);
-    return filteredCalcClients.sublist(start, end);
-  }
+  List<Client> get pagedCalcClients =>
+      _paginate(filteredCalcClients, calcClientPage, clientsPerPage);
 
-  Client? get selectedCalcClient {
-    if (selectedCalcClientId == null) return null;
-    for (final c in clients) {
-      if (c.id == selectedCalcClientId) return c;
-    }
-    return null;
-  }
+  Client? get selectedCalcClient =>
+      _findClientById(clients, selectedCalcClientId);
 
   List<ClientRate> get filteredClientRates {
     final q = clientRateSearch.toLowerCase();
@@ -211,20 +198,10 @@ class RatesShellState extends Equatable {
   }
 
   int get clientRatePageCount =>
-      (filteredClientRates.length / clientRatesPerPage).ceil().clamp(
-        1,
-        1 << 30,
-      );
+      _pageCount(filteredClientRates.length, clientRatesPerPage);
 
-  List<ClientRate> get pagedClientRates {
-    final start = clientRatePage * clientRatesPerPage;
-    if (start >= filteredClientRates.length) return const [];
-    final end = (start + clientRatesPerPage).clamp(
-      0,
-      filteredClientRates.length,
-    );
-    return filteredClientRates.sublist(start, end);
-  }
+  List<ClientRate> get pagedClientRates =>
+      _paginate(filteredClientRates, clientRatePage, clientRatesPerPage);
 
   List<PublishedRate> get filteredPublishedRates {
     final q = publishedRateSearch.toLowerCase();
@@ -252,20 +229,13 @@ class RatesShellState extends Equatable {
   }
 
   int get publishedRatePageCount =>
-      (filteredPublishedRates.length / publishedRatesPerPage).ceil().clamp(
-        1,
-        1 << 30,
-      );
+      _pageCount(filteredPublishedRates.length, publishedRatesPerPage);
 
-  List<PublishedRate> get pagedPublishedRates {
-    final start = publishedRatePage * publishedRatesPerPage;
-    if (start >= filteredPublishedRates.length) return const [];
-    final end = (start + publishedRatesPerPage).clamp(
-      0,
-      filteredPublishedRates.length,
-    );
-    return filteredPublishedRates.sublist(start, end);
-  }
+  List<PublishedRate> get pagedPublishedRates => _paginate(
+    filteredPublishedRates,
+    publishedRatePage,
+    publishedRatesPerPage,
+  );
 
   List<AuditLog> get filteredAuditLogs {
     final q = auditLogSearch.toLowerCase();
@@ -288,14 +258,10 @@ class RatesShellState extends Equatable {
   }
 
   int get auditLogPageCount =>
-      (filteredAuditLogs.length / auditLogsPerPage).ceil().clamp(1, 1 << 30);
+      _pageCount(filteredAuditLogs.length, auditLogsPerPage);
 
-  List<AuditLog> get pagedAuditLogs {
-    final start = auditLogPage * auditLogsPerPage;
-    if (start >= filteredAuditLogs.length) return const [];
-    final end = (start + auditLogsPerPage).clamp(0, filteredAuditLogs.length);
-    return filteredAuditLogs.sublist(start, end);
-  }
+  List<AuditLog> get pagedAuditLogs =>
+      _paginate(filteredAuditLogs, auditLogPage, auditLogsPerPage);
 
   RatesShellState copyWith({
     bool? isLoading,

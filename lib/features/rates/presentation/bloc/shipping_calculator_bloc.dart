@@ -57,27 +57,27 @@ class ShippingCalculatorBloc
       if (state.dimensions.length <= 1) return;
       emit(state.copyWith(dimensions: [...state.dimensions]..removeAt(event.index)));
     });
-    on<CalcDimensionLengthChanged>((event, emit) {
-      final dimensions = [...state.dimensions];
-      dimensions[event.index] = dimensions[event.index].copyWith(
-        length: event.value,
-      );
-      emit(state.copyWith(dimensions: dimensions));
-    });
-    on<CalcDimensionWidthChanged>((event, emit) {
-      final dimensions = [...state.dimensions];
-      dimensions[event.index] = dimensions[event.index].copyWith(
-        width: event.value,
-      );
-      emit(state.copyWith(dimensions: dimensions));
-    });
-    on<CalcDimensionHeightChanged>((event, emit) {
-      final dimensions = [...state.dimensions];
-      dimensions[event.index] = dimensions[event.index].copyWith(
-        height: event.value,
-      );
-      emit(state.copyWith(dimensions: dimensions));
-    });
+    on<CalcDimensionLengthChanged>(
+      (event, emit) => _updateDimension(
+        emit,
+        event.index,
+        (d) => d.copyWith(length: event.value),
+      ),
+    );
+    on<CalcDimensionWidthChanged>(
+      (event, emit) => _updateDimension(
+        emit,
+        event.index,
+        (d) => d.copyWith(width: event.value),
+      ),
+    );
+    on<CalcDimensionHeightChanged>(
+      (event, emit) => _updateDimension(
+        emit,
+        event.index,
+        (d) => d.copyWith(height: event.value),
+      ),
+    );
     on<CalcDivisorChanged>(
       (event, emit) => emit(state.copyWith(divisor: event.value)),
     );
@@ -124,6 +124,16 @@ class ShippingCalculatorBloc
 
   final RatesRepository _ratesRepository;
   final String _clientId;
+
+  void _updateDimension(
+    Emitter<ShippingCalculatorState> emit,
+    int index,
+    CalcDimension Function(CalcDimension) update,
+  ) {
+    final dimensions = [...state.dimensions];
+    dimensions[index] = update(dimensions[index]);
+    emit(state.copyWith(dimensions: dimensions));
+  }
 
   Future<void> _onRatesRequested(
     CalcRatesRequested event,
@@ -318,7 +328,7 @@ class ShippingCalculatorBloc
   }
 
   /// Resolves one of the 7 breakweight pricing formulas against
-  /// [chargeableWeight]. [tiers] must be sorted ascending by `min`. The 3
+  /// [chargeableWeight]. [tiers] must be sorted ascending by `min`.
   /// For the 3 "Minimum …" variants, the first (lowest) breakweight
   /// bracket's `rate` is authored as a flat peso amount rather than a
   /// per-kg rate — it's a direct formula swap for that one bracket, not a
@@ -339,96 +349,43 @@ class ShippingCalculatorBloc
 
     switch (pricingOption) {
       case PricingOption.fixedBreakweight:
-        final tier = matchTier();
-        if (tier == null) {
-          return _FreightResult(
-            error:
-                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
-          );
-        }
-        return _FreightResult(
-          amount: chargeableWeight * tier.rate,
-          tierMin: tier.min,
-          tierMax: tier.max,
-          tierRate: tier.rate,
-        );
-
       case PricingOption.minimumFixedBreakweight:
-        final tier = matchTier();
-        if (tier == null) {
-          return _FreightResult(
-            error:
-                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
-          );
-        }
-        // Within the first bracket: flat fee, no matter how light. Beyond
-        // it: normal per-kg fixed pricing, same as the non-minimum variant.
-        final amount = identical(tier, tiers.first)
-            ? tier.rate
-            : chargeableWeight * tier.rate;
-        return _FreightResult(
-          amount: amount,
-          tierMin: tier.min,
-          tierMax: tier.max,
-          tierRate: tier.rate,
-        );
-
       case PricingOption.flatBreakweight:
         final tier = matchTier();
-        if (tier == null) {
-          return _FreightResult(
-            error:
-                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
-          );
-        }
+        if (tier == null) return _noTierError(chargeableWeight);
+        // flatBreakweight: always a flat per-tier fee. minimumFixedBreakweight:
+        // flat fee only within the first (lowest) bracket, no matter how
+        // light — beyond it, normal per-kg pricing like fixedBreakweight.
+        final isFlat =
+            pricingOption == PricingOption.flatBreakweight ||
+            (pricingOption == PricingOption.minimumFixedBreakweight &&
+                identical(tier, tiers.first));
         return _FreightResult(
-          amount: tier.rate,
+          amount: isFlat ? tier.rate : chargeableWeight * tier.rate,
           tierMin: tier.min,
           tierMax: tier.max,
           tierRate: tier.rate,
         );
 
       case PricingOption.cummulativeBreakweight:
-        if (tiers.isEmpty || chargeableWeight > tiers.last.max) {
-          return _FreightResult(
-            error:
-                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
-          );
-        }
-        num total = 0;
-        for (final tier in tiers) {
-          // A bracket [min, max] is inclusive on both ends — e.g. [1, 50]
-          // spans 50 kg, not 49 — so the portion already covered by earlier
-          // brackets is (min - 1), not min. Using `min` directly undercounts
-          // every bracket by 1 (e.g. 85kg over [1,50]@100 + [51,100]@95
-          // should charge 50*100 + 35*95 = 8325, not 49*100 + 34*95 = 8130).
-          if (chargeableWeight < tier.min) break;
-          final portion =
-              (chargeableWeight < tier.max ? chargeableWeight : tier.max) -
-              (tier.min - 1);
-          total += portion * tier.rate;
-        }
-        return _FreightResult(
-          amount: total,
-          tierMin: tiers.first.min,
-          tierMax: chargeableWeight,
-          tierRate: null,
-        );
-
       case PricingOption.minimumCummulativeBreakweight:
         if (tiers.isEmpty || chargeableWeight > tiers.last.max) {
-          return _FreightResult(
-            error:
-                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
-          );
+          return _noTierError(chargeableWeight);
         }
+        final isMinimum =
+            pricingOption == PricingOption.minimumCummulativeBreakweight;
         num total = 0;
         for (var i = 0; i < tiers.length; i++) {
           final tier = tiers[i];
           if (chargeableWeight < tier.min) break;
-          if (i == 0) {
+          if (isMinimum && i == 0) {
             total += tier.rate; // flat entrance fee for the first bracket
           } else {
+            // A bracket [min, max] is inclusive on both ends — e.g. [1, 50]
+            // spans 50 kg, not 49 — so the portion already covered by earlier
+            // brackets is (min - 1), not min. Using `min` directly undercounts
+            // every bracket by 1 (e.g. 85kg over [1,50]@100 + [51,100]@95
+            // should charge 50*100 + 35*95 = 8325, not 49*100 + 34*95 = 8130).
             final portion =
                 (chargeableWeight < tier.max ? chargeableWeight : tier.max) -
                 (tier.min - 1);
@@ -471,10 +428,7 @@ class ShippingCalculatorBloc
 
         final excessTier = matchTier();
         if (excessTier == null || identical(excessTier, base)) {
-          return _FreightResult(
-            error:
-                'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
-          );
+          return _noTierError(chargeableWeight);
         }
         final baseAmount = isMinimum ? base.rate : base.max * base.rate;
         final amount =
@@ -500,6 +454,11 @@ class ShippingCalculatorBloc
     }
   }
 }
+
+_FreightResult _noTierError(num chargeableWeight) => _FreightResult(
+  error:
+      'No breakweight tier covers ${chargeableWeight.toStringAsFixed(2)} kg for this route.',
+);
 
 /// Internal result of one breakweight pricing formula — either an [amount]
 /// (plus the tier bounds/rate to surface in [CalcResult]) or an [error].

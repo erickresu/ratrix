@@ -43,6 +43,4 @@ void setupDependencies() {
   getIt.registerLazySingleton<PhLocationsService>(
     () => PhLocationsService(getIt<Dio>()),
   );
-
-  // Register new repositories/services/BLoCs here as features are added.
 }

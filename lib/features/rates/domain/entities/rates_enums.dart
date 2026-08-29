@@ -60,7 +60,6 @@ enum LocationSearchType {
 
   const LocationSearchType(this.label, this.apiType);
 
-  /// UI label shown in the filter dropdown.
   final String label;
 
   /// `type` query param sent to `GET api/locations/search`. Internal Code,
@@ -71,7 +70,6 @@ enum LocationSearchType {
   /// case with zero distinction between them anywhere.
   final String apiType;
 
-  /// Selected-result display text for this filter type.
   String formatOption(LocationOption option) => switch (this) {
         LocationSearchType.iataCode ||
         LocationSearchType.seaPortCode =>

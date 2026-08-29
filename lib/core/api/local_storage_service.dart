@@ -14,15 +14,11 @@ class LocalStorageService {
   static const _userIdKey = 'auth_user_id';
   static const _onboardingSeenKey = 'onboarding_seen';
 
-  // --- token (secure) ---
-
   Future<String?> readToken() => _secure.read(
     key: _tokenKey,
     aOptions: _androidOptions,
     iOptions: _iosOptions,
   );
-
-  // --- identity (shared preferences) ---
 
   Future<String?> readName() async =>
       (await SharedPreferences.getInstance()).getString(_nameKey);
@@ -32,8 +28,6 @@ class LocalStorageService {
 
   Future<String?> readUserId() async =>
       (await SharedPreferences.getInstance()).getString(_userIdKey);
-
-  // --- onboarding (shared preferences) ---
 
   Future<bool> readOnboardingSeen() async =>
       (await SharedPreferences.getInstance()).getBool(_onboardingSeenKey) ??
@@ -73,8 +67,6 @@ class LocalStorageService {
     await prefs.remove(_emailKey);
     await prefs.remove(_userIdKey);
   }
-
-  // --- platform security configs ---
 
   static const _androidOptions = AndroidOptions(
     encryptedSharedPreferences: true,

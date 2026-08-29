@@ -131,9 +131,6 @@ class RatesSidebar extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // Notifications row hidden for the meantime. Re-enable when needed:
-                // _NotificationsRow(),
-                // const SizedBox(height: 4),
                 _ProfileBlock(state: state, bloc: bloc),
               ],
             ),
@@ -198,16 +195,6 @@ class _ThemeToggleRow extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _Logo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // The asset's own canvas is solid black (no alpha), so it only blends
-    // seamlessly against a black/near-black background — fine here since
-    // the sidebar is always `RatesColors.dark.sidebarBg` regardless of theme.
-    return Image.asset('assets/images/ratrix_logo.png', height: 72);
   }
 }
 
@@ -363,50 +350,6 @@ class _SubNavItem extends StatelessWidget {
   }
 }
 
-class _NotificationsRow extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Row(
-            children: [
-              Icon(
-                CupertinoIcons.bell,
-                size: 15,
-                color: Colors.white.withValues(alpha: 0.75),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Notifications',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.75),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          Positioned(
-            left: 15,
-            top: -1,
-            child: Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: RatesColors.dark.primary,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Profile toggle button with a dropdown menu (View profile / Log out).
 ///
 /// The menu renders on the root [Overlay] via [CompositedTransformFollower]
@@ -486,11 +429,6 @@ class _ProfileBlockState extends State<_ProfileBlock> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // _MenuRow(
-                  //   label: 'View profile',
-                  //   color: Colors.white.withValues(alpha: 0.8),
-                  //   onTap: () => widget.bloc.add(const ProfileMenuToggled()),
-                  // ),
                   _MenuRow(
                     label: 'Log out',
                     color: const Color(0xFFFF8A8A),
