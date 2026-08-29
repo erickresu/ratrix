@@ -184,6 +184,138 @@ class OnboardingTour {
   }
 }
 
+/// White speech-bubble card used by both the coach-mark tour steps
+/// ([_TourContentState]) and the standalone [OnboardingIntro] scene: a
+/// title + tap-to-replay speaker icon, "Cerro: " narration body, and a
+/// Skip/primary button pair.
+class _SpeechBubble extends StatelessWidget {
+  const _SpeechBubble({
+    this.width,
+    this.padding = const EdgeInsets.all(26),
+    required this.title,
+    required this.body,
+    required this.onSpeak,
+    required this.leftLabel,
+    required this.onLeft,
+    required this.rightLabel,
+    required this.onRight,
+  });
+
+  final double? width;
+  final EdgeInsets padding;
+  final String title;
+  final String body;
+  final VoidCallback onSpeak;
+  final String leftLabel;
+  final VoidCallback onLeft;
+  final String rightLabel;
+  final VoidCallback onRight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF17241F),
+                  ),
+                ),
+              ),
+              Material(
+                color: RatesColors.dark.primarySoftBg,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onSpeak,
+                  child: Padding(
+                    padding: const EdgeInsets.all(7),
+                    child: Icon(
+                      Icons.volume_up_rounded,
+                      size: 18,
+                      color: RatesColors.dark.primaryDeep,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text.rich(
+            TextSpan(
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: Color(0xFF5B6B82),
+              ),
+              children: [
+                const TextSpan(
+                  text: 'Cerro: ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF17241F),
+                  ),
+                ),
+                TextSpan(text: body),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: onLeft,
+                style: TextButton.styleFrom(
+                  foregroundColor: RatesColors.dark.primary,
+                ),
+                child: Text(leftLabel),
+              ),
+              ElevatedButton(
+                onPressed: onRight,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: RatesColors.dark.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(rightLabel),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TourContent extends StatefulWidget {
   const _TourContent({
     required this.step,
@@ -223,105 +355,16 @@ class _TourContentState extends State<_TourContent> {
       _speak('${widget.step.title}. ${widget.step.body}');
 
   Widget _buildBubble(BuildContext context, {required bool isMobile}) {
-    return Container(
+    return _SpeechBubble(
       width: isMobile ? double.infinity : 300,
       padding: EdgeInsets.all(isMobile ? 20 : 26),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  widget.step.title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF17241F),
-                  ),
-                ),
-              ),
-              Material(
-                color: RatesColors.dark.primarySoftBg,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: _speakStep,
-                  child: Padding(
-                    padding: const EdgeInsets.all(7),
-                    child: Icon(
-                      Icons.volume_up_rounded,
-                      size: 18,
-                      color: RatesColors.dark.primaryDeep,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text.rich(
-            TextSpan(
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: Color(0xFF5B6B82),
-              ),
-              children: [
-                const TextSpan(
-                  text: 'Cerro: ',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF17241F),
-                  ),
-                ),
-                TextSpan(text: widget.step.body),
-              ],
-            ),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: widget.onSkip,
-                style: TextButton.styleFrom(
-                  foregroundColor: RatesColors.dark.primary,
-                ),
-                child: const Text('Skip'),
-              ),
-              ElevatedButton(
-                onPressed: widget.onNext,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: RatesColors.dark.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(widget.isLast ? 'Got it' : 'Next'),
-              ),
-            ],
-          ),
-        ],
-      ),
+      title: widget.step.title,
+      body: widget.step.body,
+      onSpeak: _speakStep,
+      leftLabel: 'Skip',
+      onLeft: widget.onSkip,
+      rightLabel: widget.isLast ? 'Got it' : 'Next',
+      onRight: widget.onNext,
     );
   }
 
@@ -418,105 +461,15 @@ class _OnboardingIntroState extends State<OnboardingIntro> {
                     height: 12,
                     child: CustomPaint(painter: _UpTailPainter()),
                   ),
-                  Container(
+                  _SpeechBubble(
                     width: bubbleWidth,
-                    padding: const EdgeInsets.all(26),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Expanded(
-                              child: Text(
-                                _kIntroTitle,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF17241F),
-                                ),
-                              ),
-                            ),
-                            Material(
-                              color: RatesColors.dark.primarySoftBg,
-                              shape: const CircleBorder(),
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: _speakIntro,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(7),
-                                  child: Icon(
-                                    Icons.volume_up_rounded,
-                                    size: 18,
-                                    color: RatesColors.dark.primaryDeep,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        const Text.rich(
-                          TextSpan(
-                            style: TextStyle(
-                              fontSize: 15,
-                              height: 1.5,
-                              color: Color(0xFF5B6B82),
-                            ),
-                            children: [
-                              TextSpan(
-                                text: 'Cerro: ',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF17241F),
-                                ),
-                              ),
-                              TextSpan(text: _kIntroBody),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 22),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(false),
-                              style: TextButton.styleFrom(
-                                foregroundColor: RatesColors.dark.primary,
-                              ),
-                              child: const Text('Skip tour'),
-                            ),
-                            ElevatedButton(
-                              onPressed: () => Navigator.of(context).pop(true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: RatesColors.dark.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text("Let's go"),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    title: _kIntroTitle,
+                    body: _kIntroBody,
+                    onSpeak: _speakIntro,
+                    leftLabel: 'Skip tour',
+                    onLeft: () => Navigator.of(context).pop(false),
+                    rightLabel: "Let's go",
+                    onRight: () => Navigator.of(context).pop(true),
                   ),
                 ],
               );

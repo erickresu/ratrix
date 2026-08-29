@@ -166,12 +166,12 @@ class Step3ConditionalAddons extends StatelessWidget {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  _GhostButton(
+                  GhostButton(
                     label: 'Add route',
                     onTap: () => bloc.add(const ConditionalRouteAdded()),
                   ),
                   const SizedBox(width: 12),
-                  _GhostButton(
+                  GhostButton(
                     label: 'Add breakweight',
                     onTap: () => bloc.add(const ConditionalBreakweightAdded()),
                   ),
@@ -287,46 +287,4 @@ class _ConditionCard extends StatelessWidget {
   }
 }
 
-class _GhostButton extends StatelessWidget {
-  const _GhostButton({required this.label, required this.onTap});
 
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            border: Border.all(color: context.colors.borderStrong, width: 1.5),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                CupertinoIcons.add,
-                size: 14,
-                color: context.colors.textMuted,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: context.colors.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
