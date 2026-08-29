@@ -13,8 +13,18 @@ import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/audit_log.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
+import 'audit_trail_view_mobile.dart';
+import 'audit_trail_view_web.dart';
 
 const _kAllValue = '__all__';
+
+/// Pre-built, bloc-wired pieces shared by [AuditTrailPageWeb] and
+/// [AuditTrailPageMobile] — they differ only in arrangement.
+typedef AuditTrailHeaderParts = ({
+  Widget titleColumn,
+  Widget actionFilter,
+  Widget searchField,
+});
 
 class AuditTrailView extends StatelessWidget {
   const AuditTrailView({super.key});
@@ -23,7 +33,6 @@ class AuditTrailView extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<RatesShellBloc>();
     final state = context.watch<RatesShellBloc>().state;
-    final isMobile = Breakpoints.isMobile(context);
 
     final titleColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,87 +96,62 @@ class AuditTrailView extends StatelessWidget {
       ),
     );
 
-    final filtersControlsRow = isMobile
-        ? Wrap(spacing: 8, runSpacing: 8, children: [actionFilter, searchField])
-        : Row(children: [actionFilter, const SizedBox(width: 8), searchField]);
+    final parts = (
+      titleColumn: titleColumn,
+      actionFilter: actionFilter,
+      searchField: searchField,
+    );
 
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            isMobile ? 20 : 64,
-            48,
-            isMobile ? 20 : 64,
-            40,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              titleColumn,
-              const SizedBox(height: 28),
-              filtersControlsRow,
-            ],
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              isMobile ? 20 : 64,
-              0,
-              isMobile ? 20 : 64,
-              24,
+    final body = state.auditLogsLoading
+        ? const SkeletonShimmer(
+            child: Column(
+              children: [
+                ListRowCardSkeleton(),
+                SizedBox(height: 16),
+                ListRowCardSkeleton(),
+                SizedBox(height: 16),
+                ListRowCardSkeleton(),
+              ],
             ),
-            child: state.auditLogsLoading
-                ? const SkeletonShimmer(
-                    child: Column(
-                      children: [
-                        ListRowCardSkeleton(),
-                        SizedBox(height: 16),
-                        ListRowCardSkeleton(),
-                        SizedBox(height: 16),
-                        ListRowCardSkeleton(),
-                      ],
-                    ),
-                  )
-                : state.filteredAuditLogs.isEmpty
-                ? Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(40),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: context.colors.borderStrong,
-                        style: BorderStyle.solid,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const MrRatrix(size: 96),
-                        const SizedBox(height: 4),
-                        Text(
-                          'No audit activity found.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: context.colors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : _AuditLogTable(logs: state.pagedAuditLogs),
-          ),
-        ),
-        if (!state.auditLogsLoading && state.filteredAuditLogs.isNotEmpty)
-          PaginationBar(
+          )
+        : state.filteredAuditLogs.isEmpty
+        ? Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(40),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: context.colors.borderStrong,
+                style: BorderStyle.solid,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const MrRatrix(size: 96),
+                const SizedBox(height: 4),
+                Text(
+                  'No audit activity found.',
+                  style: TextStyle(fontSize: 14, color: context.colors.textMuted),
+                ),
+              ],
+            ),
+          )
+        : _AuditLogTable(logs: state.pagedAuditLogs);
+
+    final paginationBar = !state.auditLogsLoading && state.filteredAuditLogs.isNotEmpty
+        ? PaginationBar(
             page: state.auditLogPage,
             itemsPerPage: RatesShellState.auditLogsPerPage,
             totalItems: state.filteredAuditLogs.length,
             onPageChanged: (p) => bloc.add(AuditLogPageChanged(p)),
-          ),
-      ],
-    );
+          )
+        : null;
+
+    return Breakpoints.isMobile(context)
+        ? AuditTrailPageMobile(parts: parts, body: body, paginationBar: paginationBar)
+        : AuditTrailPageWeb(parts: parts, body: body, paginationBar: paginationBar);
   }
 }
 

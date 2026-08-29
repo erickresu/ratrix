@@ -12,6 +12,7 @@ import '../../domain/entities/client.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
+import 'client_picker_page.dart';
 
 const _clientGridRows = 3;
 const _clientGridPadding = EdgeInsets.fromLTRB(64, 0, 64, 28);
@@ -80,74 +81,59 @@ class CustomClientsView extends StatelessWidget {
       ],
     );
 
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 40),
-          child: isMobile
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    titleColumn,
-                    const SizedBox(height: 16),
-                    SizedBox(width: double.infinity, child: searchField),
-                  ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: titleColumn),
-                    SizedBox(width: 300, child: searchField),
-                  ],
-                ),
-        ),
-        Expanded(
-          child: state.isLoading
-              ? SkeletonShimmer(
-                  child: GridView.builder(
-                    padding: gridPadding,
-                    physics: isMobile
-                        ? const AlwaysScrollableScrollPhysics()
-                        : const NeverScrollableScrollPhysics(),
-                    itemCount: columns * _clientGridRows,
-                    gridDelegate: gridDelegate,
-                    itemBuilder: (context, index) => const GridCardSkeleton(),
-                  ),
-                )
-              : GridView.builder(
-                  padding: gridPadding,
-                  // Desktop/tablet pages always fit their fixed 3-row grid
-                  // within the Expanded region, so scrolling is disabled
-                  // there. On mobile that's not true — 3 rows of 184px
-                  // cards can exceed the viewport left after the header and
-                  // pagination bar, and a non-scrollable grid just clips
-                  // instead of ever showing the rest.
-                  physics: isMobile
-                      ? const AlwaysScrollableScrollPhysics()
-                      : const NeverScrollableScrollPhysics(),
-                  itemCount: state.pagedClients.length,
-                  gridDelegate: gridDelegate,
-                  itemBuilder: (context, index) {
-                    final client = state.pagedClients[index];
-                    return _ClientCard(
-                      client: client,
-                      rateCount: state.clientRateCounts[client.id] ?? 0,
-                      onTap: () => bloc.add(ClientRatesRequested(client.id)),
-                    );
-                  },
-                ),
-        ),
-        if (state.filteredClients.isNotEmpty)
-          PaginationBar(
+    // Desktop/tablet pages always fit their fixed 3-row grid within the
+    // Expanded region, so scrolling is disabled there. On mobile that's not
+    // true — 3 rows of 184px cards can exceed the viewport left after the
+    // header and pagination bar, and a non-scrollable grid just clips
+    // instead of ever showing the rest.
+    final physics = isMobile
+        ? const AlwaysScrollableScrollPhysics()
+        : const NeverScrollableScrollPhysics();
+
+    final body = Expanded(
+      child: state.isLoading
+          ? SkeletonShimmer(
+              child: GridView.builder(
+                padding: gridPadding,
+                physics: physics,
+                itemCount: columns * _clientGridRows,
+                gridDelegate: gridDelegate,
+                itemBuilder: (context, index) => const GridCardSkeleton(),
+              ),
+            )
+          : GridView.builder(
+              padding: gridPadding,
+              physics: physics,
+              itemCount: state.pagedClients.length,
+              gridDelegate: gridDelegate,
+              itemBuilder: (context, index) {
+                final client = state.pagedClients[index];
+                return _ClientCard(
+                  client: client,
+                  rateCount: state.clientRateCounts[client.id] ?? 0,
+                  onTap: () => bloc.add(ClientRatesRequested(client.id)),
+                );
+              },
+            ),
+    );
+
+    final paginationBar = state.filteredClients.isNotEmpty
+        ? PaginationBar(
             page: state.clientPage,
             itemsPerPage: RatesShellState.clientsPerPage,
             totalItems: state.filteredClients.length,
             onPageChanged: (p) => bloc.add(ClientPageChanged(p)),
-          ),
-      ],
-    );
+          )
+        : null;
+
+    final parts = (titleColumn: titleColumn, searchField: searchField);
+
+    return isMobile
+        ? ClientPickerPageMobile(parts: parts, body: body, paginationBar: paginationBar)
+        : ClientPickerPageWeb(parts: parts, body: body, paginationBar: paginationBar);
   }
 }
+
 
 class _ClientCard extends StatelessWidget {
   const _ClientCard({
@@ -188,7 +174,6 @@ class _ClientCard extends StatelessWidget {
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Accent stripe — quick-glance identity marker.
               Container(
                 height: 4,
                 decoration: BoxDecoration(
@@ -308,67 +293,17 @@ class _ClientCard extends StatelessWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: context.colors.surfaceSubtle,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  CupertinoIcons.briefcase_fill,
-                                  size: 11,
-                                  color: context.colors.textMutedStrong,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  client.businessType,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: context.colors.textMutedStrong,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          InfoPill(
+                            icon: CupertinoIcons.briefcase_fill,
+                            iconColor: businessTypeColor(context, client.businessType),
+                            label: client.businessType,
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: context.colors.surfaceSubtle,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  CupertinoIcons.doc_text_fill,
-                                  size: 11,
-                                  color: isInclusive
-                                      ? context.colors.success
-                                      : context.colors.textMutedStrong,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  'VAT ${client.vatStatus.label}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: isInclusive
-                                        ? context.colors.success
-                                        : context.colors.textMutedStrong,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          InfoPill(
+                            icon: CupertinoIcons.doc_text_fill,
+                            iconColor: isInclusive
+                                ? context.colors.success
+                                : context.colors.textMutedStrong,
+                            label: 'VAT ${client.vatStatus.label}',
                           ),
                         ],
                       ),

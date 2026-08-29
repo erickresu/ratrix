@@ -14,8 +14,23 @@ import '../../bloc/shipping_calculator_bloc.dart';
 import '../../rates_colors.dart';
 import '../back_pill.dart';
 import 'freight_breakdown_dialog.dart';
+import 'shipping_calculator_form_view_mobile.dart';
+import 'shipping_calculator_form_view_web.dart';
 
 const _fieldHeight = 44.0;
+
+/// Pre-built, bloc-wired pieces shared by [ShippingCalculatorFormWeb] and
+/// [ShippingCalculatorFormMobile] — they differ only in how these are
+/// arranged, not in what they are.
+typedef ShippingCalculatorFormParts = ({
+  Widget header,
+  Widget serviceFreightCard,
+  Widget routingCard,
+  Widget cargoDetailsCard,
+  Widget submitButton,
+  Widget breakdownPanel,
+  Widget pdfButtonSlot,
+});
 
 class ShippingCalculatorFormView extends StatelessWidget {
   const ShippingCalculatorFormView({super.key});
@@ -42,26 +57,6 @@ class _CalculatorView extends StatelessWidget {
   Widget build(BuildContext context) {
     final shellBloc = context.read<RatesShellBloc>();
     final isMobile = Breakpoints.isMobile(context);
-
-    final serviceFreightAndRouting = isMobile
-        ? const Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _ServiceFreightCard(),
-              SizedBox(height: 20),
-              _RoutingCard(),
-            ],
-          )
-        : IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(flex: 3, child: _ServiceFreightCard()),
-                const SizedBox(width: 20),
-                Expanded(flex: 2, child: _RoutingCard()),
-              ],
-            ),
-          );
 
     final header = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,75 +92,19 @@ class _CalculatorView extends StatelessWidget {
       ],
     );
 
-    final formColumn = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        serviceFreightAndRouting,
-        const SizedBox(height: 20),
-        const _CargoDetailsCard(),
-        const SizedBox(height: 20),
-        const _SubmitButton(),
-      ],
+    final parts = (
+      header: header,
+      serviceFreightCard: const _ServiceFreightCard(),
+      routingCard: const _RoutingCard(),
+      cargoDetailsCard: const _CargoDetailsCard(),
+      submitButton: const _SubmitButton(),
+      breakdownPanel: FreightBreakdownPanel(client: client, showButton: false),
+      pdfButtonSlot: _GeneratePdfButtonSlot(client: client),
     );
 
-    // Force both columns' button rows (Reset/Calculate on the left,
-    // Generate Invoice PDF on the right) to sit level with each other —
-    // `IntrinsicHeight` + `stretch` gives both columns the taller one's
-    // height, and `spaceBetween` pins each column's last child (its button
-    // row) to that shared bottom edge instead of trailing wherever its own
-    // content happened to end.
-    final desktopLayout = IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    serviceFreightAndRouting,
-                    const SizedBox(height: 20),
-                    const _CargoDetailsCard(),
-                  ],
-                ),
-                const Padding(padding: EdgeInsets.only(top: 20), child: _SubmitButton()),
-              ],
-            ),
-          ),
-          const SizedBox(width: 24),
-          SizedBox(
-            width: 400,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // `Expanded` grows the card to fill the same height as the
-                // left column's details cards (both columns are stretched
-                // by the outer `IntrinsicHeight`), instead of the card
-                // sizing to its own content and leaving a big empty gap
-                // before the button.
-                Expanded(child: FreightBreakdownPanel(client: client, showButton: false)),
-                Padding(padding: const EdgeInsets.only(top: 20), child: _GeneratePdfButtonSlot(client: client)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-
-    final content = SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 56),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          header,
-          const SizedBox(height: 24),
-          isMobile ? formColumn : desktopLayout,
-        ],
-      ),
-    );
+    final content = isMobile
+        ? ShippingCalculatorFormMobile(parts: parts)
+        : ShippingCalculatorFormWeb(parts: parts);
 
     // Desktop/tablet shows the result docked as a right-hand panel (always
     // in the layout, no listener needed — it just re-renders off state).
@@ -588,6 +527,29 @@ class _CargoDetailsCard extends StatelessWidget {
 /// Popup CBM/volumetric-weight calculator — dimensions, divisor, and a
 /// scratch actual-weight field for comparison. "Use this value" copies
 /// whichever of the two is higher into the main Chargeable Weight field.
+class _DimensionField extends StatelessWidget {
+  const _DimensionField({
+    required this.dimKey,
+    required this.initialValue,
+    required this.onChanged,
+  });
+
+  final String dimKey;
+  final String initialValue;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShadInput(
+      key: ValueKey(dimKey),
+      placeholder: const Text('0'),
+      initialValue: initialValue,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      onChanged: onChanged,
+    );
+  }
+}
+
 class _CbmCalculatorDialog extends StatelessWidget {
   const _CbmCalculatorDialog();
 
@@ -671,32 +633,29 @@ class _CbmCalculatorDialog extends StatelessWidget {
                         Row(
                           children: [
                             Expanded(
-                              child: ShadInput(
-                                key: ValueKey('calc-dim-l-$i'),
-                                placeholder: const Text('0'),
+                              child: _DimensionField(
+                                dimKey: 'calc-dim-l-$i',
                                 initialValue: state.dimensions[i].length,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                onChanged: (v) => bloc.add(CalcDimensionLengthChanged(i, v)),
+                                onChanged: (v) =>
+                                    bloc.add(CalcDimensionLengthChanged(i, v)),
                               ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
-                              child: ShadInput(
-                                key: ValueKey('calc-dim-w-$i'),
-                                placeholder: const Text('0'),
+                              child: _DimensionField(
+                                dimKey: 'calc-dim-w-$i',
                                 initialValue: state.dimensions[i].width,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                onChanged: (v) => bloc.add(CalcDimensionWidthChanged(i, v)),
+                                onChanged: (v) =>
+                                    bloc.add(CalcDimensionWidthChanged(i, v)),
                               ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
-                              child: ShadInput(
-                                key: ValueKey('calc-dim-h-$i'),
-                                placeholder: const Text('0'),
+                              child: _DimensionField(
+                                dimKey: 'calc-dim-h-$i',
                                 initialValue: state.dimensions[i].height,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                onChanged: (v) => bloc.add(CalcDimensionHeightChanged(i, v)),
+                                onChanged: (v) =>
+                                    bloc.add(CalcDimensionHeightChanged(i, v)),
                               ),
                             ),
                             if (state.dimensions.length > 1) ...[

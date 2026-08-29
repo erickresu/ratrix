@@ -96,17 +96,25 @@ class RateMatrixTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Breakpoints.isMobile(context)
+        ? _MobileLayout(table: this)
+        : _DesktopLayout(table: this);
+  }
+
+  /// The full two-pane tree, shared byte-for-byte by [_MobileLayout] and
+  /// [_DesktopLayout] — they differ only in [leftPaneWidth], which
+  /// [breakweightPane] to plug in, and whether the result gets wrapped in a
+  /// horizontal scroll view, not in the tree itself.
+  Widget _buildTable(
+    BuildContext context, {
+    required double leftPaneWidth,
+    required Widget breakweightPane,
+  }) {
     final removeDisabled = matrixRows.length <= 1;
-    final bwRemoveDisabled = breakweights.length <= 1;
-    final isMobile = Breakpoints.isMobile(context);
-    final basePaneWidth = isMobile ? _leftPaneWidthMobile : _leftPaneWidth;
-    final leftPaneWidth =
-        basePaneWidth + (onRemoveRoute != null ? _removeColWidth : 0);
 
     final table = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Fixed origin/destination pane.
         SizedBox(
           width: leftPaneWidth,
           child: Column(
@@ -203,23 +211,11 @@ class RateMatrixTable extends StatelessWidget {
             ],
           ),
         ),
-        // Breakweight/rate pane: fills the remaining width evenly when the
-        // columns fit, otherwise switches to fixed-width columns with a
-        // visible, draggable horizontal scrollbar. On mobile the whole
-        // table (this build method's caller) is already wrapped in a
-        // single horizontal scroll view, so this pane just renders at its
-        // natural fixed width instead of trying to fill/scroll on its own
-        // (avoiding an Expanded-with-no-bound-width crash + nested
-        // horizontal scrolling).
-        buildBreakweightPane(
-          context: context,
-          isMobile: isMobile,
-          bwRemoveDisabled: bwRemoveDisabled,
-        ),
+        breakweightPane,
       ],
     );
 
-    final decoratedTable = Container(
+    return Container(
       decoration: BoxDecoration(
         color: context.colors.surface,
         border: Border.all(color: context.colors.border),
@@ -235,20 +231,17 @@ class RateMatrixTable extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: table,
     );
-
-    if (!isMobile) return decoratedTable;
-
-    // On mobile, the left pane alone can exceed the viewport width, so the
-    // whole table (left pane + right pane) scrolls horizontally as one unit
-    // instead of only the right pane scrolling while the left pane is fixed.
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: decoratedTable,
-    );
   }
 
-  Widget buildBreakweightPane({
-    required BuildContext context,
+  /// Breakweight/rate pane: fills the remaining width evenly when the
+  /// columns fit, otherwise switches to fixed-width columns with a visible,
+  /// draggable horizontal scrollbar. [_MobileLayout] already wraps the whole
+  /// table in one horizontal scroll view, so its pane just renders at its
+  /// natural fixed width instead of trying to fill/scroll on its own
+  /// (avoiding an Expanded-with-no-bound-width crash + nested horizontal
+  /// scrolling).
+  Widget _buildBreakweightPane(
+    BuildContext context, {
     required bool isMobile,
     required bool bwRemoveDisabled,
   }) {
@@ -350,6 +343,58 @@ class RateMatrixTable extends StatelessWidget {
           if (fillWidth) return content;
           return _HorizontalScrollPane(child: content);
         },
+      ),
+    );
+  }
+}
+
+class _MobileLayout extends StatelessWidget {
+  const _MobileLayout({required this.table});
+
+  final RateMatrixTable table;
+
+  @override
+  Widget build(BuildContext context) {
+    final bwRemoveDisabled = table.breakweights.length <= 1;
+    final leftPaneWidth = RateMatrixTable._leftPaneWidthMobile +
+        (table.onRemoveRoute != null ? RateMatrixTable._removeColWidth : 0);
+    final decoratedTable = table._buildTable(
+      context,
+      leftPaneWidth: leftPaneWidth,
+      breakweightPane: table._buildBreakweightPane(
+        context,
+        isMobile: true,
+        bwRemoveDisabled: bwRemoveDisabled,
+      ),
+    );
+
+    // The left pane alone can exceed the viewport width, so the whole
+    // table (left pane + right pane) scrolls horizontally as one unit
+    // instead of only the right pane scrolling while the left pane is fixed.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: decoratedTable,
+    );
+  }
+}
+
+class _DesktopLayout extends StatelessWidget {
+  const _DesktopLayout({required this.table});
+
+  final RateMatrixTable table;
+
+  @override
+  Widget build(BuildContext context) {
+    final bwRemoveDisabled = table.breakweights.length <= 1;
+    final leftPaneWidth = RateMatrixTable._leftPaneWidth +
+        (table.onRemoveRoute != null ? RateMatrixTable._removeColWidth : 0);
+    return table._buildTable(
+      context,
+      leftPaneWidth: leftPaneWidth,
+      breakweightPane: table._buildBreakweightPane(
+        context,
+        isMobile: false,
+        bwRemoveDisabled: bwRemoveDisabled,
       ),
     );
   }
@@ -905,6 +950,52 @@ class _BreakweightHeaderCell extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Dashed-style "+ Add …" button shared by the wizard's Rate Matrix and
+/// Conditional Add-ons steps (add breakweight/route/condition).
+class GhostButton extends StatelessWidget {
+  const GhostButton({super.key, required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            border: Border.all(color: context.colors.borderStrong, width: 1.5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                CupertinoIcons.add,
+                size: 14,
+                color: context.colors.textMuted,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: context.colors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -12,6 +12,7 @@ import '../../../domain/entities/client.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rates_shell_bloc.dart';
 import '../../rates_colors.dart';
+import '../client_picker_page.dart';
 
 const _clientGridRows = 2;
 const _clientGridPadding = EdgeInsets.fromLTRB(64, 0, 64, 28);
@@ -68,70 +69,55 @@ class ShippingCalculatorClientsView extends StatelessWidget {
       ],
     );
 
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.fromLTRB(isMobile ? 20 : 64, 48, isMobile ? 20 : 64, 40),
-          child: isMobile
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    titleColumn,
-                    const SizedBox(height: 16),
-                    SizedBox(width: double.infinity, child: searchField),
-                  ],
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: titleColumn),
-                    SizedBox(width: 300, child: searchField),
-                  ],
-                ),
-        ),
-        Expanded(
-          child: state.isLoading
-              ? SkeletonShimmer(
-                  child: GridView.builder(
-                    padding: gridPadding,
-                    physics: isMobile
-                        ? const AlwaysScrollableScrollPhysics()
-                        : const NeverScrollableScrollPhysics(),
-                    itemCount: columns * _clientGridRows,
-                    gridDelegate: gridDelegate,
-                    itemBuilder: (context, index) => const GridCardSkeleton(),
-                  ),
-                )
-              : GridView.builder(
-                  padding: gridPadding,
-                  // Desktop/tablet always fits its fixed-row grid within
-                  // the Expanded region. Mobile doesn't — rows can exceed
-                  // the viewport left after the header/pagination bar, and
-                  // a non-scrollable grid just clips instead of scrolling.
-                  physics: isMobile
-                      ? const AlwaysScrollableScrollPhysics()
-                      : const NeverScrollableScrollPhysics(),
-                  itemCount: state.pagedCalcClients.length,
-                  gridDelegate: gridDelegate,
-                  itemBuilder: (context, index) {
-                    final client = state.pagedCalcClients[index];
-                    return _CalcClientCard(
-                      client: client,
-                      rateCount: state.clientRateCounts[client.id] ?? 0,
-                      onTap: () => bloc.add(ShippingCalculatorClientChosen(client.id)),
-                    );
-                  },
-                ),
-        ),
-        if (state.filteredCalcClients.isNotEmpty)
-          PaginationBar(
+    // Desktop/tablet always fits its fixed-row grid within the Expanded
+    // region. Mobile doesn't — rows can exceed the viewport left after the
+    // header/pagination bar, and a non-scrollable grid just clips instead
+    // of scrolling.
+    final physics = isMobile
+        ? const AlwaysScrollableScrollPhysics()
+        : const NeverScrollableScrollPhysics();
+
+    final body = Expanded(
+      child: state.isLoading
+          ? SkeletonShimmer(
+              child: GridView.builder(
+                padding: gridPadding,
+                physics: physics,
+                itemCount: columns * _clientGridRows,
+                gridDelegate: gridDelegate,
+                itemBuilder: (context, index) => const GridCardSkeleton(),
+              ),
+            )
+          : GridView.builder(
+              padding: gridPadding,
+              physics: physics,
+              itemCount: state.pagedCalcClients.length,
+              gridDelegate: gridDelegate,
+              itemBuilder: (context, index) {
+                final client = state.pagedCalcClients[index];
+                return _CalcClientCard(
+                  client: client,
+                  rateCount: state.clientRateCounts[client.id] ?? 0,
+                  onTap: () => bloc.add(ShippingCalculatorClientChosen(client.id)),
+                );
+              },
+            ),
+    );
+
+    final paginationBar = state.filteredCalcClients.isNotEmpty
+        ? PaginationBar(
             page: state.calcClientPage,
             itemsPerPage: RatesShellState.clientsPerPage,
             totalItems: state.filteredCalcClients.length,
             onPageChanged: (p) => bloc.add(ShippingCalculatorClientPageChanged(p)),
-          ),
-      ],
-    );
+          )
+        : null;
+
+    final parts = (titleColumn: titleColumn, searchField: searchField);
+
+    return isMobile
+        ? ClientPickerPageMobile(parts: parts, body: body, paginationBar: paginationBar)
+        : ClientPickerPageWeb(parts: parts, body: body, paginationBar: paginationBar);
   }
 }
 
@@ -217,29 +203,16 @@ class _CalcClientCard extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(color: context.colors.surfaceSubtle, borderRadius: BorderRadius.circular(20)),
-                        child: Text(
-                          client.businessType.toUpperCase(),
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.colors.textMutedStrong),
-                        ),
+                      InfoPill(
+                        icon: CupertinoIcons.briefcase_fill,
+                        iconColor: businessTypeColor(context, client.businessType),
+                        label: client.businessType.toUpperCase(),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: context.colors.surfaceSubtle,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: context.colors.border),
-                        ),
-                        child: Text(
-                          'VAT ${client.vatStatus.label}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: isInclusive ? context.colors.success : context.colors.textMutedStrong,
-                          ),
-                        ),
+                      InfoPill(
+                        icon: CupertinoIcons.doc_text_fill,
+                        iconColor: isInclusive ? context.colors.success : context.colors.textMutedStrong,
+                        label: 'VAT ${client.vatStatus.label}',
+                        bordered: true,
                       ),
                     ],
                   ),

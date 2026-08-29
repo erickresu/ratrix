@@ -1,11 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../rates/presentation/rates_colors.dart';
 import '../bloc/auth_bloc.dart';
+import 'login_page_mobile.dart';
+import 'login_page_web.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -56,78 +57,18 @@ class _LoginPageState extends State<LoginPage> {
         },
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final showBrandPanel = constraints.maxWidth >= 900;
-            return Row(
-              children: [
-                if (showBrandPanel) const Expanded(child: _BrandPanel()),
-                Expanded(
-                  flex: showBrandPanel ? 1 : 1,
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 48,
-                      ),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 380),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // The brand panel (with its own Lottie) is
-                            // hidden below 900px — show a smaller one here
-                            // instead of dropping the animation entirely on
-                            // mobile.
-                            if (!showBrandPanel) ...[
-                              Center(
-                                child: SizedBox(
-                                  width: 240,
-                                  child: Lottie.asset('assets/lottie/login_animation.json', repeat: true),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              const Center(
-                                child: Text(
-                                  'Cerro Ratrix',
-                                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.2),
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                            ],
-                            Builder(builder: (context) {
-                              final form = _LoginForm(
-                                email: _email,
-                                password: _password,
-                                obscurePassword: _obscurePassword,
-                                onToggleObscure: () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                ),
-                                onSubmit: () => _submit(context),
-                              );
-                              if (showBrandPanel) return form;
-                              // Mobile: float the fields in a white card on
-                              // top of the black Scaffold background instead
-                              // of sitting directly on it.
-                              return Container(
-                                padding: const EdgeInsets.all(28),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 24, offset: const Offset(0, 10)),
-                                  ],
-                                ),
-                                child: form,
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            final form = LoginForm(
+              email: _email,
+              password: _password,
+              obscurePassword: _obscurePassword,
+              onToggleObscure: () => setState(
+                () => _obscurePassword = !_obscurePassword,
+              ),
+              onSubmit: () => _submit(context),
             );
+            return constraints.maxWidth >= 900
+                ? LoginPageWeb(form: form)
+                : LoginPageMobile(form: form);
           },
         ),
       ),
@@ -135,101 +76,11 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class _BrandPanel extends StatelessWidget {
-  const _BrandPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: context.colors.sidebarBg,
-      // padding: const EdgeInsets.all(56),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -80,
-            right: -80,
-            child: _Glow(color: context.colors.primary.withValues(alpha: 0.16)),
-          ),
-          Positioned(
-            bottom: -100,
-            left: -60,
-            child: _Glow(color: context.colors.custom.withValues(alpha: 0.10)),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: double.infinity,
-                child: Center(
-                  child: SizedBox(
-                    width: MediaQuery.sizeOf(context).width * 0.3,
-                    child: Lottie.asset(
-                      'assets/lottie/login_animation.json',
-                      repeat: true,
-                    ),
-                  ),
-                ),
-              ),
-
-              SizedBox(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 50),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Cerro Ratrix',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          height: 1.25,
-                          letterSpacing: -0.4,
-                        ),
-                      ),
-
-                      const SizedBox(height: 14),
-                      Text(
-                        'Publish rates, manage client-specific pricing, and configure surcharges from one place.',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.white.withValues(alpha: 0.6),
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Glow extends StatelessWidget {
-  const _Glow({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 320,
-      height: 320,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
-      ),
-    );
-  }
-}
-
-class _LoginForm extends StatelessWidget {
-  const _LoginForm({
+/// Email/password fields + submit button, shared by [LoginPageWeb] and
+/// [LoginPageMobile] — only the surrounding layout differs between them.
+class LoginForm extends StatelessWidget {
+  const LoginForm({
+    super.key,
     required this.email,
     required this.password,
     required this.obscurePassword,
