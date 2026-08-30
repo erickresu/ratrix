@@ -129,9 +129,9 @@ class _WizardView extends StatelessWidget {
                   final isMobile = Breakpoints.isMobile(context);
                   return SingleChildScrollView(
                     padding: EdgeInsets.fromLTRB(
-                      isMobile ? 20 : 64,
+                      isMobile ? 24 : 125,
                       48,
-                      isMobile ? 20 : 64,
+                      isMobile ? 24 : 125,
                       40,
                     ),
                     child: Column(
@@ -404,9 +404,9 @@ class _WizardFooter extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.fromLTRB(
-        isMobile ? 20 : 64,
+        isMobile ? 24 : 125,
         24,
-        isMobile ? 20 : 64,
+        isMobile ? 24 : 125,
         24,
       ),
       decoration: BoxDecoration(

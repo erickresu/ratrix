@@ -218,6 +218,11 @@ class ResponsiveRateTable<T> extends StatelessWidget {
     letterSpacing: 0.4,
   );
 
+  // Header row is always the fixed navy `sidebarBg`, regardless of app
+  // theme (same treatment as the sidebar itself) — so its text needs a
+  // fixed light color rather than a theme-aware muted token.
+  static final _headerTextColor = Colors.white.withValues(alpha: 0.75);
+
   static const _chargeCodeWidth = 130.0;
   static const _actionsWidth = 92.0;
   static const _colGap = 12.0;
@@ -259,7 +264,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          color: context.colors.surfaceSubtle,
+          color: context.colors.sidebarBg,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
@@ -267,7 +272,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
                 flex: 3,
                 child: Text(
                   'CHARGE CODE',
-                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                  style: _headerStyle.copyWith(color: _headerTextColor),
                 ),
               ),
               for (final column in columns)
@@ -275,9 +280,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
                   flex: column.flex,
                   child: Text(
                     column.label,
-                    style: _headerStyle.copyWith(
-                      color: context.colors.textMuted,
-                    ),
+                    style: _headerStyle.copyWith(color: _headerTextColor),
                   ),
                 ),
               const SizedBox(width: 80),
@@ -331,7 +334,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
       width: width,
       child: Text(
         text,
-        style: _headerStyle.copyWith(color: context.colors.textMuted),
+        style: _headerStyle.copyWith(color: _headerTextColor),
       ),
     );
 
@@ -346,10 +349,10 @@ class ResponsiveRateTable<T> extends StatelessWidget {
                 height: _headerHeight,
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.only(left: 20),
-                color: context.colors.surfaceSubtle,
+                color: context.colors.sidebarBg,
                 child: Text(
                   'CHARGE CODE',
-                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                  style: _headerStyle.copyWith(color: _headerTextColor),
                 ),
               ),
               for (final rate in rates)
@@ -389,7 +392,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
                   height: _headerHeight,
                   alignment: Alignment.centerLeft,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  color: context.colors.surfaceSubtle,
+                  color: context.colors.sidebarBg,
                   child: Row(
                     children: [
                       for (final column in columns) ...[

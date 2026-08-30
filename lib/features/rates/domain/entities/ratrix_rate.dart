@@ -78,7 +78,7 @@ abstract class RatrixAddress with _$RatrixAddress {
 
 @freezed
 abstract class RatrixBreakweight with _$RatrixBreakweight {
-  const factory RatrixBreakweight({required num min, required num max, required num rate}) = _RatrixBreakweight;
+  const factory RatrixBreakweight({required num min, required num max, required num rate, num? expressRate}) = _RatrixBreakweight;
 
   const RatrixBreakweight._();
 
@@ -86,12 +86,14 @@ abstract class RatrixBreakweight with _$RatrixBreakweight {
         min: (_asNum(json['breakweight_min'])) ?? 0,
         max: (_asNum(json['breakweight_max'])) ?? 0,
         rate: (_asNum(json['rate'])) ?? 0,
+        expressRate: _asNum(json['express_rate']),
       );
 
   Map<String, dynamic> toJson() => {
         'breakweight_min': min,
         'breakweight_max': max,
         'rate': rate,
+        if (expressRate != null) 'express_rate': expressRate,
       };
 }
 
@@ -258,6 +260,9 @@ abstract class RatrixRate with _$RatrixRate {
     RatrixLookupOption? chargeBasis,
     @Default(<RatrixRoute>[]) List<RatrixRoute> routes,
     RatrixAddons? addons,
+    // Percentage markup used to derive each breakweight's `express_rate`
+    // from its `rate` — see [RatrixBreakweight.expressRate].
+    num? expressMarkup,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _RatrixRate;
@@ -270,6 +275,7 @@ abstract class RatrixRate with _$RatrixRate {
         rateType: (json['rate_type'] ?? 'publish').toString(),
         rateExpiry: DateTime.tryParse(json['rate_expiry']?.toString() ?? ''),
         clientId: _asInt(json['client_id']),
+        expressMarkup: _asNum(json['express_markup']),
         freightMode: json['freight_mode'] is Map<String, dynamic>
             ? RatrixLookupOption.fromJson(json['freight_mode'] as Map<String, dynamic>)
             : null,

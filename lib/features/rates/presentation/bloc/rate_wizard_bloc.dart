@@ -64,6 +64,15 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
               (b) => !RatesFkIds.chargeBasisNotYetImplemented.contains(b),
               orElse: () => validChargeBases.first,
             );
+      final newPricingOption = _resolvePricingOption(
+        newChargeBasis,
+        state.pricingOption,
+      );
+      final normalized = _normalizeBreakweightsForPricing(
+        newPricingOption,
+        state.breakweights,
+        state.matrixRows,
+      );
       emit(
         state.copyWith(
           freightMode: event.mode,
@@ -71,10 +80,9 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
               ? state.serviceMode
               : validServiceModes.first,
           chargeBasis: newChargeBasis,
-          pricingOption: _resolvePricingOption(
-            newChargeBasis,
-            state.pricingOption,
-          ),
+          pricingOption: newPricingOption,
+          breakweights: normalized.breakweights,
+          matrixRows: normalized.matrixRows,
         ),
       );
     });
@@ -82,19 +90,38 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       (event, emit) => emit(state.copyWith(serviceMode: event.mode)),
     );
     on<ChargeBasisChanged>((event, emit) {
+      final newPricingOption = _resolvePricingOption(
+        event.basis,
+        state.pricingOption,
+      );
+      final normalized = _normalizeBreakweightsForPricing(
+        newPricingOption,
+        state.breakweights,
+        state.matrixRows,
+      );
       emit(
         state.copyWith(
           chargeBasis: event.basis,
-          pricingOption: _resolvePricingOption(
-            event.basis,
-            state.pricingOption,
-          ),
+          pricingOption: newPricingOption,
+          breakweights: normalized.breakweights,
+          matrixRows: normalized.matrixRows,
         ),
       );
     });
-    on<PricingOptionChanged>(
-      (event, emit) => emit(state.copyWith(pricingOption: event.option)),
-    );
+    on<PricingOptionChanged>((event, emit) {
+      final normalized = _normalizeBreakweightsForPricing(
+        event.option,
+        state.breakweights,
+        state.matrixRows,
+      );
+      emit(
+        state.copyWith(
+          pricingOption: event.option,
+          breakweights: normalized.breakweights,
+          matrixRows: normalized.matrixRows,
+        ),
+      );
+    });
     on<ChargeCodeSuffixChanged>(
       (event, emit) => emit(state.copyWith(chargeCodeSuffix: event.value)),
     );
@@ -102,12 +129,31 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       (event, emit) => emit(state.copyWith(expiryDate: event.date)),
     );
 
-    on<MatrixTabChanged>(
-      (event, emit) => emit(state.copyWith(matrixTab: event.tab)),
+    on<ServiceLevelChanged>(
+      (event, emit) => emit(state.copyWith(serviceLevel: event.level)),
     );
     on<MarkupChanged>(
       (event, emit) => emit(state.copyWith(markup: event.value)),
     );
+    on<MarkupApplied>((event, emit) {
+      final pct = num.tryParse(state.markup);
+      if (pct == null) return;
+      final rows = state.matrixRows.map((r) {
+        final expressRates = [...r.expressRates];
+        for (var i = 0; i < r.rates.length; i++) {
+          final rate = num.tryParse(r.rates[i]);
+          if (rate == null) continue;
+          final express = rate * (1 + pct / 100);
+          if (i < expressRates.length) {
+            expressRates[i] = express.toStringAsFixed(2);
+          } else {
+            expressRates.add(express.toStringAsFixed(2));
+          }
+        }
+        return r.copyWith(expressRates: expressRates);
+      }).toList();
+      emit(state.copyWith(matrixRows: rows));
+    });
     on<LocationSearchTypeChanged>((event, emit) {
       // A stale result set from the old type shouldn't linger under the
       // newly selected one.
@@ -196,7 +242,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
         state.copyWith(
           matrixRows: [
             ...state.matrixRows,
-            MatrixRow(rates: rates),
+            MatrixRow(rates: rates, expressRates: [...rates]),
           ],
         ),
       );
@@ -239,6 +285,11 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
     });
     on<CellChanged>((event, emit) {
       final rows = _updateAt(state.matrixRows, event.rowIndex, (r) {
+        if (event.isExpress) {
+          final expressRates = [...r.expressRates];
+          expressRates[event.breakweightIndex] = event.value;
+          return r.copyWith(expressRates: expressRates);
+        }
         final rates = [...r.rates];
         rates[event.breakweightIndex] = event.value;
         return r.copyWith(rates: rates);
@@ -247,6 +298,9 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
     });
 
     on<BreakweightAdded>((event, emit) {
+      // Excess/Minimum Excess is locked to exactly 2 tiers (base + Excess)
+      // — see RateWizardState.isExcessPricing.
+      if (state.isExcessPricing) return;
       final prevMax = state.breakweights.isNotEmpty
           ? num.tryParse(state.breakweights.last.max)
           : null;
@@ -258,19 +312,22 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
             Breakweight(min: nextMin),
           ],
           matrixRows: state.matrixRows
-              .map((r) => r.copyWith(rates: [...r.rates, '']))
+              .map((r) => r.copyWith(rates: [...r.rates, ''], expressRates: [...r.expressRates, '']))
               .toList(),
         ),
       );
     });
     on<BreakweightRemoved>((event, emit) {
-      if (state.breakweights.length <= 1) return;
+      if (state.breakweights.length <= 1 || state.isExcessPricing) return;
       emit(
         state.copyWith(
           breakweights: [...state.breakweights]..removeAt(event.index),
           matrixRows: state.matrixRows
               .map(
-                (r) => r.copyWith(rates: [...r.rates]..removeAt(event.index)),
+                (r) => r.copyWith(
+                  rates: [...r.rates]..removeAt(event.index),
+                  expressRates: [...r.expressRates]..removeAt(event.index),
+                ),
               )
               .toList(),
         ),
@@ -475,6 +532,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       serviceMode: state.serviceMode,
       chargeBasis: state.chargeBasis,
       pricingOption: state.pricingOption,
+      expressMarkup: state.markup,
       fullChargeCode: state.fullChargeCode,
       expiryDate: state.expiryDate,
       rows: [
@@ -483,6 +541,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
             origin: row.origin,
             destination: row.destination,
             rates: row.rates,
+            expressRates: row.expressRates,
             originOption: row.originOption,
             destinationOption: row.destinationOption,
           ),
@@ -630,6 +689,10 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
                   for (final slot in firstRouteBreakweights)
                     _findMatchingRate(route.breakweights, slot),
                 ],
+                expressRates: [
+                  for (final slot in firstRouteBreakweights)
+                    _findMatchingRate(route.breakweights, slot, express: true),
+                ],
                 routeId: route.id,
                 originOption: _optionFromAddress(route.origin),
                 destinationOption: _optionFromAddress(route.destination),
@@ -704,6 +767,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       expiryDate: rate.rateExpiry,
       matrixRows: matrixRows,
       breakweights: breakweights,
+      markup: rate.expressMarkup != null ? _numToString(rate.expressMarkup!) : '',
       addonValues: addonValues,
       addonModes: addonModes,
       originSearchType: originSearchType,
@@ -714,14 +778,20 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
   /// Finds the rate in [routeBreakweights] whose (min, max) exactly matches
   /// [slot], returning it as a string for the matrix cell, or `''` if this
   /// route has no breakweight with that exact boundary pair (see the
-  /// "first-route-wins" tradeoff note above).
+  /// "first-route-wins" tradeoff note above). [express] reads
+  /// [RatrixBreakweight.expressRate] instead of `rate` — also `''` when
+  /// that bracket has no express rate set, rather than falling back to the
+  /// standard one.
   static String _findMatchingRate(
     List<RatrixBreakweight> routeBreakweights,
-    RatrixBreakweight slot,
-  ) {
+    RatrixBreakweight slot, {
+    bool express = false,
+  }) {
     for (final bw in routeBreakweights) {
-      if (bw.min == slot.min && bw.max == slot.max)
-        return _numToString(bw.rate);
+      if (bw.min == slot.min && bw.max == slot.max) {
+        final value = express ? bw.expressRate : bw.rate;
+        return value == null ? '' : _numToString(value);
+      }
     }
     return '';
   }
@@ -732,6 +802,56 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
         .entries
         .map((e) => e.key == index ? update(e.value) : e.value)
         .toList();
+  }
+
+  /// Sent as the Excess tier's `breakweight_max` — there's no real upper
+  /// bound, but `RateWizardPayloadMapper` drops any breakweight whose max
+  /// doesn't parse as a number, so "no limit" has to be a very large finite
+  /// value rather than left blank.
+  static const _excessTierMaxSentinel = '999999999';
+
+  /// Excess/Minimum Excess pricing is just a base bracket + one uncapped
+  /// excess rate, so [breakweights] (and each matrix row's parallel `rates`
+  /// list) is forced to exactly 2 entries whenever [pricingOption] resolves
+  /// to one of those — trimming extras or padding a missing 2nd tier — and
+  /// the 2nd tier's max is pinned to [_excessTierMaxSentinel] even if it
+  /// already had 2 tiers with a real (now-stale) max left over from a
+  /// different pricing option. No-op for every other pricing option.
+  static ({List<Breakweight> breakweights, List<MatrixRow> matrixRows})
+  _normalizeBreakweightsForPricing(
+    PricingOption pricingOption,
+    List<Breakweight> breakweights,
+    List<MatrixRow> matrixRows,
+  ) {
+    const excessOptions = {
+      PricingOption.excessBreakweight,
+      PricingOption.minimumExcessBreakweight,
+    };
+    if (!excessOptions.contains(pricingOption)) {
+      return (breakweights: breakweights, matrixRows: matrixRows);
+    }
+
+    var tiers = breakweights;
+    var rows = matrixRows;
+
+    if (tiers.length > 2) {
+      tiers = tiers.sublist(0, 2);
+      rows = [
+        for (final r in rows)
+          r.copyWith(rates: r.rates.sublist(0, 2), expressRates: r.expressRates.sublist(0, 2)),
+      ];
+    } else if (tiers.length < 2) {
+      final prevMax = tiers.isNotEmpty ? num.tryParse(tiers.last.max) : null;
+      final nextMin = prevMax != null ? _numToString(prevMax + 1) : '1';
+      tiers = [...tiers, Breakweight(min: nextMin)];
+      rows = [
+        for (final r in rows)
+          r.copyWith(rates: [...r.rates, ''], expressRates: [...r.expressRates, '']),
+      ];
+    }
+
+    tiers = _updateAt(tiers, 1, (b) => b.copyWith(max: _excessTierMaxSentinel));
+    return (breakweights: tiers, matrixRows: rows);
   }
 
   // A charge basis change can leave the current pricing option invalid for

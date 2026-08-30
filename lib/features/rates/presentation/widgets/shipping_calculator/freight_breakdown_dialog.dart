@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../../core/widgets/mr_ratrix.dart';
 import '../../../domain/entities/client.dart';
 import '../../../domain/entities/ratrix_rate.dart';
 import '../../../domain/entities/rates_enums.dart';
@@ -13,15 +16,30 @@ import '../../bloc/shipping_calculator_bloc.dart';
 import '../../rates_colors.dart';
 import 'invoice_pdf.dart';
 
-/// Shows the freight-breakdown result in a blurred-backdrop dialog, mirroring
-/// the wizard's other modal (`NewRateModal`) but with its own barrier since
-/// this one needs a real blur behind it instead of a flat scrim.
+/// Runs the Calculate flow in a blurred-backdrop dialog: computes the
+/// result immediately, plays it back on a calculator-style LCD tape (typed
+/// out line by line — however long that takes, no fixed clock), then the
+/// same popup flips to the full breakdown with Close/Generate Invoice
+/// actions — same sequence on every screen size. What differs by platform
+/// is only what happens once Close is pressed and this popup closes:
+///
+/// - [keepResultForPanel] `true` (desktop/tablet): the result stays put
+///   and [FreightBreakdownPanel]'s docked right-hand column reveals it —
+///   closing the popup is how you "send" the answer over there.
+/// - `false` (mobile, no room for a docked panel): the result is cleared,
+///   same as before — there's nowhere else for it to live.
+///
+/// Mirrors the wizard's other modal (`NewRateModal`) but with its own
+/// barrier since this one needs a real blur behind it instead of a flat
+/// scrim.
 Future<void> showFreightBreakdownDialog(
   BuildContext context, {
   required ShippingCalculatorBloc calcBloc,
   required RatesShellBloc shellBloc,
   required Client client,
+  required bool keepResultForPanel,
 }) async {
+  calcBloc.add(const CalcSubmitRequested());
   await showShadDialog<void>(
     context: context,
     barrierColor: Colors.transparent,
@@ -34,35 +52,299 @@ Future<void> showFreightBreakdownDialog(
         BlocProvider.value(value: calcBloc),
         BlocProvider.value(value: shellBloc),
       ],
-      child: _BlurredBarrier(child: _FreightBreakdownDialog(client: client)),
+      child: _BlurredBarrier(child: _FreightBreakdownFlow(client: client)),
     ),
   );
-  // Whichever way the dialog closed (X button, barrier tap, back button),
-  // clear the result so the next Calculate press is guaranteed to produce a
-  // null -> non-null transition and re-show the dialog.
-  calcBloc.add(const CalcResultDismissed());
+  // Whichever way the popup closed (Close button, barrier tap, back
+  // button): on desktop, send the result over to the docked panel; on
+  // mobile, clear it so the next Calculate press is guaranteed a fresh
+  // null -> non-null transition.
+  calcBloc.add(keepResultForPanel ? const CalcResultRevealed() : const CalcResultDismissed());
 }
 
-class _BlurredBarrier extends StatelessWidget {
-  const _BlurredBarrier({required this.child});
+/// Calculating beat -> result reveal, in one dialog. Kept as a single
+/// widget (rather than swapping dialogs) so the transition reads as one
+/// continuous popup rather than a flicker of two.
+class _FreightBreakdownFlow extends StatefulWidget {
+  const _FreightBreakdownFlow({required this.client});
 
-  final Widget child;
+  final Client client;
+
+  @override
+  State<_FreightBreakdownFlow> createState() => _FreightBreakdownFlowState();
+}
+
+class _FreightBreakdownFlowState extends State<_FreightBreakdownFlow> {
+  bool _revealed = false;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-            child: Container(color: Colors.black.withValues(alpha: 0.45)),
+    return _revealed
+        ? _FreightBreakdownDialog(client: widget.client)
+        : _CalculatingDialog(onFinished: () => setState(() => _revealed = true));
+  }
+}
+
+/// Full-width cap shared by the calculating and result dialogs so the
+/// reveal doesn't visibly resize the popup — `_BlurredBarrier` centers
+/// with no horizontal padding of its own, so a flat 480px cap would
+/// overflow off both edges of any screen narrower than that (every phone).
+double _dialogMaxWidth(BuildContext context) {
+  final screenWidth = MediaQuery.sizeOf(context).width;
+  return screenWidth - 32 < 560 ? screenWidth - 32 : 560.0;
+}
+
+/// One line of the calculating popup's step-by-step arithmetic — built
+/// straight from the already-computed [CalcResult]/state, the same numbers
+/// [_ResultBody] renders, just presented as a running tally instead of a
+/// finished table. [runningTotal] is null for the weight line (nothing
+/// monetary yet) and the cumulative total *as of that line* everywhere
+/// else — so it reads as pre-VAT until the VAT line lands, then post-VAT
+/// from there on, same order a real calculator would show it in.
+typedef _CalcStep = ({String text, num? runningTotal});
+
+List<_CalcStep> _calculationSteps(ShippingCalculatorState state) {
+  final result = state.calcResult;
+  if (result == null || result.error != null) return const [];
+
+  num displayValue(num v) => state.roundedDisplay ? v.roundToDouble() : v;
+  String money(num v) => '₱${displayValue(v).toStringAsFixed(2)}';
+
+  final steps = <_CalcStep>[];
+
+  if (result.chargeableWeight != null) {
+    steps.add((
+      text: 'Chargeable weight = ${result.chargeableWeight!.toStringAsFixed(2)} kg',
+      runningTotal: null,
+    ));
+  }
+
+  final baseFreight = result.baseFreight ?? 0;
+  num running = baseFreight;
+  steps.add((
+    text: result.tierRate != null && result.chargeableWeight != null
+        ? '${result.chargeableWeight!.toStringAsFixed(2)} kg × ${money(result.tierRate!)}/kg = ${money(baseFreight)}'
+        : 'Base freight = ${money(baseFreight)}',
+    runningTotal: running,
+  ));
+
+  // All the add-on fees (fuel surcharge + every flat fee) land in one
+  // combined line rather than one line per fee — a rate with a dozen
+  // add-ons would otherwise turn the tape into a slog.
+  final addonsTotal = (result.fuelSurcharge ?? 0) + result.flatFees.values.fold<num>(0, (sum, v) => sum + v);
+  if (addonsTotal != 0) {
+    running += addonsTotal;
+    steps.add((text: '+ Add-ons = ${money(addonsTotal)}', runningTotal: running));
+  }
+
+  final subTotal = result.subTotal ?? running;
+  steps.add((text: 'Sub-total = ${money(subTotal)}', runningTotal: subTotal));
+  running = subTotal;
+
+  if (state.vatMode == VatMode.standard) {
+    running += state.vatAmount;
+    steps.add((
+      text: '+ VAT (${(ShippingCalculatorState.vatRate * 100).toStringAsFixed(0)}%) = ${money(state.vatAmount)}',
+      runningTotal: running,
+    ));
+  }
+
+  steps.add((
+    text: 'Grand total = ${money(displayValue(state.grandTotal))}',
+    runningTotal: displayValue(state.grandTotal),
+  ));
+  return steps;
+}
+
+/// Shown while [_FreightBreakdownFlowState] waits to reveal the
+/// already-computed result — plays it back on a calculator-style LCD tape,
+/// typing each line out character by character (like keying it into a real
+/// calculator) with finished lines scrolling up as a running receipt above
+/// the active one. Calls [onFinished] the moment the last line finishes
+/// typing plus a short settle beat — there's no fixed clock, so the wait
+/// naturally scales with how much there is to show instead of always
+/// taking exactly one duration.
+class _CalculatingDialog extends StatefulWidget {
+  const _CalculatingDialog({required this.onFinished});
+
+  final VoidCallback onFinished;
+
+  @override
+  State<_CalculatingDialog> createState() => _CalculatingDialogState();
+}
+
+class _CalculatingDialogState extends State<_CalculatingDialog> {
+  static const _charDelay = Duration(milliseconds: 26);
+  static const _linePause = Duration(milliseconds: 300);
+  static const _settlePause = Duration(milliseconds: 550);
+  static const _noStepsPause = Duration(milliseconds: 1300);
+
+  late final List<_CalcStep> _steps;
+  final List<String> _completedLines = [];
+  String _typedText = '';
+  int _currentLine = 0;
+
+  /// The mascot's running total — updated once a line finishes typing
+  /// (its arithmetic has "landed"), not preemptively while it's still
+  /// being keyed in.
+  num? _displayedTotal;
+  Timer? _timer;
+  bool _finished = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _steps = _calculationSteps(context.read<ShippingCalculatorBloc>().state);
+    if (_steps.isEmpty) {
+      Future.delayed(_noStepsPause, _finish);
+      return;
+    }
+    _typeLine();
+  }
+
+  void _typeLine() {
+    final line = _steps[_currentLine].text;
+    var charCount = 0;
+    _timer = Timer.periodic(_charDelay, (timer) {
+      charCount++;
+      setState(() => _typedText = line.substring(0, charCount));
+      if (charCount >= line.length) {
+        timer.cancel();
+        Future.delayed(_linePause, _advance);
+      }
+    });
+  }
+
+  void _advance() {
+    if (!mounted) return;
+    final finishedTotal = _steps[_currentLine].runningTotal;
+    final isLastLine = _currentLine >= _steps.length - 1;
+    setState(() {
+      if (finishedTotal != null) _displayedTotal = finishedTotal;
+      if (!isLastLine) {
+        _completedLines.add(_typedText);
+        _currentLine++;
+        _typedText = '';
+      }
+    });
+    if (isLastLine) {
+      Future.delayed(_settlePause, _finish);
+    } else {
+      _typeLine();
+    }
+  }
+
+  /// Guards against calling [widget.onFinished] twice — a pending
+  /// [Future.delayed] from the natural typing sequence can still land after
+  /// the user taps Skip, which already called this once.
+  void _finish() {
+    if (_finished) return;
+    _finished = true;
+    _timer?.cancel();
+    widget.onFinished();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final previousLine = _completedLines.isEmpty ? '' : _completedLines.last;
+    final activeChar = _typedText.isEmpty ? null : _typedText[_typedText.length - 1];
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: _dialogMaxWidth(context)),
+      child: ShadDialog(
+        radius: BorderRadius.circular(16),
+        backgroundColor: context.colors.surface,
+        padding: EdgeInsets.zero,
+        closeIcon: const SizedBox.shrink(),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: _SkipButton(onTap: _finish),
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const MrRatrix(size: 76),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _MascotSpeechBubble(
+                      text: _displayedTotal == null
+                          ? 'Let me work out your freight breakdown...'
+                          : "That's ₱${_displayedTotal!.toStringAsFixed(2)} so far...",
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (_steps.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  ),
+                )
+              else
+                _CalculatorBody(previousLine: previousLine, currentLine: _typedText, activeChar: activeChar),
+            ],
           ),
         ),
-        Align(
-          alignment: const Alignment(0, -0.6),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: child,
+      ),
+    );
+  }
+}
+
+/// A real-looking calculator: a two-line LCD screen (a dimmed previous
+/// entry above the active one being keyed in, same idea as a physical
+/// calculator's running-total display) sitting on a button pad that lights
+/// up whichever key matches the character currently being typed.
+/// Speech-bubble caption beside Mr. Ratrix — a small rotated-square tail
+/// pointing back at him so the calculating message reads as him narrating
+/// it, rather than a plain caption floating under the mascot.
+class _MascotSpeechBubble extends StatelessWidget {
+  const _MascotSpeechBubble({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = context.colors.surfaceSubtle;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: -5,
+          top: 18,
+          child: Transform.rotate(
+            angle: math.pi / 4,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(3)),
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: context.colors.textBody,
+            ),
           ),
         ),
       ],
@@ -70,11 +352,207 @@ class _BlurredBarrier extends StatelessWidget {
   }
 }
 
+class _CalculatorBody extends StatelessWidget {
+  const _CalculatorBody({
+    required this.previousLine,
+    required this.currentLine,
+    required this.activeChar,
+  });
+
+  final String previousLine;
+  final String currentLine;
+  final String? activeChar;
+
+  static const _keyRows = [
+    ['AC', '⌫', '%', '÷'],
+    ['7', '8', '9', '×'],
+    ['4', '5', '6', '−'],
+    ['1', '2', '3', '+'],
+    ['0', '.', '='],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2B2E33),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(0, 8))],
+      ),
+      child: Column(
+        children: [
+          _CalculatorScreen(previousLine: previousLine, currentLine: currentLine),
+          const SizedBox(height: 12),
+          for (final row in _keyRows) ...[
+            Row(
+              children: [
+                for (final key in row)
+                  Expanded(
+                    // The bottom row's '0' key spans two columns on a real
+                    // calculator (there's no second key after it).
+                    flex: key == '0' ? 2 : 1,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: _CalculatorKey(
+                        label: key,
+                        active: activeChar == key,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CalculatorScreen extends StatelessWidget {
+  const _CalculatorScreen({required this.previousLine, required this.currentLine});
+
+  final String previousLine;
+  final String currentLine;
+
+  @override
+  Widget build(BuildContext context) {
+    const lcdText = Color(0xFF7CF9A6);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16261C),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.4), width: 2),
+        boxShadow: [BoxShadow(color: lcdText.withValues(alpha: 0.15), blurRadius: 10)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: 20,
+            child: Text(
+              previousLine,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w600,
+                color: lcdText.withValues(alpha: 0.45),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 34,
+            child: Text(
+              '$currentLine▏',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 23,
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+                color: lcdText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One physical-looking calculator key — briefly "lit" (brighter fill,
+/// slight press-down scale) whenever [active], as if the calculator is
+/// pressing its own buttons to work the problem out.
+/// Jumps straight to the result reveal for anyone who doesn't want to
+/// watch the calculating animation play out.
+class _SkipButton extends StatelessWidget {
+  const _SkipButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: context.colors.surfaceMuted,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Skip',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: context.colors.textMutedStrong,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(CupertinoIcons.forward_end_fill, size: 12, color: context.colors.textMutedStrong),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CalculatorKey extends StatelessWidget {
+  const _CalculatorKey({required this.label, required this.active});
+
+  final String label;
+  final bool active;
+
+  bool get _isOperator => const {'AC', '⌫', '%', '÷', '×', '−', '+', '='}.contains(label);
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = _isOperator ? const Color(0xFF3D6B52) : const Color(0xFF454951);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 90),
+      curve: Curves.easeOut,
+      height: 46,
+      transform: active ? Matrix4.diagonal3Values(0.92, 0.92, 1) : Matrix4.identity(),
+      transformAlignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF7CF9A6) : baseColor,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: active
+            ? [BoxShadow(color: const Color(0xFF7CF9A6).withValues(alpha: 0.6), blurRadius: 8)]
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: active ? const Color(0xFF16261C) : Colors.white.withValues(alpha: 0.85),
+        ),
+      ),
+    );
+  }
+}
+
 /// Docked, always-in-page-flow version of the freight breakdown — used by
 /// the calculator's desktop/tablet layout as the right-hand panel instead of
-/// a modal (see `_CalculatorView` in `shipping_calculator_form_view.dart`).
-/// Shows a placeholder until a result exists, then the same header/body/PDF
-/// button as the dialog minus the close button and blur backdrop.
+/// a modal (see `ShippingCalculatorFormWeb`). Shows a placeholder until a
+/// result exists, then the same header/body/PDF button as the dialog minus
+/// the close button and blur backdrop.
 class FreightBreakdownPanel extends StatelessWidget {
   const FreightBreakdownPanel({
     super.key,
@@ -92,7 +570,10 @@ class FreightBreakdownPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ShippingCalculatorBloc>().state;
-    final result = state.calcResult;
+    // Hidden until the calculating popup reveals it, even though the
+    // result itself was computed the instant Calculate was pressed — see
+    // `calcResultRevealed`'s doc comment.
+    final result = state.calcResultRevealed ? state.calcResult : null;
 
     if (result == null) {
       return Container(
@@ -246,11 +727,37 @@ class _PulsingBorderCardState extends State<_PulsingBorderCard>
   }
 }
 
+class _BlurredBarrier extends StatelessWidget {
+  const _BlurredBarrier({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+            child: Container(color: Colors.black.withValues(alpha: 0.45)),
+          ),
+        ),
+        Align(
+          alignment: const Alignment(0, -0.6),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: child,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// Drives a slow, continuous pulse (normal border <-> gold, plus a matching
-/// glow) directly through [ShadDialog]'s own `border`/`shadows` params —
-/// same visual idea as [_PulsingBorderCard], but feeding the dialog's own
-/// decoration instead of wrapping it in a second bordered container (which
-/// would double up on top of the dialog's own border/background).
+/// glow) directly through [ShadDialog]'s own `border`/`shadows` params,
+/// instead of wrapping it in a second bordered container (which would
+/// double up on top of the dialog's own border/background).
 class _PulsingDialogBorder extends StatefulWidget {
   const _PulsingDialogBorder({required this.builder});
 
@@ -320,15 +827,8 @@ class _FreightBreakdownDialog extends StatelessWidget {
     final result = state.calcResult;
     if (result == null) return const SizedBox.shrink();
 
-    // `_BlurredBarrier` centers this with no horizontal padding of its
-    // own, so a flat 480px cap would overflow off both edges of any
-    // screen narrower than that (every phone). Clamp to the smaller of
-    // 480 and the viewport minus a margin.
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final maxWidth = screenWidth - 32 < 480 ? screenWidth - 32 : 480.0;
-
     return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
+      constraints: BoxConstraints(maxWidth: _dialogMaxWidth(context)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1013,6 +1513,19 @@ class _ResultBody extends StatelessWidget {
             value: '₱${money(state.vatAmount)}',
             valueColor: context.colors.primaryDeep,
             labelColor: context.colors.primaryDeep,
+          )
+        else if (state.vatMode.saleLabel != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              state.vatMode.saleLabel!,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                fontStyle: FontStyle.italic,
+                color: context.colors.primaryDeep,
+              ),
+            ),
           ),
         const SizedBox(height: 16),
         SingleChildScrollView(

@@ -78,13 +78,21 @@ class ExpiryDateChanged extends RateWizardEvent {
   List<Object?> get props => [date];
 }
 
-class MatrixTabChanged extends RateWizardEvent {
-  const MatrixTabChanged(this.tab);
+class ServiceLevelChanged extends RateWizardEvent {
+  const ServiceLevelChanged(this.level);
 
-  final String tab;
+  final ServiceLevel level;
 
   @override
-  List<Object?> get props => [tab];
+  List<Object?> get props => [level];
+}
+
+/// Computes every row's Express rate from its Standard rate + the current
+/// [RateWizardState.markup] percentage — a bulk fill, not a lock: cells can
+/// still be hand-edited afterward via `CellChanged(isExpress: true)`. Rows
+/// whose Standard cell isn't a parseable number are left untouched.
+class MarkupApplied extends RateWizardEvent {
+  const MarkupApplied();
 }
 
 class MarkupChanged extends RateWizardEvent {
@@ -197,14 +205,24 @@ class DestinationChanged extends RateWizardEvent {
 }
 
 class CellChanged extends RateWizardEvent {
-  const CellChanged(this.rowIndex, this.breakweightIndex, this.value);
+  const CellChanged(
+    this.rowIndex,
+    this.breakweightIndex,
+    this.value, {
+    this.isExpress = false,
+  });
 
   final int rowIndex;
   final int breakweightIndex;
   final String value;
 
+  /// True when editing the Express-tier rate column
+  /// ([MatrixRow.expressRates]) rather than the Standard one
+  /// ([MatrixRow.rates]).
+  final bool isExpress;
+
   @override
-  List<Object?> get props => [rowIndex, breakweightIndex, value];
+  List<Object?> get props => [rowIndex, breakweightIndex, value, isExpress];
 }
 
 class BreakweightAdded extends RateWizardEvent {

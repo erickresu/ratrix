@@ -18,7 +18,12 @@ class RateWizardState extends Equatable {
   final String chargeCodeSuffix;
   final DateTime? expiryDate;
 
-  final String matrixTab;
+  /// Which rate column the matrix step is currently showing/editing —
+  /// [MatrixRow.rates] for Standard, [MatrixRow.expressRates] for Express.
+  /// Both columns belong to the same rate/charge code; the API models them
+  /// as `rate`/`express_rate` on the same breakweight bracket, not as two
+  /// separate rates.
+  final ServiceLevel serviceLevel;
   final String markup;
 
   /// Origin and Destination each have their own independent search-type
@@ -67,7 +72,7 @@ class RateWizardState extends Equatable {
     this.pricingOption = PricingOption.fixedBreakweight,
     this.chargeCodeSuffix = '',
     this.expiryDate,
-    this.matrixTab = 'standard',
+    this.serviceLevel = ServiceLevel.regular,
     this.markup = '',
     this.originSearchType = LocationSearchType.island,
     this.destinationSearchType = LocationSearchType.island,
@@ -119,6 +124,16 @@ class RateWizardState extends Equatable {
     PricingOption.minimumExcessBreakweight,
   }.contains(pricingOption);
 
+  /// True for Excess/Minimum Excess — conceptually just a base bracket plus
+  /// one uncapped excess rate, so the wizard locks [breakweights] to exactly
+  /// 2 tiers for these instead of letting arbitrary ones be added, and shows
+  /// the 2nd as "Excess" / "No limit" rather than a numbered, editable-max
+  /// tier.
+  bool get isExcessPricing => const {
+    PricingOption.excessBreakweight,
+    PricingOption.minimumExcessBreakweight,
+  }.contains(pricingOption);
+
   RateWizardState copyWith({
     int? step,
     FreightMode? freightMode,
@@ -127,7 +142,7 @@ class RateWizardState extends Equatable {
     PricingOption? pricingOption,
     String? chargeCodeSuffix,
     DateTime? expiryDate,
-    String? matrixTab,
+    ServiceLevel? serviceLevel,
     String? markup,
     LocationSearchType? originSearchType,
     LocationSearchType? destinationSearchType,
@@ -165,7 +180,7 @@ class RateWizardState extends Equatable {
       pricingOption: pricingOption ?? this.pricingOption,
       chargeCodeSuffix: chargeCodeSuffix ?? this.chargeCodeSuffix,
       expiryDate: expiryDate ?? this.expiryDate,
-      matrixTab: matrixTab ?? this.matrixTab,
+      serviceLevel: serviceLevel ?? this.serviceLevel,
       markup: markup ?? this.markup,
       originSearchType: originSearchType ?? this.originSearchType,
       destinationSearchType: destinationSearchType ?? this.destinationSearchType,
@@ -211,7 +226,7 @@ class RateWizardState extends Equatable {
     pricingOption,
     chargeCodeSuffix,
     expiryDate,
-    matrixTab,
+    serviceLevel,
     markup,
     originSearchType,
     destinationSearchType,

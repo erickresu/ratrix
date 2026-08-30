@@ -40,10 +40,26 @@ class RateMatrixTable extends StatelessWidget {
     this.onDestinationSelected,
     this.onOriginSearchTypeChanged,
     this.onDestinationSearchTypeChanged,
+    this.isExcessPricing = false,
+    this.useExpressRates = false,
   });
 
   final List<domain.MatrixRow> matrixRows;
   final List<Breakweight> breakweights;
+
+  /// Shows/edits [domain.MatrixRow.expressRates] instead of `.rates` — used
+  /// by the Rate Matrix step's Express tab. Not used by the Conditional
+  /// Add-ons matrix, which has no express column.
+  final bool useExpressRates;
+
+  List<String> _valuesOf(domain.MatrixRow row) =>
+      useExpressRates ? row.expressRates : row.rates;
+
+  /// Excess/Minimum Excess pricing locks [breakweights] to exactly 2 tiers
+  /// (see `RateWizardState.isExcessPricing`) — the last column renders as a
+  /// fixed "Excess" / "No limit" tier instead of a numbered, editable-max
+  /// one, and removing either tier is disabled.
+  final bool isExcessPricing;
   final String originPlaceholder;
   final String destinationPlaceholder;
 
@@ -257,6 +273,7 @@ class RateMatrixTable extends StatelessWidget {
                   width: columnWidth,
                   height: _headerHeight,
                   removeDisabled: bwRemoveDisabled,
+                  isExcessTier: isExcessPricing && bi == breakweights.length - 1,
                   onMinChanged: (v) => onBreakweightMinChanged(bi, v),
                   onMaxChanged: (v) => onBreakweightMaxChanged(bi, v),
                   onRemove: () => onRemoveBreakweight(bi),
@@ -297,11 +314,12 @@ class RateMatrixTable extends StatelessWidget {
                           SizedBox(
                             width: 68,
                             child: ShadInput(
+                              key: ValueKey('cell-$i-$bi-$useExpressRates'),
                               placeholder: const Text('0.00'),
                               initialValue:
                                   i < matrixRows.length &&
-                                      bi < matrixRows[i].rates.length
-                                  ? matrixRows[i].rates[bi]
+                                      bi < _valuesOf(matrixRows[i]).length
+                                  ? _valuesOf(matrixRows[i])[bi]
                                   : '',
                               textAlign: TextAlign.center,
                               padding: _compactInputPadding,
@@ -355,7 +373,7 @@ class _MobileLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bwRemoveDisabled = table.breakweights.length <= 1;
+    final bwRemoveDisabled = table.breakweights.length <= 1 || table.isExcessPricing;
     final leftPaneWidth = RateMatrixTable._leftPaneWidthMobile +
         (table.onRemoveRoute != null ? RateMatrixTable._removeColWidth : 0);
     final decoratedTable = table._buildTable(
@@ -385,7 +403,7 @@ class _DesktopLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bwRemoveDisabled = table.breakweights.length <= 1;
+    final bwRemoveDisabled = table.breakweights.length <= 1 || table.isExcessPricing;
     final leftPaneWidth = RateMatrixTable._leftPaneWidth +
         (table.onRemoveRoute != null ? RateMatrixTable._removeColWidth : 0);
     return table._buildTable(
@@ -817,6 +835,7 @@ class _BreakweightHeaderCell extends StatelessWidget {
     required this.width,
     required this.height,
     required this.removeDisabled,
+    this.isExcessTier = false,
     required this.onMinChanged,
     required this.onMaxChanged,
     required this.onRemove,
@@ -827,6 +846,12 @@ class _BreakweightHeaderCell extends StatelessWidget {
   final double width;
   final double height;
   final bool removeDisabled;
+
+  /// True for the 2nd tier of an Excess/Minimum Excess pricing rate — shows
+  /// "Excess" instead of "Breakweight N" and "No limit" instead of an
+  /// editable max field, since that tier's rate applies to everything
+  /// beyond the base bracket with no upper bound.
+  final bool isExcessTier;
   final ValueChanged<String> onMinChanged;
   final ValueChanged<String> onMaxChanged;
   final VoidCallback onRemove;
@@ -840,7 +865,7 @@ class _BreakweightHeaderCell extends StatelessWidget {
   /// typing a max at or below that same tier's own min — an empty max
   /// isn't an error, it's just not filled in yet.
   bool get _hasError {
-    if (breakweight.max.isEmpty) return false;
+    if (isExcessTier || breakweight.max.isEmpty) return false;
     final min = num.tryParse(breakweight.min);
     final max = num.tryParse(breakweight.max);
     if (min == null || max == null) return false;
@@ -869,7 +894,7 @@ class _BreakweightHeaderCell extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Breakweight ${index + 1}',
+                  isExcessTier ? 'Excess' : 'Breakweight ${index + 1}',
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -921,21 +946,37 @@ class _BreakweightHeaderCell extends StatelessWidget {
                 child: Text('–', style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
               ),
               Expanded(
-                child: ShadInput(
-                  placeholder: const Text('Max'),
-                  initialValue: breakweight.max,
-                  textAlign: TextAlign.center,
-                  padding: _compactInputPadding,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: hasError
-                      ? ShadDecoration(
-                          border: ShadBorder.all(color: context.colors.destructive),
-                          focusedBorder: ShadBorder.all(color: context.colors.destructive, width: 2),
-                        )
-                      : null,
-                  onChanged: onMaxChanged,
-                ),
+                child: isExcessTier
+                    ? Container(
+                        padding: _compactInputPadding,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: context.colors.border),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'No limit',
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                        ),
+                      )
+                    : ShadInput(
+                        placeholder: const Text('Max'),
+                        initialValue: breakweight.max,
+                        textAlign: TextAlign.center,
+                        padding: _compactInputPadding,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: hasError
+                            ? ShadDecoration(
+                                border: ShadBorder.all(color: context.colors.destructive),
+                                focusedBorder: ShadBorder.all(color: context.colors.destructive, width: 2),
+                              )
+                            : null,
+                        onChanged: onMaxChanged,
+                      ),
               ),
             ],
           ),

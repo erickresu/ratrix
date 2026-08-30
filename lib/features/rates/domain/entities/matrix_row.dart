@@ -10,6 +10,10 @@ abstract class MatrixRow with _$MatrixRow {
     @Default('') String origin,
     @Default('') String destination,
     @Default(<String>['']) List<String> rates,
+    // Express-tier rate per breakweight column, same shape/length as
+    // [rates] — the API models these as `rate`/`express_rate` on the same
+    // breakweight bracket, not as two separate rates.
+    @Default(<String>['']) List<String> expressRates,
     // Server's own route id (edit mode only) — kept for reference, though
     // the backend currently deletes and recreates every route on update
     // regardless of this id.

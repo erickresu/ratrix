@@ -55,6 +55,7 @@ class RateWizardPayloadMapper {
     required String origin,
     required String destination,
     required List<String> rates,
+    required List<String> expressRates,
     required List<({String min, String max})> breakweightBounds,
     LocationOption? originOption,
     LocationOption? destinationOption,
@@ -65,10 +66,12 @@ class RateWizardPayloadMapper {
       final max = num.tryParse(breakweightBounds[i].max);
       final rate = num.tryParse(rates[i]);
       if (min == null || max == null || rate == null) continue;
+      final expressRate = i < expressRates.length ? num.tryParse(expressRates[i]) : null;
       breakweights.add({
         'breakweight_min': min,
         'breakweight_max': max,
         'rate': rate,
+        if (expressRate != null) 'express_rate': expressRate,
       });
     }
 
@@ -154,9 +157,10 @@ class RateWizardPayloadMapper {
     required ServiceMode serviceMode,
     required ChargeBasis chargeBasis,
     required PricingOption pricingOption,
+    required String? expressMarkup,
     required String fullChargeCode,
     required DateTime? expiryDate,
-    required List<({String origin, String destination, List<String> rates, LocationOption? originOption, LocationOption? destinationOption})> rows,
+    required List<({String origin, String destination, List<String> rates, List<String> expressRates, LocationOption? originOption, LocationOption? destinationOption})> rows,
     required List<({String min, String max})> breakweightBounds,
     required Map<String, String> addonValues,
     required Map<String, AddonMode> addonModes,
@@ -165,6 +169,7 @@ class RateWizardPayloadMapper {
     final serviceModeId = RatesFkIds.serviceModeIds[serviceMode];
     final chargeBasisId = RatesFkIds.chargeBasisIds[chargeBasis];
     final chargeOptionId = RatesFkIds.chargeOptionIds[pricingOption];
+    final expressMarkupValue = expressMarkup != null ? num.tryParse(expressMarkup) : null;
 
     final routes = [
       for (final row in rows)
@@ -172,6 +177,7 @@ class RateWizardPayloadMapper {
           origin: row.origin,
           destination: row.destination,
           rates: row.rates,
+          expressRates: row.expressRates,
           breakweightBounds: breakweightBounds,
           originOption: row.originOption,
           destinationOption: row.destinationOption,
@@ -189,6 +195,7 @@ class RateWizardPayloadMapper {
       if (serviceModeId != null) 'service_mode_id': serviceModeId,
       if (chargeOptionId != null) 'charge_option_id': chargeOptionId,
       if (chargeBasisId != null) 'charge_basis_id': chargeBasisId,
+      if (expressMarkupValue != null) 'express_markup': expressMarkupValue,
       'routes': routes,
       if (addons.isNotEmpty) 'addons': addons,
     };

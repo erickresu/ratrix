@@ -558,7 +558,7 @@ as String?,
 /// @nodoc
 mixin _$RatrixBreakweight {
 
- num get min; num get max; num get rate;
+ num get min; num get max; num get rate; num? get expressRate;
 /// Create a copy of RatrixBreakweight
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -569,16 +569,16 @@ $RatrixBreakweightCopyWith<RatrixBreakweight> get copyWith => _$RatrixBreakweigh
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RatrixBreakweight&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&(identical(other.rate, rate) || other.rate == rate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RatrixBreakweight&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&(identical(other.rate, rate) || other.rate == rate)&&(identical(other.expressRate, expressRate) || other.expressRate == expressRate));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,min,max,rate);
+int get hashCode => Object.hash(runtimeType,min,max,rate,expressRate);
 
 @override
 String toString() {
-  return 'RatrixBreakweight(min: $min, max: $max, rate: $rate)';
+  return 'RatrixBreakweight(min: $min, max: $max, rate: $rate, expressRate: $expressRate)';
 }
 
 
@@ -589,7 +589,7 @@ abstract mixin class $RatrixBreakweightCopyWith<$Res>  {
   factory $RatrixBreakweightCopyWith(RatrixBreakweight value, $Res Function(RatrixBreakweight) _then) = _$RatrixBreakweightCopyWithImpl;
 @useResult
 $Res call({
- num min, num max, num rate
+ num min, num max, num rate, num? expressRate
 });
 
 
@@ -606,12 +606,13 @@ class _$RatrixBreakweightCopyWithImpl<$Res>
 
 /// Create a copy of RatrixBreakweight
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? min = null,Object? max = null,Object? rate = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? min = null,Object? max = null,Object? rate = null,Object? expressRate = freezed,}) {
   return _then(_self.copyWith(
 min: null == min ? _self.min : min // ignore: cast_nullable_to_non_nullable
 as num,max: null == max ? _self.max : max // ignore: cast_nullable_to_non_nullable
 as num,rate: null == rate ? _self.rate : rate // ignore: cast_nullable_to_non_nullable
-as num,
+as num,expressRate: freezed == expressRate ? _self.expressRate : expressRate // ignore: cast_nullable_to_non_nullable
+as num?,
   ));
 }
 
@@ -696,10 +697,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( num min,  num max,  num rate)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( num min,  num max,  num rate,  num? expressRate)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RatrixBreakweight() when $default != null:
-return $default(_that.min,_that.max,_that.rate);case _:
+return $default(_that.min,_that.max,_that.rate,_that.expressRate);case _:
   return orElse();
 
 }
@@ -717,10 +718,10 @@ return $default(_that.min,_that.max,_that.rate);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( num min,  num max,  num rate)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( num min,  num max,  num rate,  num? expressRate)  $default,) {final _that = this;
 switch (_that) {
 case _RatrixBreakweight():
-return $default(_that.min,_that.max,_that.rate);case _:
+return $default(_that.min,_that.max,_that.rate,_that.expressRate);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -737,10 +738,10 @@ return $default(_that.min,_that.max,_that.rate);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( num min,  num max,  num rate)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( num min,  num max,  num rate,  num? expressRate)?  $default,) {final _that = this;
 switch (_that) {
 case _RatrixBreakweight() when $default != null:
-return $default(_that.min,_that.max,_that.rate);case _:
+return $default(_that.min,_that.max,_that.rate,_that.expressRate);case _:
   return null;
 
 }
@@ -752,12 +753,13 @@ return $default(_that.min,_that.max,_that.rate);case _:
 
 
 class _RatrixBreakweight extends RatrixBreakweight {
-  const _RatrixBreakweight({required this.min, required this.max, required this.rate}): super._();
+  const _RatrixBreakweight({required this.min, required this.max, required this.rate, this.expressRate}): super._();
   
 
 @override final  num min;
 @override final  num max;
 @override final  num rate;
+@override final  num? expressRate;
 
 /// Create a copy of RatrixBreakweight
 /// with the given fields replaced by the non-null parameter values.
@@ -769,16 +771,16 @@ _$RatrixBreakweightCopyWith<_RatrixBreakweight> get copyWith => __$RatrixBreakwe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RatrixBreakweight&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&(identical(other.rate, rate) || other.rate == rate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RatrixBreakweight&&(identical(other.min, min) || other.min == min)&&(identical(other.max, max) || other.max == max)&&(identical(other.rate, rate) || other.rate == rate)&&(identical(other.expressRate, expressRate) || other.expressRate == expressRate));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,min,max,rate);
+int get hashCode => Object.hash(runtimeType,min,max,rate,expressRate);
 
 @override
 String toString() {
-  return 'RatrixBreakweight(min: $min, max: $max, rate: $rate)';
+  return 'RatrixBreakweight(min: $min, max: $max, rate: $rate, expressRate: $expressRate)';
 }
 
 
@@ -789,7 +791,7 @@ abstract mixin class _$RatrixBreakweightCopyWith<$Res> implements $RatrixBreakwe
   factory _$RatrixBreakweightCopyWith(_RatrixBreakweight value, $Res Function(_RatrixBreakweight) _then) = __$RatrixBreakweightCopyWithImpl;
 @override @useResult
 $Res call({
- num min, num max, num rate
+ num min, num max, num rate, num? expressRate
 });
 
 
@@ -806,12 +808,13 @@ class __$RatrixBreakweightCopyWithImpl<$Res>
 
 /// Create a copy of RatrixBreakweight
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? min = null,Object? max = null,Object? rate = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? min = null,Object? max = null,Object? rate = null,Object? expressRate = freezed,}) {
   return _then(_RatrixBreakweight(
 min: null == min ? _self.min : min // ignore: cast_nullable_to_non_nullable
 as num,max: null == max ? _self.max : max // ignore: cast_nullable_to_non_nullable
 as num,rate: null == rate ? _self.rate : rate // ignore: cast_nullable_to_non_nullable
-as num,
+as num,expressRate: freezed == expressRate ? _self.expressRate : expressRate // ignore: cast_nullable_to_non_nullable
+as num?,
   ));
 }
 
@@ -1497,7 +1500,7 @@ as num?,
 /// @nodoc
 mixin _$RatrixRate {
 
- String get id; String? get chargeCode; String get rateType; DateTime? get rateExpiry; int? get clientId; RatrixLookupOption? get freightMode; RatrixLookupOption? get serviceMode; RatrixLookupOption? get chargeOption; RatrixLookupOption? get chargeBasis; List<RatrixRoute> get routes; RatrixAddons? get addons; DateTime? get createdAt; DateTime? get updatedAt;
+ String get id; String? get chargeCode; String get rateType; DateTime? get rateExpiry; int? get clientId; RatrixLookupOption? get freightMode; RatrixLookupOption? get serviceMode; RatrixLookupOption? get chargeOption; RatrixLookupOption? get chargeBasis; List<RatrixRoute> get routes; RatrixAddons? get addons; num? get expressMarkup; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of RatrixRate
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1508,16 +1511,16 @@ $RatrixRateCopyWith<RatrixRate> get copyWith => _$RatrixRateCopyWithImpl<RatrixR
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RatrixRate&&(identical(other.id, id) || other.id == id)&&(identical(other.chargeCode, chargeCode) || other.chargeCode == chargeCode)&&(identical(other.rateType, rateType) || other.rateType == rateType)&&(identical(other.rateExpiry, rateExpiry) || other.rateExpiry == rateExpiry)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.freightMode, freightMode) || other.freightMode == freightMode)&&(identical(other.serviceMode, serviceMode) || other.serviceMode == serviceMode)&&(identical(other.chargeOption, chargeOption) || other.chargeOption == chargeOption)&&(identical(other.chargeBasis, chargeBasis) || other.chargeBasis == chargeBasis)&&const DeepCollectionEquality().equals(other.routes, routes)&&(identical(other.addons, addons) || other.addons == addons)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RatrixRate&&(identical(other.id, id) || other.id == id)&&(identical(other.chargeCode, chargeCode) || other.chargeCode == chargeCode)&&(identical(other.rateType, rateType) || other.rateType == rateType)&&(identical(other.rateExpiry, rateExpiry) || other.rateExpiry == rateExpiry)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.freightMode, freightMode) || other.freightMode == freightMode)&&(identical(other.serviceMode, serviceMode) || other.serviceMode == serviceMode)&&(identical(other.chargeOption, chargeOption) || other.chargeOption == chargeOption)&&(identical(other.chargeBasis, chargeBasis) || other.chargeBasis == chargeBasis)&&const DeepCollectionEquality().equals(other.routes, routes)&&(identical(other.addons, addons) || other.addons == addons)&&(identical(other.expressMarkup, expressMarkup) || other.expressMarkup == expressMarkup)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,chargeCode,rateType,rateExpiry,clientId,freightMode,serviceMode,chargeOption,chargeBasis,const DeepCollectionEquality().hash(routes),addons,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,chargeCode,rateType,rateExpiry,clientId,freightMode,serviceMode,chargeOption,chargeBasis,const DeepCollectionEquality().hash(routes),addons,expressMarkup,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'RatrixRate(id: $id, chargeCode: $chargeCode, rateType: $rateType, rateExpiry: $rateExpiry, clientId: $clientId, freightMode: $freightMode, serviceMode: $serviceMode, chargeOption: $chargeOption, chargeBasis: $chargeBasis, routes: $routes, addons: $addons, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'RatrixRate(id: $id, chargeCode: $chargeCode, rateType: $rateType, rateExpiry: $rateExpiry, clientId: $clientId, freightMode: $freightMode, serviceMode: $serviceMode, chargeOption: $chargeOption, chargeBasis: $chargeBasis, routes: $routes, addons: $addons, expressMarkup: $expressMarkup, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -1528,7 +1531,7 @@ abstract mixin class $RatrixRateCopyWith<$Res>  {
   factory $RatrixRateCopyWith(RatrixRate value, $Res Function(RatrixRate) _then) = _$RatrixRateCopyWithImpl;
 @useResult
 $Res call({
- String id, String? chargeCode, String rateType, DateTime? rateExpiry, int? clientId, RatrixLookupOption? freightMode, RatrixLookupOption? serviceMode, RatrixLookupOption? chargeOption, RatrixLookupOption? chargeBasis, List<RatrixRoute> routes, RatrixAddons? addons, DateTime? createdAt, DateTime? updatedAt
+ String id, String? chargeCode, String rateType, DateTime? rateExpiry, int? clientId, RatrixLookupOption? freightMode, RatrixLookupOption? serviceMode, RatrixLookupOption? chargeOption, RatrixLookupOption? chargeBasis, List<RatrixRoute> routes, RatrixAddons? addons, num? expressMarkup, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -1545,7 +1548,7 @@ class _$RatrixRateCopyWithImpl<$Res>
 
 /// Create a copy of RatrixRate
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? chargeCode = freezed,Object? rateType = null,Object? rateExpiry = freezed,Object? clientId = freezed,Object? freightMode = freezed,Object? serviceMode = freezed,Object? chargeOption = freezed,Object? chargeBasis = freezed,Object? routes = null,Object? addons = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? chargeCode = freezed,Object? rateType = null,Object? rateExpiry = freezed,Object? clientId = freezed,Object? freightMode = freezed,Object? serviceMode = freezed,Object? chargeOption = freezed,Object? chargeBasis = freezed,Object? routes = null,Object? addons = freezed,Object? expressMarkup = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,chargeCode: freezed == chargeCode ? _self.chargeCode : chargeCode // ignore: cast_nullable_to_non_nullable
@@ -1558,7 +1561,8 @@ as RatrixLookupOption?,chargeOption: freezed == chargeOption ? _self.chargeOptio
 as RatrixLookupOption?,chargeBasis: freezed == chargeBasis ? _self.chargeBasis : chargeBasis // ignore: cast_nullable_to_non_nullable
 as RatrixLookupOption?,routes: null == routes ? _self.routes : routes // ignore: cast_nullable_to_non_nullable
 as List<RatrixRoute>,addons: freezed == addons ? _self.addons : addons // ignore: cast_nullable_to_non_nullable
-as RatrixAddons?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as RatrixAddons?,expressMarkup: freezed == expressMarkup ? _self.expressMarkup : expressMarkup // ignore: cast_nullable_to_non_nullable
+as num?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -1705,10 +1709,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? chargeCode,  String rateType,  DateTime? rateExpiry,  int? clientId,  RatrixLookupOption? freightMode,  RatrixLookupOption? serviceMode,  RatrixLookupOption? chargeOption,  RatrixLookupOption? chargeBasis,  List<RatrixRoute> routes,  RatrixAddons? addons,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? chargeCode,  String rateType,  DateTime? rateExpiry,  int? clientId,  RatrixLookupOption? freightMode,  RatrixLookupOption? serviceMode,  RatrixLookupOption? chargeOption,  RatrixLookupOption? chargeBasis,  List<RatrixRoute> routes,  RatrixAddons? addons,  num? expressMarkup,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RatrixRate() when $default != null:
-return $default(_that.id,_that.chargeCode,_that.rateType,_that.rateExpiry,_that.clientId,_that.freightMode,_that.serviceMode,_that.chargeOption,_that.chargeBasis,_that.routes,_that.addons,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.chargeCode,_that.rateType,_that.rateExpiry,_that.clientId,_that.freightMode,_that.serviceMode,_that.chargeOption,_that.chargeBasis,_that.routes,_that.addons,_that.expressMarkup,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -1726,10 +1730,10 @@ return $default(_that.id,_that.chargeCode,_that.rateType,_that.rateExpiry,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? chargeCode,  String rateType,  DateTime? rateExpiry,  int? clientId,  RatrixLookupOption? freightMode,  RatrixLookupOption? serviceMode,  RatrixLookupOption? chargeOption,  RatrixLookupOption? chargeBasis,  List<RatrixRoute> routes,  RatrixAddons? addons,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? chargeCode,  String rateType,  DateTime? rateExpiry,  int? clientId,  RatrixLookupOption? freightMode,  RatrixLookupOption? serviceMode,  RatrixLookupOption? chargeOption,  RatrixLookupOption? chargeBasis,  List<RatrixRoute> routes,  RatrixAddons? addons,  num? expressMarkup,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _RatrixRate():
-return $default(_that.id,_that.chargeCode,_that.rateType,_that.rateExpiry,_that.clientId,_that.freightMode,_that.serviceMode,_that.chargeOption,_that.chargeBasis,_that.routes,_that.addons,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.chargeCode,_that.rateType,_that.rateExpiry,_that.clientId,_that.freightMode,_that.serviceMode,_that.chargeOption,_that.chargeBasis,_that.routes,_that.addons,_that.expressMarkup,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1746,10 +1750,10 @@ return $default(_that.id,_that.chargeCode,_that.rateType,_that.rateExpiry,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? chargeCode,  String rateType,  DateTime? rateExpiry,  int? clientId,  RatrixLookupOption? freightMode,  RatrixLookupOption? serviceMode,  RatrixLookupOption? chargeOption,  RatrixLookupOption? chargeBasis,  List<RatrixRoute> routes,  RatrixAddons? addons,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? chargeCode,  String rateType,  DateTime? rateExpiry,  int? clientId,  RatrixLookupOption? freightMode,  RatrixLookupOption? serviceMode,  RatrixLookupOption? chargeOption,  RatrixLookupOption? chargeBasis,  List<RatrixRoute> routes,  RatrixAddons? addons,  num? expressMarkup,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _RatrixRate() when $default != null:
-return $default(_that.id,_that.chargeCode,_that.rateType,_that.rateExpiry,_that.clientId,_that.freightMode,_that.serviceMode,_that.chargeOption,_that.chargeBasis,_that.routes,_that.addons,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.chargeCode,_that.rateType,_that.rateExpiry,_that.clientId,_that.freightMode,_that.serviceMode,_that.chargeOption,_that.chargeBasis,_that.routes,_that.addons,_that.expressMarkup,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -1761,7 +1765,7 @@ return $default(_that.id,_that.chargeCode,_that.rateType,_that.rateExpiry,_that.
 
 
 class _RatrixRate extends RatrixRate {
-  const _RatrixRate({required this.id, this.chargeCode, required this.rateType, this.rateExpiry, this.clientId, this.freightMode, this.serviceMode, this.chargeOption, this.chargeBasis, final  List<RatrixRoute> routes = const <RatrixRoute>[], this.addons, this.createdAt, this.updatedAt}): _routes = routes,super._();
+  const _RatrixRate({required this.id, this.chargeCode, required this.rateType, this.rateExpiry, this.clientId, this.freightMode, this.serviceMode, this.chargeOption, this.chargeBasis, final  List<RatrixRoute> routes = const <RatrixRoute>[], this.addons, this.expressMarkup, this.createdAt, this.updatedAt}): _routes = routes,super._();
   
 
 @override final  String id;
@@ -1781,6 +1785,7 @@ class _RatrixRate extends RatrixRate {
 }
 
 @override final  RatrixAddons? addons;
+@override final  num? expressMarkup;
 @override final  DateTime? createdAt;
 @override final  DateTime? updatedAt;
 
@@ -1794,16 +1799,16 @@ _$RatrixRateCopyWith<_RatrixRate> get copyWith => __$RatrixRateCopyWithImpl<_Rat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RatrixRate&&(identical(other.id, id) || other.id == id)&&(identical(other.chargeCode, chargeCode) || other.chargeCode == chargeCode)&&(identical(other.rateType, rateType) || other.rateType == rateType)&&(identical(other.rateExpiry, rateExpiry) || other.rateExpiry == rateExpiry)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.freightMode, freightMode) || other.freightMode == freightMode)&&(identical(other.serviceMode, serviceMode) || other.serviceMode == serviceMode)&&(identical(other.chargeOption, chargeOption) || other.chargeOption == chargeOption)&&(identical(other.chargeBasis, chargeBasis) || other.chargeBasis == chargeBasis)&&const DeepCollectionEquality().equals(other._routes, _routes)&&(identical(other.addons, addons) || other.addons == addons)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RatrixRate&&(identical(other.id, id) || other.id == id)&&(identical(other.chargeCode, chargeCode) || other.chargeCode == chargeCode)&&(identical(other.rateType, rateType) || other.rateType == rateType)&&(identical(other.rateExpiry, rateExpiry) || other.rateExpiry == rateExpiry)&&(identical(other.clientId, clientId) || other.clientId == clientId)&&(identical(other.freightMode, freightMode) || other.freightMode == freightMode)&&(identical(other.serviceMode, serviceMode) || other.serviceMode == serviceMode)&&(identical(other.chargeOption, chargeOption) || other.chargeOption == chargeOption)&&(identical(other.chargeBasis, chargeBasis) || other.chargeBasis == chargeBasis)&&const DeepCollectionEquality().equals(other._routes, _routes)&&(identical(other.addons, addons) || other.addons == addons)&&(identical(other.expressMarkup, expressMarkup) || other.expressMarkup == expressMarkup)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,chargeCode,rateType,rateExpiry,clientId,freightMode,serviceMode,chargeOption,chargeBasis,const DeepCollectionEquality().hash(_routes),addons,createdAt,updatedAt);
+int get hashCode => Object.hash(runtimeType,id,chargeCode,rateType,rateExpiry,clientId,freightMode,serviceMode,chargeOption,chargeBasis,const DeepCollectionEquality().hash(_routes),addons,expressMarkup,createdAt,updatedAt);
 
 @override
 String toString() {
-  return 'RatrixRate(id: $id, chargeCode: $chargeCode, rateType: $rateType, rateExpiry: $rateExpiry, clientId: $clientId, freightMode: $freightMode, serviceMode: $serviceMode, chargeOption: $chargeOption, chargeBasis: $chargeBasis, routes: $routes, addons: $addons, createdAt: $createdAt, updatedAt: $updatedAt)';
+  return 'RatrixRate(id: $id, chargeCode: $chargeCode, rateType: $rateType, rateExpiry: $rateExpiry, clientId: $clientId, freightMode: $freightMode, serviceMode: $serviceMode, chargeOption: $chargeOption, chargeBasis: $chargeBasis, routes: $routes, addons: $addons, expressMarkup: $expressMarkup, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -1814,7 +1819,7 @@ abstract mixin class _$RatrixRateCopyWith<$Res> implements $RatrixRateCopyWith<$
   factory _$RatrixRateCopyWith(_RatrixRate value, $Res Function(_RatrixRate) _then) = __$RatrixRateCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? chargeCode, String rateType, DateTime? rateExpiry, int? clientId, RatrixLookupOption? freightMode, RatrixLookupOption? serviceMode, RatrixLookupOption? chargeOption, RatrixLookupOption? chargeBasis, List<RatrixRoute> routes, RatrixAddons? addons, DateTime? createdAt, DateTime? updatedAt
+ String id, String? chargeCode, String rateType, DateTime? rateExpiry, int? clientId, RatrixLookupOption? freightMode, RatrixLookupOption? serviceMode, RatrixLookupOption? chargeOption, RatrixLookupOption? chargeBasis, List<RatrixRoute> routes, RatrixAddons? addons, num? expressMarkup, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -1831,7 +1836,7 @@ class __$RatrixRateCopyWithImpl<$Res>
 
 /// Create a copy of RatrixRate
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? chargeCode = freezed,Object? rateType = null,Object? rateExpiry = freezed,Object? clientId = freezed,Object? freightMode = freezed,Object? serviceMode = freezed,Object? chargeOption = freezed,Object? chargeBasis = freezed,Object? routes = null,Object? addons = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? chargeCode = freezed,Object? rateType = null,Object? rateExpiry = freezed,Object? clientId = freezed,Object? freightMode = freezed,Object? serviceMode = freezed,Object? chargeOption = freezed,Object? chargeBasis = freezed,Object? routes = null,Object? addons = freezed,Object? expressMarkup = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_RatrixRate(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,chargeCode: freezed == chargeCode ? _self.chargeCode : chargeCode // ignore: cast_nullable_to_non_nullable
@@ -1844,7 +1849,8 @@ as RatrixLookupOption?,chargeOption: freezed == chargeOption ? _self.chargeOptio
 as RatrixLookupOption?,chargeBasis: freezed == chargeBasis ? _self.chargeBasis : chargeBasis // ignore: cast_nullable_to_non_nullable
 as RatrixLookupOption?,routes: null == routes ? _self._routes : routes // ignore: cast_nullable_to_non_nullable
 as List<RatrixRoute>,addons: freezed == addons ? _self.addons : addons // ignore: cast_nullable_to_non_nullable
-as RatrixAddons?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as RatrixAddons?,expressMarkup: freezed == expressMarkup ? _self.expressMarkup : expressMarkup // ignore: cast_nullable_to_non_nullable
+as num?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

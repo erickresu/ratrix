@@ -48,15 +48,7 @@ class RatesSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text(
-            'CERRO RATRIX',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.6,
-              color: Colors.white,
-            ),
-          ),
+          const _Logo(),
           const SizedBox(height: 24),
           _NavItem(
             key: SidebarTourKeys.homeNav,
@@ -138,6 +130,18 @@ class RatesSidebar extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _Logo extends StatelessWidget {
+  const _Logo();
+
+  @override
+  Widget build(BuildContext context) {
+    // Logo asset canvas was regenerated navy (no alpha) to match
+    // `RatesColors.dark.sidebarBg` — see invoice_pdf.dart's `_brandNavy` —
+    // so it blends seamlessly against the sidebar regardless of theme.
+    return Image.asset('assets/images/ratrix_logo.png', height: 72);
   }
 }
 

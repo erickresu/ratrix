@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'shipping_calculator_form_view.dart';
 
 /// Narrow-viewport Shipping Calculator layout: everything stacks in one
-/// column — Service/Freight, Routing, Cargo Details, then Submit. No room
-/// for a docked breakdown panel, so the result is shown via a modal
-/// instead (triggered by the dispatcher's [BlocListener]).
+/// column — Service/Freight, Routing, Cargo Details, then Submit.
 class ShippingCalculatorFormMobile extends StatelessWidget {
   const ShippingCalculatorFormMobile({super.key, required this.parts});
 
@@ -14,7 +12,7 @@ class ShippingCalculatorFormMobile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 48, 20, 56),
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 56),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -15,7 +15,7 @@ class ShippingCalculatorFormWeb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(64, 48, 64, 56),
+      padding: const EdgeInsets.fromLTRB(125, 48, 125, 56),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

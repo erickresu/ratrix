@@ -114,6 +114,9 @@ class ShippingCalculatorBloc
     on<CalcResultDismissed>(
       (event, emit) => emit(state.copyWith(clearCalcResult: true)),
     );
+    on<CalcResultRevealed>(
+      (event, emit) => emit(state.copyWith(calcResultRevealed: true)),
+    );
     on<CalcFormReset>(
       (event, emit) =>
           emit(ShippingCalculatorState(clientRates: state.clientRates)),
@@ -158,6 +161,9 @@ class ShippingCalculatorBloc
         selectedChargeCode: event.rate.chargeCode,
         selectedRateId: event.rate.id,
         routesLoading: true,
+        // A new rate may not have Express pricing set — don't carry over an
+        // Express selection from whatever was picked before.
+        serviceLevel: ServiceLevel.regular,
       ),
     );
     RatrixRate? fullRate;
@@ -176,10 +182,7 @@ class ShippingCalculatorBloc
     CalcSubmitRequested event,
     Emitter<ShippingCalculatorState> emit,
   ) async {
-    if (state.selectedChargeCode == null ||
-        state.origin.isEmpty ||
-        state.destination.isEmpty ||
-        state.weight.trim().isEmpty) {
+    if (!state.canSubmit) {
       emit(
         state.copyWith(
           submitError:
@@ -189,7 +192,16 @@ class ShippingCalculatorBloc
       return;
     }
 
-    emit(state.copyWith(clearSubmitError: true, calcResult: _calculate()));
+    emit(
+      state.copyWith(
+        clearSubmitError: true,
+        calcResult: _calculate(),
+        // Hidden again until the calculating popup reveals it — otherwise
+        // a stale `true` from a previous calculation would let this new
+        // result show through the docked panel before its own popup runs.
+        calcResultRevealed: false,
+      ),
+    );
   }
 
   /// Computes freight for whichever of the 7 breakweight pricing options the
@@ -245,7 +257,13 @@ class ShippingCalculatorBloc
     final tiers = [...route.breakweights]
       ..sort((a, b) => a.min.compareTo(b.min));
 
-    final freight = _freightFor(pricingOption, tiers, route, chargeableWeight);
+    final freight = _freightFor(
+      pricingOption,
+      tiers,
+      route,
+      chargeableWeight,
+      useExpress: state.serviceLevel == ServiceLevel.express,
+    );
     if (freight.error != null) {
       return CalcResult(
         volumetricWeight: volumetricWeight,
@@ -338,8 +356,15 @@ class ShippingCalculatorBloc
     PricingOption pricingOption,
     List<RatrixBreakweight> tiers,
     RatrixRoute route,
-    num chargeableWeight,
-  ) {
+    num chargeableWeight, {
+    required bool useExpress,
+  }) {
+    // Express prices off `expressRate` per bracket, falling back to the
+    // standard `rate` for any bracket that has no express rate set (e.g. the
+    // rate was only partially filled in) — never null, never a hard error.
+    num rateOf(RatrixBreakweight bw) =>
+        useExpress ? (bw.expressRate ?? bw.rate) : bw.rate;
+
     RatrixBreakweight? matchTier() {
       for (final bw in tiers) {
         if (chargeableWeight >= bw.min && chargeableWeight <= bw.max) return bw;
@@ -360,11 +385,12 @@ class ShippingCalculatorBloc
             pricingOption == PricingOption.flatBreakweight ||
             (pricingOption == PricingOption.minimumFixedBreakweight &&
                 identical(tier, tiers.first));
+        final tierRate = rateOf(tier);
         return _FreightResult(
-          amount: isFlat ? tier.rate : chargeableWeight * tier.rate,
+          amount: isFlat ? tierRate : chargeableWeight * tierRate,
           tierMin: tier.min,
           tierMax: tier.max,
-          tierRate: tier.rate,
+          tierRate: tierRate,
         );
 
       case PricingOption.cummulativeBreakweight:
@@ -379,7 +405,7 @@ class ShippingCalculatorBloc
           final tier = tiers[i];
           if (chargeableWeight < tier.min) break;
           if (isMinimum && i == 0) {
-            total += tier.rate; // flat entrance fee for the first bracket
+            total += rateOf(tier); // flat entrance fee for the first bracket
           } else {
             // A bracket [min, max] is inclusive on both ends — e.g. [1, 50]
             // spans 50 kg, not 49 — so the portion already covered by earlier
@@ -389,7 +415,7 @@ class ShippingCalculatorBloc
             final portion =
                 (chargeableWeight < tier.max ? chargeableWeight : tier.max) -
                 (tier.min - 1);
-            total += portion * tier.rate;
+            total += portion * rateOf(tier);
           }
         }
         return _FreightResult(
@@ -415,14 +441,15 @@ class ShippingCalculatorBloc
       case PricingOption.minimumExcessBreakweight:
         final base = tiers.first;
         final isMinimum = pricingOption == PricingOption.minimumExcessBreakweight;
+        final baseRate = rateOf(base);
 
         if (chargeableWeight <= base.max) {
-          final amount = isMinimum ? base.rate : chargeableWeight * base.rate;
+          final amount = isMinimum ? baseRate : chargeableWeight * baseRate;
           return _FreightResult(
             amount: amount,
             tierMin: base.min,
             tierMax: base.max,
-            tierRate: base.rate,
+            tierRate: baseRate,
           );
         }
 
@@ -430,14 +457,15 @@ class ShippingCalculatorBloc
         if (excessTier == null || identical(excessTier, base)) {
           return _noTierError(chargeableWeight);
         }
-        final baseAmount = isMinimum ? base.rate : base.max * base.rate;
+        final excessRate = rateOf(excessTier);
+        final baseAmount = isMinimum ? baseRate : base.max * baseRate;
         final amount =
-            baseAmount + (chargeableWeight - base.max) * excessTier.rate;
+            baseAmount + (chargeableWeight - base.max) * excessRate;
         return _FreightResult(
           amount: amount,
           tierMin: base.min,
           tierMax: excessTier.max,
-          tierRate: excessTier.rate,
+          tierRate: excessRate,
         );
 
       // Route-Based/Time-Based Pricing (Full Container Load) don't use

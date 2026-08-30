@@ -2,36 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../rates_colors.dart';
 
-/// Distinct accent color per business-type category, so the pill reads at
-/// a glance instead of requiring the label text — [businessType] is a
-/// free-form string from the backend (not a closed enum), so anything
-/// outside this known set (including "Others") falls back to the same
-/// muted color the label always used before category colors existed.
-Color businessTypeColor(BuildContext context, String businessType) {
-  return switch (businessType.trim().toLowerCase()) {
-    'retailer' => context.colors.primaryDeep,
-    'wholesaler' => context.colors.custom,
-    'distributor' => context.colors.success,
-    'manufacturer' => context.colors.destructive,
-    _ => context.colors.textMutedStrong,
-  };
-}
-
 /// Small icon + label chip used for a client card's business-type and VAT
-/// pills, shared by every "pick a client" screen. Only the icon is
-/// colored — several differently-colored pills side by side with colored
-/// text too reads as noisy, so the label always stays neutral.
+/// pills, shared by every "pick a client" screen. Always neutral — no
+/// per-category coloring, so several pills side by side stay calm instead
+/// of reading as a noisy legend.
 class InfoPill extends StatelessWidget {
   const InfoPill({
     super.key,
     required this.icon,
-    required this.iconColor,
     required this.label,
     this.bordered = false,
   });
 
   final IconData icon;
-  final Color iconColor;
   final String label;
   final bool bordered;
 
@@ -40,14 +23,14 @@ class InfoPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: context.colors.surfaceSubtle,
+        color: context.colors.surfaceSubtle.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
         border: bordered ? Border.all(color: context.colors.border) : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: iconColor),
+          Icon(icon, size: 11, color: context.colors.textMutedStrong),
           const SizedBox(width: 5),
           Text(
             label,
@@ -87,7 +70,7 @@ class ClientPickerPageWeb extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(64, 48, 64, 40),
+          padding: const EdgeInsets.fromLTRB(125, 48, 125, 40),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -122,7 +105,7 @@ class ClientPickerPageMobile extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 48, 20, 40),
+          padding: const EdgeInsets.fromLTRB(24, 48, 24, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -173,6 +171,11 @@ class _AuditLogTable extends StatelessWidget {
     letterSpacing: 0.4,
   );
 
+  // Header row is always the fixed navy `sidebarBg`, regardless of app
+  // theme (same treatment as the sidebar itself) — so its text needs a
+  // fixed light color rather than a theme-aware muted token.
+  static final _headerTextColor = Colors.white.withValues(alpha: 0.75);
+
   // Mobile column widths — TIME stays pinned in a fixed left pane,
   // ACTION/RECORD ID/USER scroll horizontally together.
   static const _timeWidth = 140.0;
@@ -214,7 +217,7 @@ class _AuditLogTable extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          color: context.colors.surfaceSubtle,
+          color: context.colors.sidebarBg,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Row(
             children: [
@@ -222,28 +225,28 @@ class _AuditLogTable extends StatelessWidget {
                 flex: 3,
                 child: Text(
                   'TIME',
-                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                  style: _headerStyle.copyWith(color: _headerTextColor),
                 ),
               ),
               Expanded(
                 flex: 2,
                 child: Text(
                   'ACTION',
-                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                  style: _headerStyle.copyWith(color: _headerTextColor),
                 ),
               ),
               Expanded(
                 flex: 4,
                 child: Text(
                   'RECORD ID',
-                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                  style: _headerStyle.copyWith(color: _headerTextColor),
                 ),
               ),
               Expanded(
                 flex: 2,
                 child: Text(
                   'USER',
-                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                  style: _headerStyle.copyWith(color: _headerTextColor),
                 ),
               ),
             ],
@@ -259,7 +262,7 @@ class _AuditLogTable extends StatelessWidget {
           width: width,
           child: Text(
             text,
-            style: _headerStyle.copyWith(color: context.colors.textMuted),
+            style: _headerStyle.copyWith(color: _headerTextColor),
           ),
         );
 
@@ -274,10 +277,10 @@ class _AuditLogTable extends StatelessWidget {
                 height: _headerHeight,
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.only(left: 20),
-                color: context.colors.surfaceSubtle,
+                color: context.colors.sidebarBg,
                 child: Text(
                   'TIME',
-                  style: _headerStyle.copyWith(color: context.colors.textMuted),
+                  style: _headerStyle.copyWith(color: _headerTextColor),
                 ),
               ),
               for (final log in logs) _AuditLogTimeCell(log: log),
@@ -293,7 +296,7 @@ class _AuditLogTable extends StatelessWidget {
                   height: _headerHeight,
                   alignment: Alignment.centerLeft,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  color: context.colors.surfaceSubtle,
+                  color: context.colors.sidebarBg,
                   child: Row(
                     children: [
                       headerCell('ACTION', _actionWidth),
@@ -342,93 +345,79 @@ class _AuditLogRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final time = log.createdAt;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => showShadDialog<void>(
-          context: context,
-          builder: (_) => _AuditLogDetailDialog(log: log),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: context.colors.border)),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.colors.border)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              time == null ? '—' : _formatTimestamp(time),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: context.colors.textMutedStrong,
+              ),
+            ),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 3,
+          Expanded(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ShadBadge(
+                backgroundColor: _actionBg(context),
+                hoverBackgroundColor: _actionBg(context),
+                foregroundColor: _actionColor(context),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 9,
+                  vertical: 3,
+                ),
                 child: Text(
-                  time == null ? '—' : _formatTimestamp(time),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: context.colors.textMutedStrong,
+                  log.actionLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              Expanded(
-                flex: 2,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: ShadBadge(
-                    backgroundColor: _actionBg(context),
-                    hoverBackgroundColor: _actionBg(context),
-                    foregroundColor: _actionColor(context),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 3,
-                    ),
-                    child: Text(
-                      log.actionLabel,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 4,
-                child: Text(
-                  log.recordId ?? '—',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    color: context.colors.textMuted,
-                  ),
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  log.userName ?? '—',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: context.colors.textMutedStrong,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          Expanded(
+            flex: 4,
+            child: Text(
+              log.recordId ?? '—',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'monospace',
+                color: context.colors.textMuted,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              log.userName ?? '—',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: context.colors.textMutedStrong,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 const _kAuditRowHeight = 52.0;
-
-void _openAuditLogDetail(BuildContext context, AuditLog log) => showShadDialog<void>(
-      context: context,
-      builder: (_) => _AuditLogDetailDialog(log: log),
-    );
 
 /// Mobile's pinned-left-pane TIME column for one audit row — paired with
 /// [_AuditLogScrollableRow] for the same [log], both fixed to
@@ -442,24 +431,18 @@ class _AuditLogTimeCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final time = log.createdAt;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _openAuditLogDetail(context, log),
-        child: Container(
-          height: _kAuditRowHeight,
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: context.colors.border)),
-          ),
-          child: Text(
-            time == null ? '—' : _formatTimestamp(time),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 13, color: context.colors.textMutedStrong),
-          ),
-        ),
+    return Container(
+      height: _kAuditRowHeight,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.colors.border)),
+      ),
+      child: Text(
+        time == null ? '—' : _formatTimestamp(time),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 13, color: context.colors.textMutedStrong),
       ),
     );
   }
@@ -496,61 +479,55 @@ class _AuditLogScrollableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _openAuditLogDetail(context, log),
-        child: Container(
-          height: _kAuditRowHeight,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: context.colors.border)),
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: actionWidth,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: ShadBadge(
-                    backgroundColor: _actionBg(context),
-                    hoverBackgroundColor: _actionBg(context),
-                    foregroundColor: _actionColor(context),
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                    child: Text(
-                      log.actionLabel,
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: colGap),
-              SizedBox(
-                width: recordIdWidth,
+    return Container(
+      height: _kAuditRowHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.colors.border)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: actionWidth,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ShadBadge(
+                backgroundColor: _actionBg(context),
+                hoverBackgroundColor: _actionBg(context),
+                foregroundColor: _actionColor(context),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
                 child: Text(
-                  log.recordId ?? '—',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'monospace',
-                    color: context.colors.textMuted,
-                  ),
+                  log.actionLabel,
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                 ),
               ),
-              SizedBox(width: colGap),
-              SizedBox(
-                width: userWidth,
-                child: Text(
-                  log.userName ?? '—',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: context.colors.textMutedStrong),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          SizedBox(width: colGap),
+          SizedBox(
+            width: recordIdWidth,
+            child: Text(
+              log.recordId ?? '—',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'monospace',
+                color: context.colors.textMuted,
+              ),
+            ),
+          ),
+          SizedBox(width: colGap),
+          SizedBox(
+            width: userWidth,
+            child: Text(
+              log.userName ?? '—',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13, color: context.colors.textMutedStrong),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -561,50 +538,4 @@ String _formatTimestamp(DateTime dt) {
   String two(int n) => n.toString().padLeft(2, '0');
   return '${local.year}-${two(local.month)}-${two(local.day)} '
       '${two(local.hour)}:${two(local.minute)}';
-}
-
-/// Dumps the raw log entry rather than only the typed [AuditLog] fields —
-/// the exact response shape isn't documented, so this stays useful even
-/// where the typed parsing above guessed a key name wrong.
-class _AuditLogDetailDialog extends StatelessWidget {
-  const _AuditLogDetailDialog({required this.log});
-
-  final AuditLog log;
-
-  @override
-  Widget build(BuildContext context) {
-    const encoder = JsonEncoder.withIndent('  ');
-    final pretty = encoder.convert(log.raw);
-
-    return ShadDialog(
-      title: const Text('Audit Log Entry'),
-      description: Text(
-        log.tableName ?? log.id,
-        style: TextStyle(color: context.colors.textMuted),
-      ),
-      actions: [
-        ShadButton.outline(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Close'),
-        ),
-      ],
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 360, maxWidth: 480),
-        child: SingleChildScrollView(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.colors.surfaceSubtle,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: SelectableText(
-              pretty,
-              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

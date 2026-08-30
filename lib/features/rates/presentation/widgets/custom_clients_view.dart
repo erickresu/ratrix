@@ -9,14 +9,13 @@ import '../../../../core/widgets/pagination_bar.dart';
 import '../../../../core/widgets/shine_sweep.dart';
 import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/client.dart';
-import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 import 'client_picker_page.dart';
 
 const _clientGridRows = 3;
-const _clientGridPadding = EdgeInsets.fromLTRB(64, 0, 64, 28);
-const _clientGridPaddingMobile = EdgeInsets.fromLTRB(20, 0, 20, 28);
+const _clientGridPadding = EdgeInsets.fromLTRB(125, 0, 125, 28);
+const _clientGridPaddingMobile = EdgeInsets.fromLTRB(24, 0, 24, 28);
 
 SliverGridDelegateWithFixedCrossAxisCount _clientGridDelegate(int crossAxisCount) {
   return SliverGridDelegateWithFixedCrossAxisCount(
@@ -148,8 +147,6 @@ class _ClientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isInclusive = client.vatStatus == VatStatus.inclusive;
-
     return AnimatedPressable(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
@@ -295,14 +292,10 @@ class _ClientCard extends StatelessWidget {
                         children: [
                           InfoPill(
                             icon: CupertinoIcons.briefcase_fill,
-                            iconColor: businessTypeColor(context, client.businessType),
                             label: client.businessType,
                           ),
                           InfoPill(
                             icon: CupertinoIcons.doc_text_fill,
-                            iconColor: isInclusive
-                                ? context.colors.success
-                                : context.colors.textMutedStrong,
                             label: 'VAT ${client.vatStatus.label}',
                           ),
                         ],

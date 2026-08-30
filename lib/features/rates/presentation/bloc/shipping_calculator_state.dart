@@ -95,6 +95,18 @@ class CalcResult extends Equatable {
 
 enum VatMode { standard, exempt, zeroRated }
 
+extension VatModeLabel on VatMode {
+  /// BIR-required phrase for official receipts under RR 16-2005/TRAIN —
+  /// exempt and zero-rated sales must print this on the document even
+  /// though both compute the same ₱0 VAT. `null` for standard, which
+  /// prints the usual Inclusive/Exclusive VAT status instead.
+  String? get saleLabel => switch (this) {
+        VatMode.exempt => 'VAT-Exempt Sale',
+        VatMode.zeroRated => 'Zero-Rated Sale',
+        VatMode.standard => null,
+      };
+}
+
 class ShippingCalculatorState extends Equatable {
   final RateType rateType;
   final FreightMode freightMode;
@@ -114,6 +126,16 @@ class ShippingCalculatorState extends Equatable {
   final bool routesLoading;
 
   final CalcResult? calcResult;
+
+  /// Whether the docked `FreightBreakdownPanel` (desktop) is allowed to
+  /// actually show [calcResult] yet. [calcResult] itself is computed the
+  /// instant Calculate is pressed — needed right away so the calculating
+  /// popup's LCD tape has real numbers to type out — but the panel stays
+  /// hidden behind that popup's blur until `CalcResultRevealed` fires
+  /// (once the popup finishes or is skipped), so the answer doesn't show
+  /// through before the popup does its thing.
+  final bool calcResultRevealed;
+
   final bool roundedDisplay;
   final VatMode vatMode;
   final bool vatInclusive;
@@ -153,6 +175,7 @@ class ShippingCalculatorState extends Equatable {
     this.selectedRate,
     this.routesLoading = false,
     this.calcResult,
+    this.calcResultRevealed = false,
     this.roundedDisplay = false,
     this.vatMode = VatMode.standard,
     this.vatInclusive = false,
@@ -205,6 +228,13 @@ class ShippingCalculatorState extends Equatable {
     return const [];
   }
 
+  /// Whether the selected rate has an Express rate set on at least one
+  /// breakweight bracket, on any route — gates the Express option in the
+  /// Service Level picker, since a rate created with no Express column
+  /// filled in has nothing to price against.
+  bool get hasExpressRates =>
+      selectedRate?.routes.any((r) => r.breakweights.any((bw) => bw.expressRate != null)) ?? false;
+
   List<String> get availableOrigins => {for (final c in routeChoices) c.origin}.toList();
 
   List<String> get availableDestinations {
@@ -225,6 +255,17 @@ class ShippingCalculatorState extends Equatable {
       PricingOption.minimumExcessBreakweight,
     }.contains(pricingOption);
   }
+
+  /// Whether the form has enough filled in to actually compute a result —
+  /// shared by the bloc (to decide whether to compute or surface
+  /// [ShippingCalculatorBloc._onSubmitRequested]'s inline error) and the UI
+  /// (to decide whether pressing Calculate should open the result popup at
+  /// all, or just trigger that inline error).
+  bool get canSubmit =>
+      selectedChargeCode != null &&
+      origin.isNotEmpty &&
+      destination.isNotEmpty &&
+      weight.trim().isNotEmpty;
 
   /// Sum of `(L × W × H) / divisor` across every dimension entry in the CBM
   /// popup — `null` when the divisor isn't a usable positive number yet.
@@ -277,6 +318,7 @@ class ShippingCalculatorState extends Equatable {
     bool? routesLoading,
     CalcResult? calcResult,
     bool clearCalcResult = false,
+    bool? calcResultRevealed,
     bool? roundedDisplay,
     VatMode? vatMode,
     bool? vatInclusive,
@@ -303,6 +345,7 @@ class ShippingCalculatorState extends Equatable {
       selectedRate: clearRateTable ? null : (selectedRate ?? this.selectedRate),
       routesLoading: routesLoading ?? this.routesLoading,
       calcResult: clearCalcResult || clearRateTable ? null : (calcResult ?? this.calcResult),
+      calcResultRevealed: calcResultRevealed ?? this.calcResultRevealed,
       roundedDisplay: roundedDisplay ?? this.roundedDisplay,
       vatMode: vatMode ?? this.vatMode,
       vatInclusive: vatInclusive ?? this.vatInclusive,
@@ -331,6 +374,7 @@ class ShippingCalculatorState extends Equatable {
         selectedRate,
         routesLoading,
         calcResult,
+        calcResultRevealed,
         roundedDisplay,
         vatMode,
         vatInclusive,

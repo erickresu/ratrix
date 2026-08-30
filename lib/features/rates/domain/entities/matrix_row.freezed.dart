@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MatrixRow {
 
- String get origin; String get destination; List<String> get rates; String? get routeId; LocationOption? get originOption; LocationOption? get destinationOption;
+ String get origin; String get destination; List<String> get rates; List<String> get expressRates; String? get routeId; LocationOption? get originOption; LocationOption? get destinationOption;
 /// Create a copy of MatrixRow
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $MatrixRowCopyWith<MatrixRow> get copyWith => _$MatrixRowCopyWithImpl<MatrixRow>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MatrixRow&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.destination, destination) || other.destination == destination)&&const DeepCollectionEquality().equals(other.rates, rates)&&(identical(other.routeId, routeId) || other.routeId == routeId)&&(identical(other.originOption, originOption) || other.originOption == originOption)&&(identical(other.destinationOption, destinationOption) || other.destinationOption == destinationOption));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MatrixRow&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.destination, destination) || other.destination == destination)&&const DeepCollectionEquality().equals(other.rates, rates)&&const DeepCollectionEquality().equals(other.expressRates, expressRates)&&(identical(other.routeId, routeId) || other.routeId == routeId)&&(identical(other.originOption, originOption) || other.originOption == originOption)&&(identical(other.destinationOption, destinationOption) || other.destinationOption == destinationOption));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,origin,destination,const DeepCollectionEquality().hash(rates),routeId,originOption,destinationOption);
+int get hashCode => Object.hash(runtimeType,origin,destination,const DeepCollectionEquality().hash(rates),const DeepCollectionEquality().hash(expressRates),routeId,originOption,destinationOption);
 
 @override
 String toString() {
-  return 'MatrixRow(origin: $origin, destination: $destination, rates: $rates, routeId: $routeId, originOption: $originOption, destinationOption: $destinationOption)';
+  return 'MatrixRow(origin: $origin, destination: $destination, rates: $rates, expressRates: $expressRates, routeId: $routeId, originOption: $originOption, destinationOption: $destinationOption)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $MatrixRowCopyWith<$Res>  {
   factory $MatrixRowCopyWith(MatrixRow value, $Res Function(MatrixRow) _then) = _$MatrixRowCopyWithImpl;
 @useResult
 $Res call({
- String origin, String destination, List<String> rates, String? routeId, LocationOption? originOption, LocationOption? destinationOption
+ String origin, String destination, List<String> rates, List<String> expressRates, String? routeId, LocationOption? originOption, LocationOption? destinationOption
 });
 
 
@@ -62,11 +62,12 @@ class _$MatrixRowCopyWithImpl<$Res>
 
 /// Create a copy of MatrixRow
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? origin = null,Object? destination = null,Object? rates = null,Object? routeId = freezed,Object? originOption = freezed,Object? destinationOption = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? origin = null,Object? destination = null,Object? rates = null,Object? expressRates = null,Object? routeId = freezed,Object? originOption = freezed,Object? destinationOption = freezed,}) {
   return _then(_self.copyWith(
 origin: null == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
 as String,destination: null == destination ? _self.destination : destination // ignore: cast_nullable_to_non_nullable
 as String,rates: null == rates ? _self.rates : rates // ignore: cast_nullable_to_non_nullable
+as List<String>,expressRates: null == expressRates ? _self.expressRates : expressRates // ignore: cast_nullable_to_non_nullable
 as List<String>,routeId: freezed == routeId ? _self.routeId : routeId // ignore: cast_nullable_to_non_nullable
 as String?,originOption: freezed == originOption ? _self.originOption : originOption // ignore: cast_nullable_to_non_nullable
 as LocationOption?,destinationOption: freezed == destinationOption ? _self.destinationOption : destinationOption // ignore: cast_nullable_to_non_nullable
@@ -179,10 +180,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String origin,  String destination,  List<String> rates,  String? routeId,  LocationOption? originOption,  LocationOption? destinationOption)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String origin,  String destination,  List<String> rates,  List<String> expressRates,  String? routeId,  LocationOption? originOption,  LocationOption? destinationOption)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MatrixRow() when $default != null:
-return $default(_that.origin,_that.destination,_that.rates,_that.routeId,_that.originOption,_that.destinationOption);case _:
+return $default(_that.origin,_that.destination,_that.rates,_that.expressRates,_that.routeId,_that.originOption,_that.destinationOption);case _:
   return orElse();
 
 }
@@ -200,10 +201,10 @@ return $default(_that.origin,_that.destination,_that.rates,_that.routeId,_that.o
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String origin,  String destination,  List<String> rates,  String? routeId,  LocationOption? originOption,  LocationOption? destinationOption)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String origin,  String destination,  List<String> rates,  List<String> expressRates,  String? routeId,  LocationOption? originOption,  LocationOption? destinationOption)  $default,) {final _that = this;
 switch (_that) {
 case _MatrixRow():
-return $default(_that.origin,_that.destination,_that.rates,_that.routeId,_that.originOption,_that.destinationOption);case _:
+return $default(_that.origin,_that.destination,_that.rates,_that.expressRates,_that.routeId,_that.originOption,_that.destinationOption);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -220,10 +221,10 @@ return $default(_that.origin,_that.destination,_that.rates,_that.routeId,_that.o
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String origin,  String destination,  List<String> rates,  String? routeId,  LocationOption? originOption,  LocationOption? destinationOption)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String origin,  String destination,  List<String> rates,  List<String> expressRates,  String? routeId,  LocationOption? originOption,  LocationOption? destinationOption)?  $default,) {final _that = this;
 switch (_that) {
 case _MatrixRow() when $default != null:
-return $default(_that.origin,_that.destination,_that.rates,_that.routeId,_that.originOption,_that.destinationOption);case _:
+return $default(_that.origin,_that.destination,_that.rates,_that.expressRates,_that.routeId,_that.originOption,_that.destinationOption);case _:
   return null;
 
 }
@@ -235,7 +236,7 @@ return $default(_that.origin,_that.destination,_that.rates,_that.routeId,_that.o
 
 
 class _MatrixRow implements MatrixRow {
-  const _MatrixRow({this.origin = '', this.destination = '', final  List<String> rates = const <String>[''], this.routeId, this.originOption, this.destinationOption}): _rates = rates;
+  const _MatrixRow({this.origin = '', this.destination = '', final  List<String> rates = const <String>[''], final  List<String> expressRates = const <String>[''], this.routeId, this.originOption, this.destinationOption}): _rates = rates,_expressRates = expressRates;
   
 
 @override@JsonKey() final  String origin;
@@ -245,6 +246,13 @@ class _MatrixRow implements MatrixRow {
   if (_rates is EqualUnmodifiableListView) return _rates;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_rates);
+}
+
+ final  List<String> _expressRates;
+@override@JsonKey() List<String> get expressRates {
+  if (_expressRates is EqualUnmodifiableListView) return _expressRates;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_expressRates);
 }
 
 @override final  String? routeId;
@@ -261,16 +269,16 @@ _$MatrixRowCopyWith<_MatrixRow> get copyWith => __$MatrixRowCopyWithImpl<_Matrix
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MatrixRow&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.destination, destination) || other.destination == destination)&&const DeepCollectionEquality().equals(other._rates, _rates)&&(identical(other.routeId, routeId) || other.routeId == routeId)&&(identical(other.originOption, originOption) || other.originOption == originOption)&&(identical(other.destinationOption, destinationOption) || other.destinationOption == destinationOption));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MatrixRow&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.destination, destination) || other.destination == destination)&&const DeepCollectionEquality().equals(other._rates, _rates)&&const DeepCollectionEquality().equals(other._expressRates, _expressRates)&&(identical(other.routeId, routeId) || other.routeId == routeId)&&(identical(other.originOption, originOption) || other.originOption == originOption)&&(identical(other.destinationOption, destinationOption) || other.destinationOption == destinationOption));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,origin,destination,const DeepCollectionEquality().hash(_rates),routeId,originOption,destinationOption);
+int get hashCode => Object.hash(runtimeType,origin,destination,const DeepCollectionEquality().hash(_rates),const DeepCollectionEquality().hash(_expressRates),routeId,originOption,destinationOption);
 
 @override
 String toString() {
-  return 'MatrixRow(origin: $origin, destination: $destination, rates: $rates, routeId: $routeId, originOption: $originOption, destinationOption: $destinationOption)';
+  return 'MatrixRow(origin: $origin, destination: $destination, rates: $rates, expressRates: $expressRates, routeId: $routeId, originOption: $originOption, destinationOption: $destinationOption)';
 }
 
 
@@ -281,7 +289,7 @@ abstract mixin class _$MatrixRowCopyWith<$Res> implements $MatrixRowCopyWith<$Re
   factory _$MatrixRowCopyWith(_MatrixRow value, $Res Function(_MatrixRow) _then) = __$MatrixRowCopyWithImpl;
 @override @useResult
 $Res call({
- String origin, String destination, List<String> rates, String? routeId, LocationOption? originOption, LocationOption? destinationOption
+ String origin, String destination, List<String> rates, List<String> expressRates, String? routeId, LocationOption? originOption, LocationOption? destinationOption
 });
 
 
@@ -298,11 +306,12 @@ class __$MatrixRowCopyWithImpl<$Res>
 
 /// Create a copy of MatrixRow
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? origin = null,Object? destination = null,Object? rates = null,Object? routeId = freezed,Object? originOption = freezed,Object? destinationOption = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? origin = null,Object? destination = null,Object? rates = null,Object? expressRates = null,Object? routeId = freezed,Object? originOption = freezed,Object? destinationOption = freezed,}) {
   return _then(_MatrixRow(
 origin: null == origin ? _self.origin : origin // ignore: cast_nullable_to_non_nullable
 as String,destination: null == destination ? _self.destination : destination // ignore: cast_nullable_to_non_nullable
 as String,rates: null == rates ? _self._rates : rates // ignore: cast_nullable_to_non_nullable
+as List<String>,expressRates: null == expressRates ? _self._expressRates : expressRates // ignore: cast_nullable_to_non_nullable
 as List<String>,routeId: freezed == routeId ? _self.routeId : routeId // ignore: cast_nullable_to_non_nullable
 as String?,originOption: freezed == originOption ? _self.originOption : originOption // ignore: cast_nullable_to_non_nullable
 as LocationOption?,destinationOption: freezed == destinationOption ? _self.destinationOption : destinationOption // ignore: cast_nullable_to_non_nullable

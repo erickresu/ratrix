@@ -21,7 +21,7 @@ class AuditTrailPageMobile extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 48, 20, 40),
+          padding: const EdgeInsets.fromLTRB(24, 48, 24, 40),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -37,7 +37,7 @@ class AuditTrailPageMobile extends StatelessWidget {
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: body,
           ),
         ),

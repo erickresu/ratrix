@@ -95,7 +95,15 @@ Future<void> generateInvoicePdf({
                     children: [
                       _chargeRow(state.vatInclusive ? 'VATable Subtotal:' : 'Sub-Total:', result.subTotal),
                       if (state.vatMode == VatMode.standard)
-                        _chargeRow('VAT (${(ShippingCalculatorState.vatRate * 100).toStringAsFixed(0)}%):', state.vatAmount),
+                        _chargeRow('VAT (${(ShippingCalculatorState.vatRate * 100).toStringAsFixed(0)}%):', state.vatAmount)
+                      else if (state.vatMode.saleLabel != null)
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.only(top: 2, bottom: 2),
+                          child: pw.Text(
+                            state.vatMode.saleLabel!,
+                            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, fontStyle: pw.FontStyle.italic, color: _goldDeep),
+                          ),
+                        ),
                       pw.SizedBox(height: 6),
                       pw.Divider(color: _border, thickness: 1),
                       pw.Row(
@@ -186,11 +194,11 @@ pw.Widget _billTo(Client client, ShippingCalculatorState state) {
             'Phone',
             client.phoneNumber != null && client.phoneNumber!.isNotEmpty ? client.phoneNumber! : '-',
             'VAT Status',
-            state.vatInclusive ? 'Inclusive' : 'Exclusive',
+            state.vatMode.saleLabel ?? (state.vatInclusive ? 'Inclusive' : 'Exclusive'),
           ),
         ] else ...[
           pw.SizedBox(height: 6),
-          _fieldPair('VAT Status', state.vatInclusive ? 'Inclusive' : 'Exclusive', '', ''),
+          _fieldPair('VAT Status', state.vatMode.saleLabel ?? (state.vatInclusive ? 'Inclusive' : 'Exclusive'), '', ''),
         ],
         if (client.officeAddress != null && client.officeAddress!.isNotEmpty) ...[
           pw.SizedBox(height: 6),

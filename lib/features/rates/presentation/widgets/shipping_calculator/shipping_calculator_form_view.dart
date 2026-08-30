@@ -56,7 +56,6 @@ class _CalculatorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shellBloc = context.read<RatesShellBloc>();
-    final isMobile = Breakpoints.isMobile(context);
 
     final header = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,28 +96,14 @@ class _CalculatorView extends StatelessWidget {
       serviceFreightCard: const _ServiceFreightCard(),
       routingCard: const _RoutingCard(),
       cargoDetailsCard: const _CargoDetailsCard(),
-      submitButton: const _SubmitButton(),
+      submitButton: _SubmitButton(client: client),
       breakdownPanel: FreightBreakdownPanel(client: client, showButton: false),
       pdfButtonSlot: _GeneratePdfButtonSlot(client: client),
     );
 
-    final content = isMobile
+    return Breakpoints.isMobile(context)
         ? ShippingCalculatorFormMobile(parts: parts)
         : ShippingCalculatorFormWeb(parts: parts);
-
-    // Desktop/tablet shows the result docked as a right-hand panel (always
-    // in the layout, no listener needed — it just re-renders off state).
-    // Mobile has no room for that side-by-side, so it keeps the modal.
-    if (!isMobile) return content;
-
-    return BlocListener<ShippingCalculatorBloc, ShippingCalculatorState>(
-      listenWhen: (prev, curr) => prev.calcResult == null && curr.calcResult != null,
-      listener: (context, state) {
-        final calcBloc = context.read<ShippingCalculatorBloc>();
-        showFreightBreakdownDialog(context, calcBloc: calcBloc, shellBloc: shellBloc, client: client);
-      },
-      child: content,
-    );
   }
 }
 
@@ -275,6 +260,36 @@ class _ServiceFreightCard extends StatelessWidget {
       ],
     );
 
+    // Header-trailing radio pair instead of its own field row — reclaims
+    // the section header's empty right side rather than adding a whole
+    // extra row below. Always the same widget shape (Tooltip -> option)
+    // regardless of hasExpressRates — conditionally swapping the Tooltip
+    // wrapper in/out caused repeated mouse-tracker crashes when that swap
+    // landed under the cursor.
+    final serviceLevelTrailing = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ServiceLevelRadioOption(
+          label: 'Standard',
+          selected: state.serviceLevel == ServiceLevel.regular,
+          onTap: () => bloc.add(const CalcServiceLevelChanged(ServiceLevel.regular)),
+        ),
+        const SizedBox(width: 16),
+        Tooltip(
+          message: state.hasExpressRates
+              ? 'Price this route using the Express rate'
+              : 'This rate has no Express pricing set',
+          child: _ServiceLevelRadioOption(
+            label: 'Express',
+            selected: state.serviceLevel == ServiceLevel.express,
+            onTap: state.hasExpressRates
+                ? () => bloc.add(const CalcServiceLevelChanged(ServiceLevel.express))
+                : null,
+          ),
+        ),
+      ],
+    );
+
     Widget fieldRow(Widget left, Widget right) {
       if (isMobile) {
         return Column(
@@ -295,6 +310,7 @@ class _ServiceFreightCard extends StatelessWidget {
     return _SectionCard(
       icon: Icons.local_shipping_outlined,
       title: 'Service & Freight Details',
+      trailing: serviceLevelTrailing,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -367,6 +383,67 @@ class _RoutingCard extends StatelessWidget {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Standard/Express radio option shown in the section header's trailing
+/// slot. `onTap == null` renders it disabled — wrap in a [Tooltip] to
+/// explain why (e.g. no Express rate set).
+class _ServiceLevelRadioOption extends StatelessWidget {
+  const _ServiceLevelRadioOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onTap == null;
+    final color = disabled
+        ? context.colors.textFaint
+        : selected
+            ? context.colors.primary
+            : context.colors.textMutedStrong;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color, width: 1.5),
+                ),
+                child: selected
+                    ? Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -910,7 +987,7 @@ class _AddonsSummary extends StatelessWidget {
 /// Renders `GeneratePdfButton` in its own slot outside `FreightBreakdownPanel`
 /// (which is told `showButton: false`) so it can sit in a separate bottom-
 /// aligned row alongside the form's Reset/Calculate buttons — see
-/// `desktopLayout` in `_CalculatorView`.
+/// `ShippingCalculatorFormWeb`.
 class _GeneratePdfButtonSlot extends StatelessWidget {
   const _GeneratePdfButtonSlot({required this.client});
 
@@ -919,25 +996,43 @@ class _GeneratePdfButtonSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<ShippingCalculatorBloc>().state;
-    final result = state.calcResult;
+    final result = state.calcResultRevealed ? state.calcResult : null;
     if (result == null || result.error != null) return const SizedBox.shrink();
     return GeneratePdfButton(state: state, client: client);
   }
 }
 
 class _SubmitButton extends StatelessWidget {
-  const _SubmitButton();
+  const _SubmitButton({required this.client});
+
+  final Client client;
 
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<ShippingCalculatorBloc>();
-    final submitError = context.select((ShippingCalculatorBloc b) => b.state.submitError);
+    final state = context.watch<ShippingCalculatorBloc>().state;
+
+    void handleCalculate() {
+      if (!state.canSubmit) {
+        // Not enough filled in yet — surface the same inline error as
+        // before rather than opening a popup with nothing to show.
+        bloc.add(const CalcSubmitRequested());
+        return;
+      }
+      showFreightBreakdownDialog(
+        context,
+        calcBloc: bloc,
+        shellBloc: context.read<RatesShellBloc>(),
+        client: client,
+        keepResultForPanel: !Breakpoints.isMobile(context),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (submitError != null) ...[
-          Text(submitError, style: TextStyle(fontSize: 13, color: context.colors.destructive)),
+        if (state.submitError != null) ...[
+          Text(state.submitError!, style: TextStyle(fontSize: 13, color: context.colors.destructive)),
           const SizedBox(height: 12),
         ],
         Align(
@@ -954,7 +1049,7 @@ class _SubmitButton extends StatelessWidget {
               ShadButton(
                 gradient: context.colors.primaryButtonGradient,
                 leading: const Icon(Icons.calculate_outlined, size: 17),
-                onPressed: () => bloc.add(const CalcSubmitRequested()),
+                onPressed: handleCalculate,
                 child: const Text('Calculate Freight Breakdown'),
               ),
             ],

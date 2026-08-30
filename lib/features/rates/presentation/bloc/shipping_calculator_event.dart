@@ -185,6 +185,14 @@ class CalcResultDismissed extends ShippingCalculatorEvent {
   const CalcResultDismissed();
 }
 
+/// Fired once the calculating popup finishes (or is skipped) on desktop —
+/// lets the docked `FreightBreakdownPanel` show the already-computed
+/// result, which up to that point stays hidden behind the popup's blur
+/// even though `calcResult` was set the moment Calculate was pressed.
+class CalcResultRevealed extends ShippingCalculatorEvent {
+  const CalcResultRevealed();
+}
+
 class CalcFormReset extends ShippingCalculatorEvent {
   const CalcFormReset();
 }

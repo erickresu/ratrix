@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../../../core/utils/breakpoints.dart';
+import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../rates_colors.dart';
 import 'rate_matrix_table.dart';
@@ -86,14 +87,18 @@ class Step1RateMatrix extends StatelessWidget {
           children: [
             _MatrixTab(
               label: 'Standard rates',
-              selected: state.matrixTab == 'standard',
-              onTap: () => bloc.add(const MatrixTabChanged('standard')),
+              selected: state.serviceLevel == ServiceLevel.regular,
+              onTap: () => bloc.add(
+                const ServiceLevelChanged(ServiceLevel.regular),
+              ),
             ),
             const SizedBox(width: 24),
             _MatrixTab(
               label: 'Express rates',
-              selected: state.matrixTab == 'express',
-              onTap: () => bloc.add(const MatrixTabChanged('express')),
+              selected: state.serviceLevel == ServiceLevel.express,
+              onTap: () => bloc.add(
+                const ServiceLevelChanged(ServiceLevel.express),
+              ),
             ),
           ],
         ),
@@ -103,7 +108,7 @@ class Step1RateMatrix extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${state.matrixTab == 'standard' ? 'Standard' : 'Express'} rate markup',
+                'Express rate markup',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -160,7 +165,7 @@ class Step1RateMatrix extends StatelessWidget {
               const SizedBox(width: 8),
               ShadButton(
                 backgroundColor: context.colors.primary,
-                onPressed: () {},
+                onPressed: () => bloc.add(const MarkupApplied()),
                 child: const Text('Apply markup'),
               ),
             ],
@@ -206,13 +211,17 @@ class Step1RateMatrix extends StatelessWidget {
           onDestinationSelected: (i, option, text) => bloc.add(DestinationLocationSelected(i, option, text)),
           onOriginSearchTypeChanged: (t) => bloc.add(LocationSearchTypeChanged(LocationField.origin, t)),
           onDestinationSearchTypeChanged: (t) => bloc.add(LocationSearchTypeChanged(LocationField.destination, t)),
-          onCellChanged: (i, bi, v) => bloc.add(CellChanged(i, bi, v)),
+          onCellChanged: (i, bi, v) => bloc.add(
+            CellChanged(i, bi, v, isExpress: state.serviceLevel == ServiceLevel.express),
+          ),
           onBreakweightMinChanged: (i, v) =>
               bloc.add(BreakweightMinChanged(i, v)),
           onBreakweightMaxChanged: (i, v) =>
               bloc.add(BreakweightMaxChanged(i, v)),
           onRemoveBreakweight: (i) => bloc.add(BreakweightRemoved(i)),
           onRemoveRoute: (i) => bloc.add(RouteRemoveRequested(i)),
+          isExcessPricing: state.isExcessPricing,
+          useExpressRates: state.serviceLevel == ServiceLevel.express,
         ),
         const SizedBox(height: 20),
         Row(
@@ -221,11 +230,15 @@ class Step1RateMatrix extends StatelessWidget {
               label: 'Add route',
               onTap: () => bloc.add(const RouteAdded()),
             ),
-            const SizedBox(width: 12),
-            GhostButton(
-              label: 'Add breakweight',
-              onTap: () => bloc.add(const BreakweightAdded()),
-            ),
+            // Excess/Minimum Excess is locked to a base bracket + one
+            // uncapped Excess tier — no arbitrary 3rd+ tier to add.
+            if (!state.isExcessPricing) ...[
+              const SizedBox(width: 12),
+              GhostButton(
+                label: 'Add breakweight',
+                onTap: () => bloc.add(const BreakweightAdded()),
+              ),
+            ],
           ],
         ),
         if (state.requiresMinimumCharge) ...[

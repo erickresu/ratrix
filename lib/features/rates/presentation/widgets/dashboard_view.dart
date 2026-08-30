@@ -33,9 +33,9 @@ class DashboardView extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(
-            isMobile ? 20 : 88,
+            isMobile ? 24 : 125,
             64,
-            isMobile ? 20 : 88,
+            isMobile ? 24 : 125,
             40,
           ),
           child: Row(
@@ -129,9 +129,9 @@ class DashboardView extends StatelessWidget {
             slivers: [
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(
-                  isMobile ? 20 : 88,
+                  isMobile ? 24 : 125,
                   0,
-                  isMobile ? 20 : 88,
+                  isMobile ? 24 : 125,
                   64,
                 ),
                 sliver: SliverFillRemaining(
@@ -221,9 +221,9 @@ class _DashboardSkeleton extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(
-              isMobile ? 20 : 64,
+              isMobile ? 24 : 125,
               48,
-              isMobile ? 20 : 64,
+              isMobile ? 24 : 125,
               40,
             ),
             child: Row(
@@ -246,9 +246,9 @@ class _DashboardSkeleton extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
-                isMobile ? 20 : 64,
+                isMobile ? 24 : 125,
                 0,
-                isMobile ? 20 : 64,
+                isMobile ? 24 : 125,
                 56,
               ),
               child: Column(
@@ -500,10 +500,13 @@ class _RecentRatesTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = Breakpoints.isMobile(context);
+    // Header row is always the fixed navy `sidebarBg`, regardless of app
+    // theme (same treatment as the sidebar itself) — so its text needs a
+    // fixed light color rather than a theme-aware muted token.
     final headerStyle = TextStyle(
       fontSize: compact ? 10 : 12,
       fontWeight: FontWeight.w600,
-      color: context.colors.textMuted,
+      color: Colors.white.withValues(alpha: 0.75),
       letterSpacing: 0.4,
     );
 
@@ -537,7 +540,7 @@ class _RecentRatesTable extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          color: context.colors.surfaceSubtle,
+          color: context.colors.sidebarBg,
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 18 : 24,
             vertical: compact ? 13 : 14,
@@ -682,7 +685,7 @@ class _RecentRatesTable extends StatelessWidget {
                 height: headerHeight,
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.only(left: 18),
-                color: context.colors.surfaceSubtle,
+                color: context.colors.sidebarBg,
                 child: Text('CLIENT', style: headerStyle),
               ),
               for (final rate in rates)
@@ -732,7 +735,7 @@ class _RecentRatesTable extends StatelessWidget {
                   height: headerHeight,
                   alignment: Alignment.centerLeft,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  color: context.colors.surfaceSubtle,
+                  color: context.colors.sidebarBg,
                   child: Row(
                     children: [
                       headerCell('ROUTE', routeWidth),
