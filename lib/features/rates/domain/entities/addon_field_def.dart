@@ -18,10 +18,11 @@ abstract class AddonGroupDef with _$AddonGroupDef {
 
 const addonGroupDefs = <AddonGroupDef>[
   AddonGroupDef(
-    title: 'Transport & Base Charges',
+    title: 'Transport & Delivery Charges',
     fields: [
       AddonFieldDef(key: 'fuel', label: 'Fuel Surcharge (FSC/BAF)', hasToggle: true),
       AddonFieldDef(key: 'security', label: 'Security Surcharge'),
+      AddonFieldDef(key: 'delivery', label: 'Delivery Fee'),
     ],
   ),
   AddonGroupDef(
@@ -36,27 +37,19 @@ const addonGroupDefs = <AddonGroupDef>[
     ],
   ),
   AddonGroupDef(
-    title: 'Pickup & Delivery-Related Charges',
-    fields: [AddonFieldDef(key: 'delivery', label: 'Delivery Fee')],
-  ),
-  AddonGroupDef(
     title: 'Packing & Protection Charges',
     fields: [
       AddonFieldDef(key: 'crating', label: 'Crating Fee'),
       AddonFieldDef(key: 'packing', label: 'Packing Fee'),
+      AddonFieldDef(key: 'hazardous', label: 'Hazardous Goods Handling Fee'),
     ],
   ),
   AddonGroupDef(
-    title: 'Terminal, Port & Infrastructure Charges',
+    title: 'Terminal, Port & Other Charges',
     fields: [
       AddonFieldDef(key: 'thc', label: 'Air Terminal Handling Fee (THC)'),
       AddonFieldDef(key: 'demurrage', label: 'Demurrage/Detention Fee'),
-    ],
-  ),
-  AddonGroupDef(
-    title: 'Additional Fees',
-    fields: [
-      AddonFieldDef(key: 'hazardous', label: 'Hazardous Goods Handling Fee'),
+      AddonFieldDef(key: 'arrastre', label: 'Arrastre Charge'),
       AddonFieldDef(key: 'othersNonVat', label: 'Others Non-VAT'),
     ],
   ),

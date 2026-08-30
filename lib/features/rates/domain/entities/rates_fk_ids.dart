@@ -118,6 +118,13 @@ class RatesFkIds {
       if (e.value.isEmpty) e.key,
   };
 
+  /// [chargeBasisNotYetImplemented] plus Full Container Load (options are
+  /// confirmed, but no pricing formula for them exists in the calculator).
+  static final Set<ChargeBasis> chargeBasisDisabledInWizard = {
+    ...chargeBasisNotYetImplemented,
+    ChargeBasis.fullContainerLoad,
+  };
+
   /// `types_freight_mode_charge_basis` pivot — which [ChargeBasis] values are
   /// valid for a given [FreightMode]. The wizard's charge-basis picker must
   /// only offer these, and reset to the first valid option whenever the

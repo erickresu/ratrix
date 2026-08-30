@@ -39,10 +39,12 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
        ) {
     on<WizardStepChanged>((event, emit) {
       if (event.step > 0 && !state.canLeaveStep0) return;
+      if (event.step > 1 && !state.canLeaveStep1) return;
       emit(state.copyWith(step: event.step));
     });
     on<WizardNextStepRequested>((event, emit) {
       if (state.step == 0 && !state.canLeaveStep0) return;
+      if (state.step == 1 && !state.canLeaveStep1) return;
       if (state.step < 3) emit(state.copyWith(step: state.step + 1));
     });
     on<WizardBackStepRequested>((event, emit) {
@@ -57,11 +59,12 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       final newChargeBasis = validChargeBases.contains(state.chargeBasis)
           ? state.chargeBasis
           // Prefer a charge basis that's actually usable over one that's
-          // only listed as "valid for this freight mode" but not yet
-          // implemented (e.g. Full Truck Load) — otherwise switching to
-          // Land would default straight into a disabled Pricing Option.
+          // only listed as "valid for this freight mode" but disabled in
+          // the wizard (e.g. Full Truck Load, Full Container Load) —
+          // otherwise switching to Land/Sea would default straight into a
+          // disabled option.
           : validChargeBases.firstWhere(
-              (b) => !RatesFkIds.chargeBasisNotYetImplemented.contains(b),
+              (b) => !RatesFkIds.chargeBasisDisabledInWizard.contains(b),
               orElse: () => validChargeBases.first,
             );
       final newPricingOption = _resolvePricingOption(
@@ -733,6 +736,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       put('demurrage', addons.demurrageDetention);
       put('hazardous', addons.hazardousGoodsHandling);
       put('othersNonVat', addons.othersNonVat);
+      put('arrastre', addons.arrastre);
       // thc: air_thc/sea_thc both map back to the single wizard "thc" field,
       // matching whichever the forward mapper would have written for this
       // freight mode.

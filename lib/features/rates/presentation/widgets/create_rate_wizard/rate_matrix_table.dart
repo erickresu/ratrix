@@ -304,9 +304,9 @@ class RateMatrixTable extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            r'$',
+                            '₱',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 14,
                               color: context.colors.primaryDeep,
                             ),
                           ),
@@ -882,8 +882,8 @@ class _BreakweightHeaderCell extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surfaceSubtle,
         border: Border(
-          left: BorderSide(color: context.colors.border),
-          bottom: BorderSide(color: context.colors.border),
+          left: BorderSide(color: context.colors.borderStrong),
+          bottom: BorderSide(color: context.colors.borderStrong),
         ),
       ),
       child: Column(

@@ -319,8 +319,12 @@ class _WizardFooter extends StatelessWidget {
     final canLeaveStep0 = context.select(
       (RateWizardBloc b) => b.state.canLeaveStep0,
     );
+    final canLeaveStep1 = context.select(
+      (RateWizardBloc b) => b.state.canLeaveStep1,
+    );
     final isMobile = Breakpoints.isMobile(context);
     final blockedByFreightMode = step == 0 && !canLeaveStep0;
+    final blockedByBreakweights = step == 1 && !canLeaveStep1;
 
     final nextButton = ShadButton(
       gradient: step == 3
@@ -341,7 +345,7 @@ class _WizardFooter extends StatelessWidget {
       trailing: step == 3
           ? null
           : const Icon(CupertinoIcons.arrow_right, size: 16),
-      onPressed: (step == 3 && isSubmitting) || blockedByFreightMode
+      onPressed: (step == 3 && isSubmitting) || blockedByFreightMode || blockedByBreakweights
           ? null
           : () {
               if (step < 3) {

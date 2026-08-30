@@ -72,6 +72,9 @@ class StepRail extends StatelessWidget {
           internalPadding: 8,
           verticalTitlePlacement: VerticalTitlePlacement.side,
           verticalAlignment: CrossAxisAlignment.start,
+          activeStepBackgroundColor: context.colors.pageBg,
+          finishedStepBackgroundColor: context.colors.pageBg,
+          unreachedStepBackgroundColor: context.colors.pageBg,
           lineStyle: LineStyle(
             lineType: LineType.normal,
             lineLength: 44,

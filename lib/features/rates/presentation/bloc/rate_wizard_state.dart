@@ -134,6 +134,16 @@ class RateWizardState extends Equatable {
     PricingOption.minimumExcessBreakweight,
   }.contains(pricingOption);
 
+  /// Excess/Minimum Excess only ever need the base tier's max filled in
+  /// (min is fixed at 1, the 2nd tier has no editable max — it's "No
+  /// limit"). Every other pricing option needs every tier's min and max.
+  bool get canLeaveStep1 => isExcessPricing
+      ? breakweights.isNotEmpty && breakweights.first.max.trim().isNotEmpty
+      : breakweights.isNotEmpty &&
+          breakweights.every(
+            (b) => b.min.trim().isNotEmpty && b.max.trim().isNotEmpty,
+          );
+
   RateWizardState copyWith({
     int? step,
     FreightMode? freightMode,

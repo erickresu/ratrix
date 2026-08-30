@@ -28,6 +28,7 @@ class RateWizardPayloadMapper {
     'demurrage': 'demurrage_detention',
     'hazardous': 'hazardous_goods_handling',
     'othersNonVat': 'others_non_vat',
+    'arrastre': 'arrastre',
   };
 
   /// Only these addon keys have an API `_type` (exact/percentage) field.

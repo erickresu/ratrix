@@ -17,6 +17,7 @@ class Step1RateMatrix extends StatelessWidget {
     final state = context.watch<RateWizardBloc>().state;
     final isMobile = Breakpoints.isMobile(context);
 
+    /*
     final bulkOpsText = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -53,10 +54,12 @@ class Step1RateMatrix extends StatelessWidget {
         icon: CupertinoIcons.arrow_down_doc,
       ),
     ];
+    */
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        /*
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -83,25 +86,25 @@ class Step1RateMatrix extends StatelessWidget {
                 ),
         ),
         const SizedBox(height: 28),
+        */
         Row(
           children: [
             _MatrixTab(
               label: 'Standard rates',
               selected: state.serviceLevel == ServiceLevel.regular,
-              onTap: () => bloc.add(
-                const ServiceLevelChanged(ServiceLevel.regular),
-              ),
+              onTap: () =>
+                  bloc.add(const ServiceLevelChanged(ServiceLevel.regular)),
             ),
             const SizedBox(width: 24),
             _MatrixTab(
               label: 'Express rates',
               selected: state.serviceLevel == ServiceLevel.express,
-              onTap: () => bloc.add(
-                const ServiceLevelChanged(ServiceLevel.express),
-              ),
+              onTap: () =>
+                  bloc.add(const ServiceLevelChanged(ServiceLevel.express)),
             ),
           ],
         ),
+        /*
         Divider(height: 25, color: context.colors.border),
         Builder(builder: (context) {
           final markupDescription = Column(
@@ -191,6 +194,7 @@ class Step1RateMatrix extends StatelessWidget {
             ],
           );
         }),
+        */
         const SizedBox(height: 16),
         RateMatrixTable(
           matrixRows: state.matrixRows,
@@ -205,14 +209,26 @@ class Step1RateMatrix extends StatelessWidget {
           destinationSearchType: state.destinationSearchType,
           onOriginChanged: (i, v) => bloc.add(OriginChanged(i, v)),
           onDestinationChanged: (i, v) => bloc.add(DestinationChanged(i, v)),
-          onOriginQueryChanged: (q) => bloc.add(LocationSearchQueryChanged(LocationField.origin, q)),
-          onDestinationQueryChanged: (q) => bloc.add(LocationSearchQueryChanged(LocationField.destination, q)),
-          onOriginSelected: (i, option, text) => bloc.add(OriginLocationSelected(i, option, text)),
-          onDestinationSelected: (i, option, text) => bloc.add(DestinationLocationSelected(i, option, text)),
-          onOriginSearchTypeChanged: (t) => bloc.add(LocationSearchTypeChanged(LocationField.origin, t)),
-          onDestinationSearchTypeChanged: (t) => bloc.add(LocationSearchTypeChanged(LocationField.destination, t)),
+          onOriginQueryChanged: (q) =>
+              bloc.add(LocationSearchQueryChanged(LocationField.origin, q)),
+          onDestinationQueryChanged: (q) => bloc.add(
+            LocationSearchQueryChanged(LocationField.destination, q),
+          ),
+          onOriginSelected: (i, option, text) =>
+              bloc.add(OriginLocationSelected(i, option, text)),
+          onDestinationSelected: (i, option, text) =>
+              bloc.add(DestinationLocationSelected(i, option, text)),
+          onOriginSearchTypeChanged: (t) =>
+              bloc.add(LocationSearchTypeChanged(LocationField.origin, t)),
+          onDestinationSearchTypeChanged: (t) =>
+              bloc.add(LocationSearchTypeChanged(LocationField.destination, t)),
           onCellChanged: (i, bi, v) => bloc.add(
-            CellChanged(i, bi, v, isExpress: state.serviceLevel == ServiceLevel.express),
+            CellChanged(
+              i,
+              bi,
+              v,
+              isExpress: state.serviceLevel == ServiceLevel.express,
+            ),
           ),
           onBreakweightMinChanged: (i, v) =>
               bloc.add(BreakweightMinChanged(i, v)),
@@ -315,4 +331,3 @@ class _MatrixTab extends StatelessWidget {
     );
   }
 }
-
