@@ -242,13 +242,19 @@ class ShippingCalculatorState extends Equatable {
     return {for (final c in routeChoices) if (c.origin == origin) c.destination}.toList();
   }
 
+  /// The selected rate's pricing option, resolved from its FK id — null
+  /// until a rate is selected.
+  PricingOption? get pricingOption {
+    final chargeOptionId = selectedRate?.chargeOption?.id;
+    if (chargeOptionId == null) return null;
+    return RatesFkIds.pricingOptionFromId[chargeOptionId];
+  }
+
   /// True when the selected rate's pricing option is one of the 3 "Minimum
   /// …" breakweight variants — the first bracket's rate is a flat fee
   /// instead of per-kg for these (see `ShippingCalculatorBloc._freightFor`).
   bool get requiresMinimumCharge {
-    final chargeOptionId = selectedRate?.chargeOption?.id;
-    if (chargeOptionId == null) return false;
-    final pricingOption = RatesFkIds.pricingOptionFromId[chargeOptionId];
+    final pricingOption = this.pricingOption;
     return const {
       PricingOption.minimumFixedBreakweight,
       PricingOption.minimumCummulativeBreakweight,

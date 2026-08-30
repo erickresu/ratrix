@@ -546,6 +546,7 @@ class _CargoDetailsCard extends StatelessWidget {
               origin: state.origin,
               destination: state.destination,
               tiers: state.selectedRouteTiers,
+              serviceLevel: state.serviceLevel,
               addons: state.selectedRate?.addons,
             ),
       child: Column(
@@ -802,11 +803,18 @@ class _CbmCalculatorDialog extends StatelessWidget {
 /// origin/destination and breakweight brackets so the user can check what's
 /// actually configured before hitting Calculate, not just after it errors.
 class _RouteTiersInfoButton extends StatelessWidget {
-  const _RouteTiersInfoButton({required this.origin, required this.destination, required this.tiers, this.addons});
+  const _RouteTiersInfoButton({
+    required this.origin,
+    required this.destination,
+    required this.tiers,
+    required this.serviceLevel,
+    this.addons,
+  });
 
   final String origin;
   final String destination;
   final List<RatrixBreakweight> tiers;
+  final ServiceLevel serviceLevel;
   final RatrixAddons? addons;
 
   void _showDialog(BuildContext context) => showShadDialog<void>(
@@ -816,11 +824,12 @@ class _RouteTiersInfoButton extends StatelessWidget {
           backgroundColor: dialogContext.colors.surface,
           padding: EdgeInsets.zero,
           closeIcon: const SizedBox.shrink(),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560, maxHeight: 600),
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
+          // ShadDialog's own default constraints cap maxWidth at 512
+          // regardless of a child ConstrainedBox — override here instead.
+          constraints: const BoxConstraints(maxWidth: 720, maxHeight: 600),
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -828,12 +837,31 @@ class _RouteTiersInfoButton extends StatelessWidget {
                     children: [
                       Icon(CupertinoIcons.square_stack_3d_up, size: 20, color: dialogContext.colors.primaryDeep),
                       const SizedBox(width: 10),
-                      Expanded(
+                      Text(
+                        'Rate Details',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: dialogContext.colors.textBody),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: serviceLevel == ServiceLevel.express
+                              ? dialogContext.colors.accentChipBg
+                              : dialogContext.colors.primaryChipBg,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         child: Text(
-                          'Rate Details',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: dialogContext.colors.textBody),
+                          serviceLevel.label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: serviceLevel == ServiceLevel.express
+                                ? dialogContext.colors.accent
+                                : dialogContext.colors.primaryDeep,
+                          ),
                         ),
                       ),
+                      const Spacer(),
                       Material(
                         color: dialogContext.colors.surfaceMuted,
                         shape: const CircleBorder(),
@@ -867,7 +895,6 @@ class _RouteTiersInfoButton extends StatelessWidget {
               ),
             ),
           ),
-        ),
       );
 
   @override

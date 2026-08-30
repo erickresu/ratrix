@@ -620,7 +620,7 @@ class FreightBreakdownPanel extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             child: Column(
               children: [
-                _DialogHeader(rateType: state.rateType),
+                _DialogHeader(state: state),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -853,7 +853,7 @@ class _FreightBreakdownDialog extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _DialogHeader(rateType: state.rateType),
+                    _DialogHeader(state: state),
                     Flexible(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -946,15 +946,12 @@ class _GeneratePdfButtonState extends State<GeneratePdfButton> {
 }
 
 class _DialogHeader extends StatelessWidget {
-  const _DialogHeader({required this.rateType});
+  const _DialogHeader({required this.state});
 
-  final RateType rateType;
+  final ShippingCalculatorState state;
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final dateLabel = '${now.month}/${now.day}/${now.year}';
-
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
       decoration: BoxDecoration(gradient: context.colors.primaryButtonGradient),
@@ -976,7 +973,7 @@ class _DialogHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: Text(
-                    '${rateType.label.toUpperCase()} RATE',
+                    '${state.rateType.label.toUpperCase()} RATE',
                     style: const TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -1012,13 +1009,336 @@ class _DialogHeader extends StatelessWidget {
               ],
             ),
           ),
-          Text(
-            dateLabel,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.85),
+          if (state.calcResult != null && state.calcResult!.error == null)
+            Material(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _showCalculationBreakdown(context, state),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(CupertinoIcons.number, size: 13, color: Colors.white),
+                      SizedBox(width: 6),
+                      Text(
+                        'How is this calculated?',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Plain-English description of the formula behind [PricingOption] — shown
+/// in the Calculation Breakdown popup so the numbers below it aren't just
+/// asserted, they're explained.
+String _formulaFor(PricingOption option) => switch (option) {
+      PricingOption.fixedBreakweight => 'Chargeable weight × the matched bracket\'s rate.',
+      PricingOption.minimumFixedBreakweight =>
+        'A flat fee within the first bracket, regardless of actual weight; weight × rate for any bracket beyond it.',
+      PricingOption.flatBreakweight => 'A flat fee for whichever bracket the weight falls into — never multiplied by weight.',
+      PricingOption.cummulativeBreakweight =>
+        'Each bracket the weight passes through is charged separately at that bracket\'s rate, then summed.',
+      PricingOption.minimumCummulativeBreakweight =>
+        'A flat entrance fee for the first bracket, then each further bracket charged per kg and summed.',
+      PricingOption.excessBreakweight =>
+        'The base bracket priced per kg, plus everything beyond it priced at the excess bracket\'s rate.',
+      PricingOption.minimumExcessBreakweight =>
+        'A flat base-bracket fee, plus everything beyond it priced at the excess bracket\'s rate.',
+      PricingOption.routeBased || PricingOption.timeBased =>
+        'Not yet computed by this calculator.',
+    };
+
+void _showCalculationBreakdown(BuildContext context, ShippingCalculatorState state) {
+  showShadDialog<void>(
+    context: context,
+    builder: (dialogContext) => _CalculationBreakdownDialog(state: state),
+  );
+}
+
+/// "Show your work" popup — every figure in the freight breakdown, traced
+/// back to the formula and the exact rate/route data it came from, instead
+/// of just asserting the final numbers.
+class _CalculationBreakdownDialog extends StatelessWidget {
+  const _CalculationBreakdownDialog({required this.state});
+
+  final ShippingCalculatorState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final result = state.calcResult!;
+    num displayValue(num v) => state.roundedDisplay ? v.roundToDouble() : v;
+    String money(num v) => '₱${displayValue(v).toStringAsFixed(2)}';
+
+    final addons = state.selectedRate?.addons;
+    final addonLines = <String>[];
+    if (result.fuelSurcharge != null && result.fuelSurcharge != 0) {
+      addonLines.add(
+        addons?.fuelSurchargeType == 'percentage'
+            ? 'Fuel surcharge: ${addons?.fuelSurcharge} % of base freight = ${money(result.fuelSurcharge!)}'
+            : 'Fuel surcharge: ${money(result.fuelSurcharge!)} (flat, from rate config)',
+      );
+    }
+    for (final entry in result.flatFees.entries) {
+      if (entry.key == 'Valuation' && addons?.valuationType == 'percentage') {
+        addonLines.add('${entry.key}: ${addons?.valuation} % of declared value = ${money(entry.value)}');
+      } else {
+        addonLines.add('${entry.key}: ${money(entry.value)} (flat, from rate config)');
+      }
+    }
+
+    final grandTotalText = state.vatInclusive
+        ? 'Sub-total (VAT already included) = ${money(displayValue(state.grandTotal))}'
+        : 'Sub-total + VAT = ${money(displayValue(state.grandTotal))}';
+
+    return ShadDialog(
+      radius: BorderRadius.circular(20),
+      backgroundColor: context.colors.surface,
+      padding: EdgeInsets.zero,
+      closeIcon: const SizedBox.shrink(),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 680),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: context.colors.primaryButtonGradient,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: const Icon(CupertinoIcons.number, size: 18, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Calculation Breakdown',
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.colors.textBody),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Every figure, traced back to its source',
+                          style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Material(
+                    color: context.colors.surfaceMuted,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(CupertinoIcons.xmark, size: 15, color: context.colors.textMuted),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _BreakdownSection(
+                        icon: CupertinoIcons.tag_fill,
+                        title: 'Rate used',
+                        lines: [
+                          if (state.selectedChargeCode != null) 'Charge code: ${state.selectedChargeCode}',
+                          if (state.pricingOption != null) ...[
+                            'Pricing option: ${state.pricingOption!.label}',
+                            'Formula: ${_formulaFor(state.pricingOption!)}',
+                          ],
+                          if (result.matchedTierMin != null && result.matchedTierMax != null)
+                            'Matched bracket: ${result.matchedTierMin!.toStringAsFixed(0)}–${result.matchedTierMax!.toStringAsFixed(0)} kg'
+                                '${result.tierRate != null ? ' @ ${money(result.tierRate!)}/kg' : ''}',
+                        ],
+                      ),
+                      _BreakdownSection(
+                        icon: CupertinoIcons.cube_box_fill,
+                        title: 'Base freight',
+                        lines: [
+                          if (result.chargeableWeight != null) 'Chargeable weight: ${result.chargeableWeight!.toStringAsFixed(2)} kg',
+                          if (result.tierRate != null && result.chargeableWeight != null)
+                            '${result.chargeableWeight!.toStringAsFixed(2)} kg × ${money(result.tierRate!)}/kg = ${money(result.baseFreight ?? 0)}'
+                          else
+                            'Base freight = ${money(result.baseFreight ?? 0)}',
+                        ],
+                      ),
+                      if (addonLines.isNotEmpty)
+                        _BreakdownSection(icon: CupertinoIcons.plus_circle_fill, title: 'Add-ons', lines: addonLines),
+                      _BreakdownSection(
+                        icon: CupertinoIcons.equal_square_fill,
+                        title: 'Sub-total',
+                        lines: ['Base freight + add-ons = ${money(result.subTotal ?? 0)}'],
+                      ),
+                      _BreakdownSection(
+                        icon: CupertinoIcons.percent,
+                        title: 'VAT',
+                        lines: switch (state.vatMode) {
+                          VatMode.exempt => const ['VAT-Exempt Sale — no VAT applied.'],
+                          VatMode.zeroRated => const ['Zero-Rated Sale — no VAT applied.'],
+                          VatMode.standard => [
+                              state.vatInclusive
+                                  ? 'VAT already included in the sub-total — backed out as sub-total ÷ 1.12 × 0.12 = ${money(state.vatAmount)}'
+                                  : '12% of the VATable sub-total = ${money(state.vatAmount)}',
+                            ],
+                        },
+                      ),
+                      const SizedBox(height: 4),
+                      _GrandTotalCard(text: grandTotalText),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Renders `label = value`/`label: value` lines with the tail after the
+/// last `=`/`:` bolded — the answer stands out, the working stays quiet.
+Widget _emphasizedLine(BuildContext context, String text) {
+  final baseStyle = TextStyle(fontSize: 13, color: context.colors.textMutedStrong, height: 1.5);
+  final eqIndex = text.lastIndexOf(' = ');
+  final colonIndex = text.indexOf(': ');
+  final (cut, markerLength) = eqIndex != -1 ? (eqIndex, 3) : (colonIndex, 2);
+  if (cut == -1) return Text(text, style: baseStyle);
+
+  return RichText(
+    text: TextSpan(
+      style: baseStyle,
+      children: [
+        TextSpan(text: text.substring(0, cut + markerLength)),
+        TextSpan(
+          text: text.substring(cut + markerLength),
+          style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.textBody),
+        ),
+      ],
+    ),
+  );
+}
+
+class _BreakdownSection extends StatelessWidget {
+  const _BreakdownSection({required this.icon, required this.title, required this.lines});
+
+  final IconData icon;
+  final String title;
+  final List<String> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceSubtle,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 13, color: context.colors.primaryDeep),
+              const SizedBox(width: 6),
+              Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                  color: context.colors.primaryDeep,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final line in lines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: _emphasizedLine(context, line),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The final answer, called out from the rest of the (quieter) working —
+/// same gradient treatment as the popup's own header badge.
+class _GrandTotalCard extends StatelessWidget {
+  const _GrandTotalCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final splitAt = text.lastIndexOf(' = ');
+    final prefix = splitAt == -1 ? text : text.substring(0, splitAt + 3);
+    final suffix = splitAt == -1 ? '' : text.substring(splitAt + 3);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: context.colors.primaryButtonGradient,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'GRAND TOTAL',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+                color: Colors.white,
+              ).copyWith(color: Colors.white.withValues(alpha: 0.85)),
             ),
           ),
+          if (suffix.isNotEmpty)
+            Text(
+              suffix,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+            )
+          else
+            Flexible(
+              child: Text(
+                prefix,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                textAlign: TextAlign.right,
+              ),
+            ),
         ],
       ),
     );
@@ -1207,8 +1527,9 @@ class RouteTiersTable extends StatelessWidget {
               border: Border.all(color: context.colors.border),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: IntrinsicHeight(
+              child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Origin/Destination pinned as the leftmost column, mirroring
                 // the rate wizard's matrix table layout.
@@ -1217,29 +1538,33 @@ class RouteTiersTable extends StatelessWidget {
                   child: Column(
                     children: [
                       Container(
-                        height: 44,
+                        height: 48,
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         color: context.colors.surfaceSubtle,
                         child: Text('ROUTE', style: headerLabelStyle(context)),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            top: BorderSide(color: context.colors.border),
+                      Expanded(
+                        child: Container(
+                          width: double.infinity,
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 10,
                           ),
-                        ),
-                        child: Text(
-                          '${origin.isEmpty ? '—' : origin} → ${destination.isEmpty ? '—' : destination}',
-                          style: cellStyle(
-                            context,
-                          ).copyWith(fontWeight: FontWeight.w700),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                          decoration: BoxDecoration(
+                            border: Border(
+                              top: BorderSide(color: context.colors.border),
+                            ),
+                          ),
+                          child: Text(
+                            '${origin.isEmpty ? '—' : origin} → ${destination.isEmpty ? '—' : destination}',
+                            style: cellStyle(
+                              context,
+                            ).copyWith(fontWeight: FontWeight.w700),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ],
@@ -1251,9 +1576,9 @@ class RouteTiersTable extends StatelessWidget {
                     child: Column(
                       children: [
                         Container(
-                          height: 44,
+                          height: 48,
                           alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
                             color: context.colors.surfaceSubtle,
                             border: Border(
@@ -1281,36 +1606,67 @@ class RouteTiersTable extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Container(
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: BorderSide(color: context.colors.border),
-                              left: BorderSide(color: context.colors.border),
-                            ),
-                          ),
+                        Expanded(
                           child: Container(
+                            width: double.infinity,
+                            alignment: Alignment.center,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 10,
+                              vertical: 14,
                             ),
                             decoration: BoxDecoration(
-                              color: context.colors.primaryChipBg,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              '₱${tiers[i].rate.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: context.colors.primaryDeep,
+                              border: Border(
+                                top: BorderSide(color: context.colors.border),
+                                left: BorderSide(color: context.colors.border),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.primaryChipBg,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'REG ₱${tiers[i].rate.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.colors.primaryDeep,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (tiers[i].expressRate != null) ...[
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: context.colors.accentChipBg,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      'EXP ₱${tiers[i].expressRate!.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: context.colors.accent,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ),
@@ -1320,6 +1676,7 @@ class RouteTiersTable extends StatelessWidget {
               ],
             ),
           ),
+        ),
       ],
     );
   }

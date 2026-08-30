@@ -29,7 +29,9 @@ class ShippingCalculatorBloc
           emit(state.copyWith(serviceMode: event.mode, clearRateTable: true)),
     );
     on<CalcServiceLevelChanged>(
-      (event, emit) => emit(state.copyWith(serviceLevel: event.level)),
+      (event, emit) => emit(
+        state.copyWith(serviceLevel: event.level, clearCalcResult: true),
+      ),
     );
     on<CalcRateTableChanged>(_onRateTableChanged);
     on<CalcOriginChanged>(
@@ -164,6 +166,7 @@ class ShippingCalculatorBloc
         // A new rate may not have Express pricing set — don't carry over an
         // Express selection from whatever was picked before.
         serviceLevel: ServiceLevel.regular,
+        clearCalcResult: true,
       ),
     );
     RatrixRate? fullRate;
@@ -315,6 +318,7 @@ class ShippingCalculatorBloc
         rate.freightMode?.code == 'SEA' ? addons.seaThc : addons.airThc,
       );
       addFlat('Demurrage/detention', addons.demurrageDetention);
+      addFlat('Arrastre charge', addons.arrastre);
       addFlat('Hazardous goods handling', addons.hazardousGoodsHandling);
       addFlat('Other fees', addons.othersNonVat);
     }
