@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../../core/utils/money_formatting.dart';
 import '../../../../../core/widgets/mr_ratrix.dart';
 import '../../../domain/entities/client.dart';
 import '../../../domain/entities/ratrix_rate.dart';
@@ -108,7 +109,7 @@ List<_CalcStep> _calculationSteps(ShippingCalculatorState state) {
   if (result == null || result.error != null) return const [];
 
   num displayValue(num v) => state.roundedDisplay ? v.roundToDouble() : v;
-  String money(num v) => '₱${displayValue(v).toStringAsFixed(2)}';
+  String money(num v) => '₱${formatMoney(displayValue(v))}';
 
   final steps = <_CalcStep>[];
 
@@ -280,7 +281,7 @@ class _CalculatingDialogState extends State<_CalculatingDialog> {
                     child: _MascotSpeechBubble(
                       text: _displayedTotal == null
                           ? 'Let me work out your freight breakdown...'
-                          : "That's ₱${_displayedTotal!.toStringAsFixed(2)} so far...",
+                          : "That's ₱${formatMoney(_displayedTotal!)} so far...",
                     ),
                   ),
                 ],
@@ -927,7 +928,8 @@ class _GeneratePdfButtonState extends State<GeneratePdfButton> {
     return SizedBox(
       width: double.infinity,
       child: ShadButton(
-        gradient: context.colors.primaryButtonGradient,
+        backgroundColor: context.colors.primary,
+        hoverBackgroundColor: context.colors.primaryHover,
         leading: _generating
             ? const SizedBox(
                 width: 16,
@@ -1081,7 +1083,7 @@ class _CalculationBreakdownDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final result = state.calcResult!;
     num displayValue(num v) => state.roundedDisplay ? v.roundToDouble() : v;
-    String money(num v) => '₱${displayValue(v).toStringAsFixed(2)}';
+    String money(num v) => '₱${formatMoney(displayValue(v))}';
 
     final addons = state.selectedRate?.addons;
     final addonLines = <String>[];
@@ -1177,7 +1179,8 @@ class _CalculationBreakdownDialog extends StatelessWidget {
                             'Formula: ${_formulaFor(state.pricingOption!)}',
                           ],
                           if (result.matchedTierMin != null && result.matchedTierMax != null)
-                            'Matched bracket: ${result.matchedTierMin!.toStringAsFixed(0)}–${result.matchedTierMax!.toStringAsFixed(0)} kg'
+                            'Matched bracket: ${result.matchedTierMin!.toStringAsFixed(0)}–'
+                                '${result.matchedTierMax! >= 999999999 ? 'No limit' : '${result.matchedTierMax!.toStringAsFixed(0)} kg'}'
                                 '${result.tierRate != null ? ' @ ${money(result.tierRate!)}/kg' : ''}',
                         ],
                       ),
@@ -1521,7 +1524,21 @@ class RouteTiersTable extends StatelessWidget {
             style: cellStyle(context).copyWith(color: context.colors.textMuted),
           )
         else
-          Container(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (tiers.any((t) => t.expressRate != null)) ...[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _RateLegendDot(color: context.colors.primaryDeep, label: 'Regular'),
+                    const SizedBox(width: 14),
+                    _RateLegendDot(color: context.colors.accent, label: 'Express'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              Container(
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               border: Border.all(color: context.colors.border),
@@ -1598,7 +1615,9 @@ class RouteTiersTable extends StatelessWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${tiers[i].min.toStringAsFixed(0)}–${tiers[i].max.toStringAsFixed(0)}',
+                                tiers[i].isUncapped
+                                    ? '${tiers[i].min.toStringAsFixed(0)}–No limit'
+                                    : '${tiers[i].min.toStringAsFixed(0)}–${tiers[i].max.toStringAsFixed(0)}',
                                 style: headerRangeStyle(context),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -1633,7 +1652,7 @@ class RouteTiersTable extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    'REG ₱${tiers[i].rate.toStringAsFixed(2)}',
+                                    '₱${formatMoney(tiers[i].rate)}',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
@@ -1655,7 +1674,7 @@ class RouteTiersTable extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
-                                      'EXP ₱${tiers[i].expressRate!.toStringAsFixed(2)}',
+                                      '₱${formatMoney(tiers[i].expressRate!)}',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
@@ -1677,6 +1696,34 @@ class RouteTiersTable extends StatelessWidget {
             ),
           ),
         ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+class _RateLegendDot extends StatelessWidget {
+  const _RateLegendDot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong),
+        ),
       ],
     );
   }
@@ -1693,7 +1740,7 @@ class _ResultBody extends StatelessWidget {
 
     num displayValue(num v) => state.roundedDisplay ? v.roundToDouble() : v;
     String money(num? v) =>
-        v == null ? '—' : displayValue(v).toStringAsFixed(2);
+        v == null ? '—' : formatMoney(displayValue(v));
 
     final grandTotal = displayValue(state.grandTotal);
 
@@ -1799,7 +1846,7 @@ class _ResultBody extends StatelessWidget {
                   ),
                 ),
                 TextSpan(
-                  text: grandTotal.toStringAsFixed(2),
+                  text: formatMoney(grandTotal),
                   style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.w800,

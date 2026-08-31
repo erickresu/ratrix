@@ -51,10 +51,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         deviceName: event.deviceName,
       );
-    } on AuthException catch (e) {
-      emit(state.copyWith(isSubmitting: false, error: e.message));
     } catch (e) {
-      emit(state.copyWith(isSubmitting: false, error: e.toString()));
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          error: 'Sign in failed. Please check your credentials and try again.',
+        ),
+      );
     }
   }
 

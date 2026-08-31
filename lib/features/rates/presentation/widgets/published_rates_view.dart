@@ -6,7 +6,6 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/mr_ratrix.dart';
 import '../../../../core/widgets/pagination_bar.dart';
-import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/published_rate.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
@@ -15,7 +14,7 @@ import 'delete_rate_dialog.dart';
 import 'published_rates_view_mobile.dart';
 import 'published_rates_view_web.dart';
 import 'rate_table.dart';
-import 'status_dialog.dart';
+import 'status_toast.dart';
 
 const _kAllValue = '__all__';
 
@@ -174,18 +173,12 @@ class PublishedRatesView extends StatelessWidget {
       sortToggle: sortToggle,
     );
 
-    final body = state.publishedRatesLoading
-        ? const SkeletonShimmer(
-            child: Column(
-              children: [
-                ListRowCardSkeleton(),
-                SizedBox(height: 16),
-                ListRowCardSkeleton(),
-                SizedBox(height: 16),
-                ListRowCardSkeleton(),
-              ],
-            ),
-          )
+    final body = RateTableFitReporter(
+      currentPerPage: state.publishedRatesPerPage,
+      onFit: (fit) => bloc.add(PublishedRatesPerPageChanged(fit)),
+      builder: (context, availableHeight, fit) =>
+        state.publishedRatesLoading
+        ? buildFittedRateSkeleton(availableHeight)
         : state.filteredPublishedRates.isEmpty
         ? Container(
             width: double.infinity,
@@ -261,14 +254,25 @@ class PublishedRatesView extends StatelessWidget {
               );
               if (confirmed == true) bloc.add(DeleteRateRequested(rate.id));
             },
-          );
+          ),
+    );
 
-    final paginationBar = !state.publishedRatesLoading && state.filteredPublishedRates.isNotEmpty
-        ? PaginationBar(
-            page: state.publishedRatePage,
-            itemsPerPage: RatesShellState.publishedRatesPerPage,
-            totalItems: state.filteredPublishedRates.length,
-            onPageChanged: (p) => bloc.add(PublishedRatePageChanged(p)),
+    // Reserved even while loading (just invisible) so the table's measured
+    // height doesn't shrink the moment loading finishes and the bar turns
+    // visible — that shrink would otherwise overflow the row count already
+    // fit against the taller loading-time space.
+    final paginationBar = state.publishedRatesLoading || state.filteredPublishedRates.isNotEmpty
+        ? Opacity(
+            opacity: state.publishedRatesLoading ? 0 : 1,
+            child: IgnorePointer(
+              ignoring: state.publishedRatesLoading,
+              child: PaginationBar(
+                page: state.publishedRatePage,
+                itemsPerPage: state.publishedRatesPerPage,
+                totalItems: state.filteredPublishedRates.length,
+                onPageChanged: (p) => bloc.add(PublishedRatePageChanged(p)),
+              ),
+            ),
           )
         : null;
 
@@ -279,7 +283,7 @@ class PublishedRatesView extends StatelessWidget {
               curr.deleteRateError != null &&
               prev.deleteRateError != curr.deleteRateError,
           listener: (context, state) {
-            showStatusDialog(
+            showStatusToast(
               context,
               title: 'Delete failed',
               description: state.deleteRateError,
@@ -292,7 +296,7 @@ class PublishedRatesView extends StatelessWidget {
           listenWhen: (prev, curr) =>
               curr.deleteRateSucceeded && !prev.deleteRateSucceeded,
           listener: (context, state) {
-            showStatusDialog(context, title: 'Rate deleted');
+            showStatusToast(context, title: 'Rate deleted');
             bloc.add(const DeleteRateSuccessDismissed());
           },
         ),

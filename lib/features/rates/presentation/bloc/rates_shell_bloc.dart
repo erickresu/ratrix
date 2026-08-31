@@ -85,6 +85,18 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
     on<ClientRatePageChanged>(
       (event, emit) => emit(state.copyWith(clientRatePage: event.page)),
     );
+    on<ClientRatesPerPageChanged>((event, emit) {
+      if (event.perPage == state.clientRatesPerPage) return;
+      final newPageCount = (state.filteredClientRates.length / event.perPage)
+          .ceil()
+          .clamp(1, 1 << 30);
+      emit(
+        state.copyWith(
+          clientRatesPerPage: event.perPage,
+          clientRatePage: state.clientRatePage.clamp(0, newPageCount - 1),
+        ),
+      );
+    });
     on<ClientRateFreightFilterChanged>(
       (event, emit) => emit(
         state.copyWith(
@@ -154,6 +166,19 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
     on<PublishedRatePageChanged>(
       (event, emit) => emit(state.copyWith(publishedRatePage: event.page)),
     );
+    on<PublishedRatesPerPageChanged>((event, emit) {
+      if (event.perPage == state.publishedRatesPerPage) return;
+      final newPageCount =
+          (state.filteredPublishedRates.length / event.perPage)
+              .ceil()
+              .clamp(1, 1 << 30);
+      emit(
+        state.copyWith(
+          publishedRatesPerPage: event.perPage,
+          publishedRatePage: state.publishedRatePage.clamp(0, newPageCount - 1),
+        ),
+      );
+    });
     on<PublishedRateFreightFilterChanged>(
       (event, emit) => emit(
         state.copyWith(

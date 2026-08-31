@@ -5,14 +5,17 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../../core/di/injection_container.dart';
 import '../../../../../core/utils/breakpoints.dart';
+import '../../../../../core/utils/money_formatting.dart';
 import '../../../data/repositories/rates_repository.dart';
 import '../../../domain/entities/client.dart';
+import '../../../domain/entities/client_rate.dart';
 import '../../../domain/entities/ratrix_rate.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rates_shell_bloc.dart';
 import '../../bloc/shipping_calculator_bloc.dart';
 import '../../rates_colors.dart';
 import '../back_pill.dart';
+import 'change_rate_table_dialog.dart';
 import 'freight_breakdown_dialog.dart';
 import 'shipping_calculator_form_view_mobile.dart';
 import 'shipping_calculator_form_view_web.dart';
@@ -160,6 +163,17 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
+bool _hasRoutingOrCargoData(ShippingCalculatorState state) {
+  if (state.origin.trim().isNotEmpty) return true;
+  if (state.destination.trim().isNotEmpty) return true;
+  if (state.weight.trim().isNotEmpty) return true;
+  if (state.declaredValue.trim().isNotEmpty) return true;
+  for (final d in state.dimensions) {
+    if (d.length.trim().isNotEmpty || d.width.trim().isNotEmpty || d.height.trim().isNotEmpty) return true;
+  }
+  return false;
+}
+
 class _ServiceFreightCard extends StatelessWidget {
   const _ServiceFreightCard();
 
@@ -242,14 +256,24 @@ class _ServiceFreightCard extends StatelessWidget {
                   placeholder: const Text('Select a rate table'),
                   initialValue: state.selectedChargeCode,
                   selectedOptionBuilder: (context, value) => Text(value, style: const TextStyle(fontFamily: 'monospace')),
-                  onChanged: (value) {
+                  onChanged: (value) async {
                     if (value == null) return;
+                    ClientRate? picked;
                     for (final rate in rateTables) {
                       if (rate.chargeCode == value) {
-                        bloc.add(CalcRateTableChanged(rate));
+                        picked = rate;
                         break;
                       }
                     }
+                    if (picked == null) return;
+                    if (_hasRoutingOrCargoData(state)) {
+                      final confirmed = await showShadDialog<bool>(
+                        context: context,
+                        builder: (_) => const ChangeRateTableDialog(),
+                      );
+                      if (confirmed != true) return;
+                    }
+                    bloc.add(CalcRateTableChanged(picked));
                   },
                   options: [
                     for (final r in rateTables)
@@ -573,7 +597,7 @@ class _CargoDetailsCard extends StatelessWidget {
                       children: [
                         const TextSpan(text: 'This rate charges a flat fee of '),
                         TextSpan(
-                          text: '₱${firstTier.rate.toStringAsFixed(2)}',
+                          text: '₱${formatMoney(firstTier.rate)}',
                           style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.primaryDeep),
                         ),
                         const TextSpan(text: ' for the first '),
@@ -631,6 +655,20 @@ class _DimensionField extends StatelessWidget {
 class _CbmCalculatorDialog extends StatelessWidget {
   const _CbmCalculatorDialog();
 
+  /// This one piece's own volumetric weight, or `—` until its length/width/
+  /// height and the shared divisor are all filled in with valid numbers.
+  String _rowWeightLabel(ShippingCalculatorState state, int i) {
+    final divisor = num.tryParse(state.divisor.trim());
+    final d = state.dimensions[i];
+    final length = num.tryParse(d.length.trim());
+    final width = num.tryParse(d.width.trim());
+    final height = num.tryParse(d.height.trim());
+    if (divisor == null || divisor <= 0 || length == null || width == null || height == null) {
+      return '—';
+    }
+    return '${((length * width * height) / divisor).toStringAsFixed(2)} kg';
+  }
+
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<ShippingCalculatorBloc>();
@@ -642,7 +680,7 @@ class _CbmCalculatorDialog extends StatelessWidget {
       padding: EdgeInsets.zero,
       closeIcon: const SizedBox.shrink(),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 540, maxHeight: 620),
+        constraints: const BoxConstraints(maxWidth: 620, maxHeight: 680),
         child: Padding(
           padding: const EdgeInsets.all(28),
           child: Column(
@@ -650,13 +688,33 @@ class _CbmCalculatorDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(CupertinoIcons.cube_box, size: 20, color: context.colors.primaryDeep),
-                  const SizedBox(width: 10),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: context.colors.primaryButtonGradient,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: const Icon(CupertinoIcons.cube_box_fill, size: 18, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      'Calculate from Dimensions',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textBody),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Calculate from Dimensions',
+                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.colors.textBody),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Per-piece weight, summed into one chargeable total',
+                          style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                        ),
+                      ],
                     ),
                   ),
                   Material(
@@ -673,7 +731,7 @@ class _CbmCalculatorDialog extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
               Flexible(
                 child: SingleChildScrollView(
                   child: Column(
@@ -702,7 +760,15 @@ class _CbmCalculatorDialog extends StatelessWidget {
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
                             ),
                           ),
-                          if (state.dimensions.length > 1) const SizedBox(width: 42),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            width: 72,
+                            child: Text(
+                              'Weight',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
+                            ),
+                          ),
+                          if (state.dimensions.length > 1) const SizedBox(width: 50),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -736,8 +802,34 @@ class _CbmCalculatorDialog extends StatelessWidget {
                                     bloc.add(CalcDimensionHeightChanged(i, v)),
                               ),
                             ),
+                            const SizedBox(width: 10),
+                            SizedBox(
+                              width: 72,
+                              height: _fieldHeight,
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.primaryChipBg,
+                                    borderRadius: BorderRadius.circular(7),
+                                  ),
+                                  child: Text(
+                                    _rowWeightLabel(state, i),
+                                    textAlign: TextAlign.right,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.colors.primaryDeep,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                             if (state.dimensions.length > 1) ...[
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 18),
                               SizedBox(
                                 height: _fieldHeight,
                                 child: IconButton(
@@ -764,16 +856,41 @@ class _CbmCalculatorDialog extends StatelessWidget {
                         onChanged: (v) => bloc.add(CalcDivisorChanged(v)),
                       ),
                       const SizedBox(height: 24),
-                      const _FieldLabel('Computed Weight (kg)'),
-                      SizedBox(
-                        width: double.infinity,
-                        height: _fieldHeight,
-                        child: _DisabledField(
-                          text: state.popupVolumetricWeight == null
-                              ? 'Enter dimensions and divisor above'
-                              : '${state.popupVolumetricWeight!.toStringAsFixed(2)} kg',
+                      if (state.popupVolumetricWeight != null)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: context.colors.sidebarBg.withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                'COMPUTED WEIGHT',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '${state.popupVolumetricWeight!.toStringAsFixed(2)} kg',
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        )
+                      else ...[
+                        const _FieldLabel('Computed Weight (kg)'),
+                        SizedBox(
+                          width: double.infinity,
+                          height: _fieldHeight,
+                          child: const _DisabledField(text: 'Enter dimensions and divisor above'),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -782,7 +899,8 @@ class _CbmCalculatorDialog extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: ShadButton(
-                  gradient: context.colors.primaryButtonGradient,
+                  backgroundColor: context.colors.primary,
+                  hoverBackgroundColor: context.colors.primaryHover,
                   enabled: state.popupVolumetricWeight != null,
                   onPressed: () {
                     bloc.add(const CalcCbmResultApplied());
@@ -940,43 +1058,44 @@ class _AddonsSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String money(num v) => v.toStringAsFixed(2);
     String amountFor(num value, String? type) =>
-        type == 'percentage' ? '${money(value)}%' : '₱${money(value)}';
+        type == 'percentage' ? '${value.toStringAsFixed(2)}%' : '₱${formatMoney(value)}';
 
     final rows = <(String, String)>[
       if (addons.fuelSurcharge != null && addons.fuelSurcharge != 0)
         ('Fuel Surcharge', amountFor(addons.fuelSurcharge!, addons.fuelSurchargeType)),
       if (addons.securitySurcharge != null && addons.securitySurcharge != 0)
-        ('Security Surcharge', '₱${money(addons.securitySurcharge!)}'),
+        ('Security Surcharge', '₱${formatMoney(addons.securitySurcharge!)}'),
       if (addons.waybillFee != null && addons.waybillFee != 0)
-        ('Waybill Fee', '₱${money(addons.waybillFee!)}'),
+        ('Waybill Fee', '₱${formatMoney(addons.waybillFee!)}'),
       if (addons.bookingHandlingFee != null && addons.bookingHandlingFee != 0)
-        ('Booking/Handling Fee', '₱${money(addons.bookingHandlingFee!)}'),
+        ('Booking/Handling Fee', '₱${formatMoney(addons.bookingHandlingFee!)}'),
       if (addons.documentationFee != null && addons.documentationFee != 0)
-        ('Documentation Fee', '₱${money(addons.documentationFee!)}'),
+        ('Documentation Fee', '₱${formatMoney(addons.documentationFee!)}'),
       if (addons.permitFeesNonVat != null && addons.permitFeesNonVat != 0)
-        ('Permit Fee', '₱${money(addons.permitFeesNonVat!)}'),
+        ('Permit Fee', '₱${formatMoney(addons.permitFeesNonVat!)}'),
       if (addons.insurance != null && addons.insurance != 0)
-        ('Insurance', '₱${money(addons.insurance!)}'),
+        ('Insurance', '₱${formatMoney(addons.insurance!)}'),
       if (addons.valuation != null && addons.valuation != 0)
         ('Valuation', amountFor(addons.valuation!, addons.valuationType)),
       if (addons.deliveryFee != null && addons.deliveryFee != 0)
-        ('Delivery Fee', '₱${money(addons.deliveryFee!)}'),
+        ('Delivery Fee', '₱${formatMoney(addons.deliveryFee!)}'),
       if (addons.cratingFee != null && addons.cratingFee != 0)
-        ('Crating Fee', '₱${money(addons.cratingFee!)}'),
+        ('Crating Fee', '₱${formatMoney(addons.cratingFee!)}'),
       if (addons.packingFee != null && addons.packingFee != 0)
-        ('Packing Fee', '₱${money(addons.packingFee!)}'),
+        ('Packing Fee', '₱${formatMoney(addons.packingFee!)}'),
       if (addons.airThc != null && addons.airThc != 0)
-        ('Air THC', '₱${money(addons.airThc!)}'),
+        ('Air THC', '₱${formatMoney(addons.airThc!)}'),
       if (addons.seaThc != null && addons.seaThc != 0)
-        ('Sea THC', '₱${money(addons.seaThc!)}'),
+        ('Sea THC', '₱${formatMoney(addons.seaThc!)}'),
       if (addons.demurrageDetention != null && addons.demurrageDetention != 0)
-        ('Demurrage/Detention', '₱${money(addons.demurrageDetention!)}'),
+        ('Demurrage/Detention', '₱${formatMoney(addons.demurrageDetention!)}'),
+      if (addons.arrastre != null && addons.arrastre != 0)
+        ('Arrastre Charge', '₱${formatMoney(addons.arrastre!)}'),
       if (addons.hazardousGoodsHandling != null && addons.hazardousGoodsHandling != 0)
-        ('Hazardous Goods Handling', '₱${money(addons.hazardousGoodsHandling!)}'),
+        ('Hazardous Goods Handling', '₱${formatMoney(addons.hazardousGoodsHandling!)}'),
       if (addons.othersNonVat != null && addons.othersNonVat != 0)
-        ('Other Fees', '₱${money(addons.othersNonVat!)}'),
+        ('Other Fees', '₱${formatMoney(addons.othersNonVat!)}'),
     ];
 
     if (rows.isEmpty) return const SizedBox.shrink();
@@ -1074,7 +1193,8 @@ class _SubmitButton extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               ShadButton(
-                gradient: context.colors.primaryButtonGradient,
+                backgroundColor: context.colors.primary,
+                hoverBackgroundColor: context.colors.primaryHover,
                 leading: const Icon(Icons.calculate_outlined, size: 17),
                 onPressed: handleCalculate,
                 child: const Text('Calculate Freight Breakdown'),

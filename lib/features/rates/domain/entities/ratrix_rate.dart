@@ -95,6 +95,11 @@ abstract class RatrixBreakweight with _$RatrixBreakweight {
         'rate': rate,
         if (expressRate != null) 'express_rate': expressRate,
       };
+
+  /// The wizard sends `999999999` as this tier's max for Excess/Minimum
+  /// Excess pricing's uncapped 2nd tier (the backend has no real "no
+  /// limit" value) — display it as "No limit" instead of the raw sentinel.
+  bool get isUncapped => max >= 999999999;
 }
 
 @freezed

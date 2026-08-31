@@ -33,7 +33,7 @@ class CustomClientRatesPageMobile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 decoration: BoxDecoration(
-                  color: context.colors.sidebarPanelBg,
+                  color: context.colors.sidebarBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Wrap(

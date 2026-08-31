@@ -40,7 +40,6 @@ class RatesColors extends ThemeExtension<RatesColors> {
     required this.shadowCard,
     required this.wizardBgGradient,
     required this.primaryButtonGradient,
-    required this.accentButtonGradient,
   });
 
   final Color primary;
@@ -86,7 +85,6 @@ class RatesColors extends ThemeExtension<RatesColors> {
 
   final Gradient wizardBgGradient;
   final Gradient primaryButtonGradient;
-  final Gradient accentButtonGradient;
 
   static const light = RatesColors(
     primary: Color(0xFFD4A017),
@@ -130,11 +128,6 @@ class RatesColors extends ThemeExtension<RatesColors> {
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [Color(0xFFE6B325), Color(0xFFB8890F)],
-    ),
-    accentButtonGradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [Color(0xFF7C5FE0), Color(0xFF5B3FC0)],
     ),
   );
 
@@ -190,11 +183,6 @@ class RatesColors extends ThemeExtension<RatesColors> {
       end: Alignment.bottomRight,
       colors: [Color(0xFFE0B33A), Color(0xFFB8890F)],
     ),
-    accentButtonGradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: [Color(0xFFAC9DFC), Color(0xFF9B8AFB)],
-    ),
   );
 
   @override
@@ -233,7 +221,6 @@ class RatesColors extends ThemeExtension<RatesColors> {
     Color? shadowCard,
     Gradient? wizardBgGradient,
     Gradient? primaryButtonGradient,
-    Gradient? accentButtonGradient,
   }) {
     return RatesColors(
       primary: primary ?? this.primary,
@@ -270,7 +257,6 @@ class RatesColors extends ThemeExtension<RatesColors> {
       shadowCard: shadowCard ?? this.shadowCard,
       wizardBgGradient: wizardBgGradient ?? this.wizardBgGradient,
       primaryButtonGradient: primaryButtonGradient ?? this.primaryButtonGradient,
-      accentButtonGradient: accentButtonGradient ?? this.accentButtonGradient,
     );
   }
 
@@ -312,7 +298,6 @@ class RatesColors extends ThemeExtension<RatesColors> {
       shadowCard: Color.lerp(shadowCard, other.shadowCard, t)!,
       wizardBgGradient: t < 0.5 ? wizardBgGradient : other.wizardBgGradient,
       primaryButtonGradient: t < 0.5 ? primaryButtonGradient : other.primaryButtonGradient,
-      accentButtonGradient: t < 0.5 ? accentButtonGradient : other.accentButtonGradient,
     );
   }
 }

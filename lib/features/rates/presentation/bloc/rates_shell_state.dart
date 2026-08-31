@@ -50,6 +50,11 @@ class RatesShellState extends Equatable {
   final String clientRateSearch;
   final RateStatus clientRatesTab;
   final int clientRatePage;
+
+  /// How many rows the client rates table shows per page — starts at the
+  /// default and is kept in sync with however many rows actually fit the
+  /// table's measured height (see `ClientRatesPerPageChanged`).
+  final int clientRatesPerPage;
   final FreightMode? clientRateFreightFilter;
   final ServiceMode? clientRateServiceFilter;
   final bool clientRateSortByExpiry;
@@ -75,6 +80,11 @@ class RatesShellState extends Equatable {
   final String publishedRateSearch;
   final RateStatus publishedRatesTab;
   final int publishedRatePage;
+
+  /// How many rows the published rates table shows per page — starts at
+  /// the default and is kept in sync with however many rows actually fit
+  /// the table's measured height (see `PublishedRatesPerPageChanged`).
+  final int publishedRatesPerPage;
   final FreightMode? publishedRateFreightFilter;
   final ServiceMode? publishedRateServiceFilter;
   final bool publishedRateSortByExpiry;
@@ -119,6 +129,7 @@ class RatesShellState extends Equatable {
     this.clientRateSearch = '',
     this.clientRatesTab = RateStatus.active,
     this.clientRatePage = 0,
+    this.clientRatesPerPage = 7,
     this.clientRateFreightFilter,
     this.clientRateServiceFilter,
     this.clientRateSortByExpiry = false,
@@ -133,6 +144,7 @@ class RatesShellState extends Equatable {
     this.publishedRateSearch = '',
     this.publishedRatesTab = RateStatus.active,
     this.publishedRatePage = 0,
+    this.publishedRatesPerPage = 7,
     this.publishedRateFreightFilter,
     this.publishedRateServiceFilter,
     this.publishedRateSortByExpiry = false,
@@ -147,8 +159,6 @@ class RatesShellState extends Equatable {
   });
 
   static const clientsPerPage = 9;
-  static const clientRatesPerPage = 5;
-  static const publishedRatesPerPage = 5;
   static const auditLogsPerPage = 8;
 
   List<Client> get filteredClients => _searchClients(clients, clientSearch);
@@ -283,6 +293,7 @@ class RatesShellState extends Equatable {
     String? clientRateSearch,
     RateStatus? clientRatesTab,
     int? clientRatePage,
+    int? clientRatesPerPage,
     FreightMode? clientRateFreightFilter,
     bool clearClientRateFreightFilter = false,
     ServiceMode? clientRateServiceFilter,
@@ -302,6 +313,7 @@ class RatesShellState extends Equatable {
     String? publishedRateSearch,
     RateStatus? publishedRatesTab,
     int? publishedRatePage,
+    int? publishedRatesPerPage,
     FreightMode? publishedRateFreightFilter,
     bool clearPublishedRateFreightFilter = false,
     ServiceMode? publishedRateServiceFilter,
@@ -338,6 +350,7 @@ class RatesShellState extends Equatable {
       clientRateSearch: clientRateSearch ?? this.clientRateSearch,
       clientRatesTab: clientRatesTab ?? this.clientRatesTab,
       clientRatePage: clientRatePage ?? this.clientRatePage,
+      clientRatesPerPage: clientRatesPerPage ?? this.clientRatesPerPage,
       clientRateFreightFilter: clearClientRateFreightFilter
           ? null
           : (clientRateFreightFilter ?? this.clientRateFreightFilter),
@@ -362,6 +375,7 @@ class RatesShellState extends Equatable {
       publishedRateSearch: publishedRateSearch ?? this.publishedRateSearch,
       publishedRatesTab: publishedRatesTab ?? this.publishedRatesTab,
       publishedRatePage: publishedRatePage ?? this.publishedRatePage,
+      publishedRatesPerPage: publishedRatesPerPage ?? this.publishedRatesPerPage,
       publishedRateFreightFilter: clearPublishedRateFreightFilter
           ? null
           : (publishedRateFreightFilter ?? this.publishedRateFreightFilter),
@@ -410,6 +424,7 @@ class RatesShellState extends Equatable {
     clientRateSearch,
     clientRatesTab,
     clientRatePage,
+    clientRatesPerPage,
     clientRateFreightFilter,
     clientRateServiceFilter,
     clientRateSortByExpiry,
@@ -421,6 +436,7 @@ class RatesShellState extends Equatable {
     publishedRateSearch,
     publishedRatesTab,
     publishedRatePage,
+    publishedRatesPerPage,
     publishedRateFreightFilter,
     publishedRateServiceFilter,
     publishedRateSortByExpiry,

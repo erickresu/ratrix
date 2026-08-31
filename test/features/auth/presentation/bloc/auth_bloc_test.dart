@@ -70,7 +70,10 @@ void main() {
       ),
       expect: () => [
         const AuthState(isSubmitting: true),
-        const AuthState(isSubmitting: false, error: 'Invalid credentials.'),
+        const AuthState(
+          isSubmitting: false,
+          error: 'Sign in failed. Please check your credentials and try again.',
+        ),
       ],
     );
   });

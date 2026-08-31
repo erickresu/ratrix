@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../../../../core/utils/money_formatting.dart';
 import '../../../domain/entities/client.dart';
 import '../../../domain/entities/rates_fk_ids.dart';
 import '../../bloc/shipping_calculator_bloc.dart';
@@ -50,7 +51,7 @@ Future<void> generateInvoicePdf({
   final items = <_ChargeItem>[
     (
       description: 'Base Freight',
-      rate: result.tierRate != null ? 'Php ${result.tierRate!.toStringAsFixed(2)}/kg' : '-',
+      rate: result.tierRate != null ? 'Php ${formatMoney(result.tierRate!)}/kg' : '-',
       qty: result.chargeableWeight != null ? '${result.chargeableWeight!.toStringAsFixed(2)} kg' : '-',
       total: result.baseFreight ?? 0,
     ),
@@ -111,7 +112,7 @@ Future<void> generateInvoicePdf({
                         children: [
                           pw.Text('TOTAL:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: _textBody)),
                           pw.Text(
-                            'Php ${(state.roundedDisplay ? state.grandTotal.roundToDouble() : state.grandTotal).toStringAsFixed(2)}',
+                            'Php ${formatMoney(state.roundedDisplay ? state.grandTotal.roundToDouble() : state.grandTotal)}',
                             style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: _goldDeep),
                           ),
                         ],
@@ -255,7 +256,7 @@ pw.Widget _itemTable(List<_ChargeItem> items) {
             cell(items[i].description, bold: true),
             cell(items[i].rate),
             cell(items[i].qty),
-            cell('Php ${items[i].total.toStringAsFixed(2)}', align: pw.TextAlign.right),
+            cell('Php ${formatMoney(items[i].total)}', align: pw.TextAlign.right),
           ],
         ),
     ],
@@ -317,7 +318,7 @@ pw.Widget _chargeRow(String label, num? value) {
       children: [
         pw.Text(label, style: pw.TextStyle(fontSize: 10, color: _textBody)),
         pw.Text(
-          value == null ? '-' : 'Php ${value.toStringAsFixed(2)}',
+          value == null ? '-' : 'Php ${formatMoney(value)}',
           style: pw.TextStyle(fontSize: 10, color: _textBody),
         ),
       ],

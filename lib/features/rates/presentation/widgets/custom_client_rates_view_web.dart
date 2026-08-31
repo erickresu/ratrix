@@ -32,7 +32,7 @@ class CustomClientRatesPageWeb extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
                 decoration: BoxDecoration(
-                  color: context.colors.sidebarPanelBg,
+                  color: context.colors.sidebarBg,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(

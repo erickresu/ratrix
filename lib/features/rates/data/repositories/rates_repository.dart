@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/api/app_logger.dart';
+import '../../../../core/utils/money_formatting.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../domain/entities/client_rate.dart';
 import '../../domain/entities/location_option.dart';
@@ -170,7 +171,7 @@ class RatesRepository {
     }
     amount ??= rate.addons?.baseFreightRate;
     if (amount == null) return '—';
-    return '₱${amount.toStringAsFixed(2)}';
+    return '₱${formatMoney(amount)}';
   }
 
   /// Rates for one client (used by the custom-client-rates panel), mapped

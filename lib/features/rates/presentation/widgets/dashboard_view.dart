@@ -535,6 +535,10 @@ class _RecentRatesTable extends StatelessWidget {
       vertical: 18,
     );
     final fieldGap = SizedBox(width: compact ? 10 : 16);
+    // Client names run long ("Magna Prime Chemical Technologies
+    // Incorporated") and fill most of their column, leaving the standard
+    // gap looking cramped against the TYPE badge right after it.
+    final clientTypeGap = SizedBox(width: compact ? 16 : 32);
 
     final table = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,10 +551,10 @@ class _RecentRatesTable extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Expanded(flex: 24, child: Text('ROUTE', style: headerStyle)),
+              Expanded(flex: 14, child: Text('ROUTE', style: headerStyle)),
               fieldGap,
-              Expanded(flex: 16, child: Text('CLIENT', style: headerStyle)),
-              fieldGap,
+              Expanded(flex: 26, child: Text('CLIENT', style: headerStyle)),
+              clientTypeGap,
               Expanded(flex: 10, child: Text('TYPE', style: headerStyle)),
               fieldGap,
               Expanded(
@@ -583,12 +587,12 @@ class _RecentRatesTable extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  flex: 24,
+                  flex: 14,
                   child: _RouteCell(route: rate.route, compact: compact),
                 ),
                 fieldGap,
                 Expanded(
-                  flex: 16,
+                  flex: 26,
                   child: rate.client == '—'
                       ? Text(
                           'All clients',
@@ -600,6 +604,7 @@ class _RecentRatesTable extends StatelessWidget {
                         )
                       : Text(
                           rate.client,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: bodyFontSize,
@@ -607,7 +612,7 @@ class _RecentRatesTable extends StatelessWidget {
                           ),
                         ),
                 ),
-                fieldGap,
+                clientTypeGap,
                 Expanded(
                   flex: 10,
                   child: Align(

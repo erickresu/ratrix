@@ -569,10 +569,13 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
           savedChargeCode: savedRate.chargeCode,
         ),
       );
-    } on RatesApiException catch (e) {
-      emit(state.copyWith(isSubmitting: false, submitError: e.message));
     } catch (e) {
-      emit(state.copyWith(isSubmitting: false, submitError: e.toString()));
+      emit(
+        state.copyWith(
+          isSubmitting: false,
+          submitError: 'Failed to save rate. Please try again.',
+        ),
+      );
     }
   }
 

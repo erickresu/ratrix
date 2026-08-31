@@ -4,6 +4,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/horizontal_scroll_table.dart';
+import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../rates_colors.dart';
 
@@ -133,6 +134,67 @@ Widget rateStatusBadge(
   ),
 );
 
+/// Measures the height it's given and reports how many [ResponsiveRateTable]
+/// rows actually fit, so a caller's page size can track the viewport
+/// instead of a fixed number. Fires [onFit] after the frame (never during
+/// build) only when the fitting count changes. [builder] gets the raw
+/// available height too, so a loading skeleton (whose row height differs
+/// from the real table's) can size itself to fit without overflowing.
+class RateTableFitReporter extends StatefulWidget {
+  const RateTableFitReporter({
+    super.key,
+    required this.currentPerPage,
+    required this.onFit,
+    required this.builder,
+  });
+
+  final int currentPerPage;
+  final ValueChanged<int> onFit;
+  final Widget Function(BuildContext context, double availableHeight, int fit) builder;
+
+  @override
+  State<RateTableFitReporter> createState() => _RateTableFitReporterState();
+}
+
+class _RateTableFitReporterState extends State<RateTableFitReporter> {
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = constraints.maxHeight - ResponsiveRateTable.headerHeight;
+        final fit = (available / ResponsiveRateTable.rowHeight).floor().clamp(1, 50);
+        if (fit != widget.currentPerPage) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) widget.onFit(fit);
+          });
+        }
+        return widget.builder(context, constraints.maxHeight, fit);
+      },
+    );
+  }
+}
+
+/// Loading placeholder for a [ResponsiveRateTable] — same card markup as
+/// before, but the row count is derived from [availableHeight] so it never
+/// overflows the space the real table would also be measured against.
+Widget buildFittedRateSkeleton(double availableHeight) {
+  const cardHeight = 76.0;
+  const gap = 16.0;
+  final count = ((availableHeight + gap) / (cardHeight + gap))
+      .floor()
+      .clamp(1, 20);
+  return SkeletonShimmer(
+    child: Column(
+      children: [
+        for (var i = 0; i < count; i++) ...[
+          if (i != 0) const SizedBox(height: gap),
+          const ListRowCardSkeleton(),
+        ],
+      ],
+    ),
+  );
+}
+
 class _RowActionButton extends StatelessWidget {
   const _RowActionButton({
     required this.icon,
@@ -226,8 +288,8 @@ class ResponsiveRateTable<T> extends StatelessWidget {
   static const _chargeCodeWidth = 130.0;
   static const _actionsWidth = 92.0;
   static const _colGap = 12.0;
-  static const _headerHeight = 40.0;
-  static const _rowHeight = 64.0;
+  static const headerHeight = 40.0;
+  static const rowHeight = 64.0;
 
   // +24 accounts for the scrollable pane's own 12px symmetric padding
   // (left+right) around the header/row content — without it the last
@@ -241,26 +303,33 @@ class ResponsiveRateTable<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = Breakpoints.isMobile(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        border: Border.all(color: context.colors.border),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: context.colors.shadowSoft,
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
+    // Align (loose constraints) so the table hugs header + row content
+    // instead of stretching to fill whatever height its parent gives it
+    // (which left blank space below the last row inside the border).
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          border: Border.all(color: context.colors.border),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: context.colors.shadowSoft,
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: isMobile ? _buildMobile(context) : _buildDesktop(context),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: isMobile ? _buildMobile(context) : _buildDesktop(context),
     );
   }
 
   Widget _buildDesktop(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
@@ -344,9 +413,10 @@ class ResponsiveRateTable<T> extends StatelessWidget {
         SizedBox(
           width: _chargeCodeWidth,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                height: _headerHeight,
+                height: headerHeight,
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.only(left: 20),
                 color: context.colors.sidebarBg,
@@ -357,7 +427,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
               ),
               for (final rate in rates)
                 Container(
-                  height: _rowHeight,
+                  height: rowHeight,
                   alignment: Alignment.centerLeft,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -387,9 +457,10 @@ class ResponsiveRateTable<T> extends StatelessWidget {
           child: HorizontalScrollTable(
             width: _scrollableWidth,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  height: _headerHeight,
+                  height: headerHeight,
                   alignment: Alignment.centerLeft,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   color: context.colors.sidebarBg,
@@ -417,7 +488,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
     return Opacity(
       opacity: deleting ? 0.5 : 1,
       child: Container(
-        height: _rowHeight,
+        height: rowHeight,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           border: Border(top: BorderSide(color: context.colors.border)),

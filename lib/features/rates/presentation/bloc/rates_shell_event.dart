@@ -115,6 +115,17 @@ class ClientRatePageChanged extends RatesShellEvent {
   List<Object?> get props => [page];
 }
 
+/// Fired when the client rates table measures how many rows actually fit
+/// its available height (e.g. after a window resize).
+class ClientRatesPerPageChanged extends RatesShellEvent {
+  const ClientRatesPerPageChanged(this.perPage);
+
+  final int perPage;
+
+  @override
+  List<Object?> get props => [perPage];
+}
+
 class ClientRateFreightFilterChanged extends RatesShellEvent {
   const ClientRateFreightFilterChanged(this.freightMode);
 
@@ -185,6 +196,17 @@ class PublishedRatePageChanged extends RatesShellEvent {
 
   @override
   List<Object?> get props => [page];
+}
+
+/// Fired when the published rates table measures how many rows actually fit
+/// its available height (e.g. after a window resize).
+class PublishedRatesPerPageChanged extends RatesShellEvent {
+  const PublishedRatesPerPageChanged(this.perPage);
+
+  final int perPage;
+
+  @override
+  List<Object?> get props => [perPage];
 }
 
 class PublishedRateFreightFilterChanged extends RatesShellEvent {

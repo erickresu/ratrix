@@ -6,7 +6,6 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/mr_ratrix.dart';
 import '../../../../core/widgets/pagination_bar.dart';
-import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/client_rate.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
@@ -16,7 +15,7 @@ import 'custom_client_rates_view_mobile.dart';
 import 'custom_client_rates_view_web.dart';
 import 'delete_rate_dialog.dart';
 import 'rate_table.dart';
-import 'status_dialog.dart';
+import 'status_toast.dart';
 
 const _kAllValue = '__all__';
 
@@ -57,10 +56,10 @@ class CustomClientRatesView extends StatelessWidget {
           color: context.colors.primary.withValues(alpha: 0.2),
           child: Text(
             client.initials,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF6FE0C6),
+              color: context.colors.primary,
             ),
           ),
         ),
@@ -202,18 +201,12 @@ class CustomClientRatesView extends StatelessWidget {
       sortToggle: sortToggle,
     );
 
-    final body = state.clientRatesLoading
-        ? const SkeletonShimmer(
-            child: Column(
-              children: [
-                ListRowCardSkeleton(),
-                SizedBox(height: 16),
-                ListRowCardSkeleton(),
-                SizedBox(height: 16),
-                ListRowCardSkeleton(),
-              ],
-            ),
-          )
+    final body = RateTableFitReporter(
+      currentPerPage: state.clientRatesPerPage,
+      onFit: (fit) => bloc.add(ClientRatesPerPageChanged(fit)),
+      builder: (context, availableHeight, fit) =>
+        state.clientRatesLoading
+        ? buildFittedRateSkeleton(availableHeight)
         : state.filteredClientRates.isEmpty
         ? Container(
             width: double.infinity,
@@ -289,14 +282,25 @@ class CustomClientRatesView extends StatelessWidget {
               );
               if (confirmed == true) bloc.add(DeleteRateRequested(rate.id));
             },
-          );
+          ),
+    );
 
-    final paginationBar = !state.clientRatesLoading && state.filteredClientRates.isNotEmpty
-        ? PaginationBar(
-            page: state.clientRatePage,
-            itemsPerPage: RatesShellState.clientRatesPerPage,
-            totalItems: state.filteredClientRates.length,
-            onPageChanged: (p) => bloc.add(ClientRatePageChanged(p)),
+    // Reserved even while loading (just invisible) so the table's measured
+    // height doesn't shrink the moment loading finishes and the bar turns
+    // visible — that shrink would otherwise overflow the row count already
+    // fit against the taller loading-time space.
+    final paginationBar = state.clientRatesLoading || state.filteredClientRates.isNotEmpty
+        ? Opacity(
+            opacity: state.clientRatesLoading ? 0 : 1,
+            child: IgnorePointer(
+              ignoring: state.clientRatesLoading,
+              child: PaginationBar(
+                page: state.clientRatePage,
+                itemsPerPage: state.clientRatesPerPage,
+                totalItems: state.filteredClientRates.length,
+                onPageChanged: (p) => bloc.add(ClientRatePageChanged(p)),
+              ),
+            ),
           )
         : null;
 
@@ -307,7 +311,7 @@ class CustomClientRatesView extends StatelessWidget {
               curr.deleteRateError != null &&
               prev.deleteRateError != curr.deleteRateError,
           listener: (context, state) {
-            showStatusDialog(
+            showStatusToast(
               context,
               title: 'Delete failed',
               description: state.deleteRateError,
@@ -320,7 +324,7 @@ class CustomClientRatesView extends StatelessWidget {
           listenWhen: (prev, curr) =>
               curr.deleteRateSucceeded && !prev.deleteRateSucceeded,
           listener: (context, state) {
-            showStatusDialog(context, title: 'Rate deleted');
+            showStatusToast(context, title: 'Rate deleted');
             bloc.add(const DeleteRateSuccessDismissed());
           },
         ),

@@ -430,6 +430,15 @@ class _OnboardingIntroState extends State<OnboardingIntro> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _speakIntro());
   }
 
+  @override
+  void dispose() {
+    // Covers every dismissal path (back gesture, barrier tap), not just the
+    // two explicit buttons — the intro voice shouldn't keep talking once
+    // this screen is gone.
+    _tts.stop();
+    super.dispose();
+  }
+
   Future<void> _speakIntro() => _speak('$_kIntroTitle $_kIntroBody');
 
   @override
@@ -467,9 +476,15 @@ class _OnboardingIntroState extends State<OnboardingIntro> {
                     body: _kIntroBody,
                     onSpeak: _speakIntro,
                     leftLabel: 'Skip tour',
-                    onLeft: () => Navigator.of(context).pop(false),
+                    onLeft: () {
+                      _tts.stop();
+                      Navigator.of(context).pop(false);
+                    },
                     rightLabel: "Let's go",
-                    onRight: () => Navigator.of(context).pop(true),
+                    onRight: () {
+                      _tts.stop();
+                      Navigator.of(context).pop(true);
+                    },
                   ),
                 ],
               );

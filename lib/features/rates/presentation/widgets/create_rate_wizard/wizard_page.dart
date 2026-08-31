@@ -11,7 +11,7 @@ import '../../bloc/rate_wizard_bloc.dart';
 import '../../bloc/rates_shell_bloc.dart';
 import '../../rates_colors.dart';
 import '../back_pill.dart';
-import '../status_dialog.dart';
+import '../status_toast.dart';
 import 'remove_route_dialog.dart';
 import 'step0_rate_setup.dart';
 import 'step1_rate_matrix.dart';
@@ -74,7 +74,7 @@ class _WizardView extends StatelessWidget {
               prev.submitSucceeded != curr.submitSucceeded,
           listener: (context, state) {
             if (state.submitError != null) {
-              showStatusDialog(
+              showStatusToast(
                 context,
                 title: 'Something went wrong',
                 description: state.submitError,
@@ -86,7 +86,7 @@ class _WizardView extends StatelessWidget {
               // charge_code rather than a made-up generic string.
               final chargeCode = state.savedChargeCode;
               if (state.lastSubmitStayedOnPage) {
-                showStatusDialog(
+                showStatusToast(
                   context,
                   title: chargeCode != null ? 'Saved $chargeCode' : 'Changes saved',
                 );
@@ -98,7 +98,7 @@ class _WizardView extends StatelessWidget {
                 final shellBloc = context.read<RatesShellBloc>();
                 final wizardState = context.read<RateWizardBloc>().state;
                 final isEditing = wizardState.editingRateId != null;
-                showStatusDialog(
+                showStatusToast(
                   context,
                   title: chargeCode == null
                       ? (isEditing ? 'Rate updated' : 'Rate created')
@@ -183,6 +183,7 @@ class _WizardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final wizardState = context.watch<RateWizardBloc>().state;
     final shellBloc = context.read<RatesShellBloc>();
+    final isEditing = wizardState.editingRateId != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +201,9 @@ class _WizardHeader extends StatelessWidget {
         Row(
           children: [
             Text(
-              wizardState.isCustom ? 'Create New Custom Rate' : 'New rate',
+              isEditing
+                  ? (wizardState.isCustom ? 'Edit Custom Rate' : 'Edit Rate')
+                  : (wizardState.isCustom ? 'Create New Custom Rate' : 'New rate'),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -327,9 +330,8 @@ class _WizardFooter extends StatelessWidget {
     final blockedByBreakweights = step == 1 && !canLeaveStep1;
 
     final nextButton = ShadButton(
-      gradient: step == 3
-          ? context.colors.accentButtonGradient
-          : context.colors.primaryButtonGradient,
+      backgroundColor: step == 3 ? context.colors.accent : context.colors.primary,
+      hoverBackgroundColor: step == 3 ? context.colors.accentHover : context.colors.primaryHover,
       leading: step == 3
           ? (isSubmitting
                 ? const SizedBox(

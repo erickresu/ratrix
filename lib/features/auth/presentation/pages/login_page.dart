@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../rates/presentation/rates_colors.dart';
+import '../../../rates/presentation/widgets/status_toast.dart';
 import '../bloc/auth_bloc.dart';
 import 'login_page_mobile.dart';
 import 'login_page_web.dart';
@@ -46,14 +47,7 @@ class _LoginPageState extends State<LoginPage> {
         listenWhen: (prev, curr) =>
             prev.error != curr.error && curr.error != null,
         listener: (context, state) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                backgroundColor: context.colors.destructive,
-                content: Text(state.error!),
-              ),
-            );
+          showStatusToast(context, title: state.error!, isError: true);
         },
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -169,7 +163,8 @@ class LoginForm extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ShadButton(
-            gradient: context.colors.primaryButtonGradient,
+            backgroundColor: context.colors.primary,
+            hoverBackgroundColor: context.colors.primaryHover,
             onPressed: isSubmitting ? null : onSubmit,
             child: isSubmitting
                 ? const SizedBox(

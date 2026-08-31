@@ -167,6 +167,18 @@ class ShippingCalculatorBloc
         // Express selection from whatever was picked before.
         serviceLevel: ServiceLevel.regular,
         clearCalcResult: true,
+        // A different rate has its own routes/breakweights — the previous
+        // origin/destination/weight/cargo details don't necessarily apply
+        // to it, so start the input side over rather than leaving stale
+        // values that look valid but weren't priced against this rate.
+        origin: '',
+        destination: '',
+        weight: '',
+        declaredValue: '',
+        dimensions: const [CalcDimension()],
+        divisor: '6000',
+        resultComputed: false,
+        clearSubmitError: true,
       ),
     );
     RatrixRate? fullRate;

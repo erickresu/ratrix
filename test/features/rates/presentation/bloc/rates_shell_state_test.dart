@@ -166,9 +166,9 @@ void main() {
     test('pagedClientRates and clientRatePageCount paginate the filtered list', () {
       final rates = [for (var i = 0; i < 12; i++) _clientRate(id: '$i')];
       final state = RatesShellState(selectedClientRates: rates);
-      expect(state.clientRatePageCount, 3); // 12 / 5 per page, rounded up
-      expect(state.pagedClientRates.length, RatesShellState.clientRatesPerPage);
-      expect(state.copyWith(clientRatePage: 2).pagedClientRates.length, 2);
+      expect(state.clientRatePageCount, 2); // 12 / 7 per page, rounded up
+      expect(state.pagedClientRates.length, state.clientRatesPerPage);
+      expect(state.copyWith(clientRatePage: 1).pagedClientRates.length, 5);
     });
   });
 
