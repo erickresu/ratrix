@@ -35,6 +35,11 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
                  isCustom: isCustom,
                  clientId: clientId,
                  clientName: clientName,
+                 // Valuation defaults to 1% of declared value for every
+                 // freight mode — still fully editable, and the calculator
+                 // already skips it entirely whenever declared value is 0.
+                 addonValues: const {'valuation': '1'},
+                 addonModes: const {'valuation': AddonMode.percentage},
                ),
        ) {
     on<WizardStepChanged>((event, emit) {

@@ -76,8 +76,11 @@ enum LocationSearchType {
           option.iata ?? option.label,
         LocationSearchType.internalCode =>
           '${option.code ?? ''} — (${option.cityName ?? ''}, ${option.provinceName ?? ''})',
+        LocationSearchType.cityProvince =>
+          option.provinceName != null && option.provinceName!.isNotEmpty
+              ? '${option.cityName ?? option.label}, ${option.provinceName}'
+              : option.label,
         LocationSearchType.island ||
-        LocationSearchType.cityProvince ||
         LocationSearchType.province =>
           option.label,
       };

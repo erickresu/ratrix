@@ -555,18 +555,9 @@ class _CalculatorKey extends StatelessWidget {
 /// result exists, then the same header/body/PDF button as the dialog minus
 /// the close button and blur backdrop.
 class FreightBreakdownPanel extends StatelessWidget {
-  const FreightBreakdownPanel({
-    super.key,
-    required this.client,
-    this.showButton = true,
-  });
+  const FreightBreakdownPanel({super.key, required this.client});
 
   final Client client;
-
-  /// Set false when the caller renders the Generate Invoice PDF button
-  /// itself in a separate slot (e.g. to bottom-align it against another
-  /// column's own trailing button row).
-  final bool showButton;
 
   @override
   Widget build(BuildContext context) {
@@ -621,7 +612,7 @@ class FreightBreakdownPanel extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             child: Column(
               children: [
-                _DialogHeader(state: state),
+                _DialogHeader(state: state, client: client),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -647,10 +638,6 @@ class FreightBreakdownPanel extends StatelessWidget {
             ),
           ),
         ),
-        if (showButton && result.error == null) ...[
-          const SizedBox(height: 12),
-          GeneratePdfButton(state: state, client: client),
-        ],
       ],
     );
   }
@@ -854,7 +841,7 @@ class _FreightBreakdownDialog extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _DialogHeader(state: state),
+                    _DialogHeader(state: state, client: client),
                     Flexible(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -882,75 +869,17 @@ class _FreightBreakdownDialog extends StatelessWidget {
               ),
             ),
           ),
-          if (result.error == null) ...[
-            const SizedBox(height: 12),
-            GeneratePdfButton(state: state, client: client),
-          ],
         ],
       ),
     );
   }
 }
 
-/// `Printing.layoutPdf` renders the whole document client-side before its
-/// print/save dialog appears — on web especially, that can take a few
-/// seconds with zero visual feedback otherwise, reading as a hang. Track a
-/// local loading flag so the button shows a spinner and disables itself for
-/// the duration instead of looking unresponsive.
-class GeneratePdfButton extends StatefulWidget {
-  const GeneratePdfButton({
-    super.key,
-    required this.state,
-    required this.client,
-  });
+class _DialogHeader extends StatelessWidget {
+  const _DialogHeader({required this.state, required this.client});
 
   final ShippingCalculatorState state;
   final Client client;
-
-  @override
-  State<GeneratePdfButton> createState() => _GeneratePdfButtonState();
-}
-
-class _GeneratePdfButtonState extends State<GeneratePdfButton> {
-  bool _generating = false;
-
-  Future<void> _handleTap() async {
-    setState(() => _generating = true);
-    try {
-      await generateInvoicePdf(state: widget.state, client: widget.client);
-    } finally {
-      if (mounted) setState(() => _generating = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ShadButton(
-        backgroundColor: context.colors.primary,
-        hoverBackgroundColor: context.colors.primaryHover,
-        leading: _generating
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Icon(CupertinoIcons.arrow_down_doc, size: 16),
-        onPressed: _generating ? null : _handleTap,
-        child: Text(_generating ? 'Generating...' : 'Generate Invoice PDF'),
-      ),
-    );
-  }
-}
-
-class _DialogHeader extends StatelessWidget {
-  const _DialogHeader({required this.state});
-
-  final ShippingCalculatorState state;
 
   @override
   Widget build(BuildContext context) {
@@ -1012,34 +941,85 @@ class _DialogHeader extends StatelessWidget {
             ),
           ),
           if (state.calcResult != null && state.calcResult!.error == null)
-            Material(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => _showCalculationBreakdown(context, state),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(CupertinoIcons.number, size: 13, color: Colors.white),
-                      SizedBox(width: 6),
-                      Text(
-                        'How is this calculated?',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            _HeaderMenuButton(state: state, client: client),
         ],
       ),
+    );
+  }
+}
+
+enum _HeaderMenuAction { howCalculated, generatePdf }
+
+/// Header's overflow menu — "How was it calculated?" (opens the Calculation
+/// Breakdown popup) and "Generate Invoice PDF", folded into one menu instead
+/// of two separate buttons competing for space in the gradient header.
+class _HeaderMenuButton extends StatefulWidget {
+  const _HeaderMenuButton({required this.state, required this.client});
+
+  final ShippingCalculatorState state;
+  final Client client;
+
+  @override
+  State<_HeaderMenuButton> createState() => _HeaderMenuButtonState();
+}
+
+class _HeaderMenuButtonState extends State<_HeaderMenuButton> {
+  bool _generatingPdf = false;
+
+  Future<void> _handleSelected(_HeaderMenuAction action) async {
+    switch (action) {
+      case _HeaderMenuAction.howCalculated:
+        _showCalculationBreakdown(context, widget.state);
+      case _HeaderMenuAction.generatePdf:
+        setState(() => _generatingPdf = true);
+        try {
+          await generateInvoicePdf(state: widget.state, client: widget.client);
+        } finally {
+          if (mounted) setState(() => _generatingPdf = false);
+        }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_generatingPdf) {
+      return const Padding(
+        padding: EdgeInsets.all(8),
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+        ),
+      );
+    }
+
+    return PopupMenuButton<_HeaderMenuAction>(
+      onSelected: _handleSelected,
+      color: context.colors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      icon: const Icon(CupertinoIcons.ellipsis_vertical, size: 18, color: Colors.white),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: _HeaderMenuAction.howCalculated,
+          child: Row(
+            children: [
+              Icon(CupertinoIcons.number, size: 15, color: context.colors.textMuted),
+              const SizedBox(width: 10),
+              const Text('How was it calculated?'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: _HeaderMenuAction.generatePdf,
+          child: Row(
+            children: [
+              Icon(CupertinoIcons.arrow_down_doc, size: 15, color: context.colors.textMuted),
+              const SizedBox(width: 10),
+              const Text('Generate Invoice PDF'),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1495,6 +1475,14 @@ class RouteTiersTable extends StatelessWidget {
       color: context.colors.textBody,
     );
 
+    // Fixed content height (not IntrinsicHeight/Expanded) so both the
+    // pinned ROUTE column and every tier column always agree on height
+    // without needing to lay the whole row out first — required for the
+    // tier columns to scroll horizontally below (a horizontally-scrolling
+    // SingleChildScrollView doesn't support intrinsic-height queries).
+    final rowContentHeight = tiers.any((t) => t.expressRate != null) ? 96.0 : 68.0;
+    const tierColWidth = 130.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1539,166 +1527,235 @@ class RouteTiersTable extends StatelessWidget {
                 const SizedBox(height: 8),
               ],
               Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              border: Border.all(color: context.colors.border),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: IntrinsicHeight(
-              child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Origin/Destination pinned as the leftmost column, mirroring
-                // the rate wizard's matrix table layout.
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 48,
-                        alignment: Alignment.centerLeft,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        color: context.colors.surfaceSubtle,
-                        child: Text('ROUTE', style: headerLabelStyle(context)),
-                      ),
-                      Expanded(
-                        child: Container(
-                          width: double.infinity,
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: BorderSide(color: context.colors.border),
-                            ),
-                          ),
-                          child: Text(
-                            '${origin.isEmpty ? '—' : origin} → ${destination.isEmpty ? '—' : destination}',
-                            style: cellStyle(
-                              context,
-                            ).copyWith(fontWeight: FontWeight.w700),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  border: Border.all(color: context.colors.border),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                for (var i = 0; i < tiers.length; i++)
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      children: [
-                        Container(
-                          height: 48,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Origin/Destination pinned as the leftmost column,
+                    // mirroring the rate wizard's matrix table layout.
+                    // Fixed width (not flex) so it stays the same size
+                    // across every table instance regardless of how many
+                    // tier columns it's paired with — flex:3 would
+                    // otherwise shrink it whenever a table has more tier
+                    // columns sharing the row (e.g. ODA/Pickup Fee entries
+                    // often have 3+ tiers vs. a route's usual 2).
+                    SizedBox(
+                      width: 240,
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 48,
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             color: context.colors.surfaceSubtle,
-                            border: Border(
-                              left: BorderSide(color: context.colors.border),
-                            ),
+                            child: Text('ROUTE', style: headerLabelStyle(context)),
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                i == 0 ? 'MINIMUM' : 'TIER ${i + 1}',
-                                style: i == 0
-                                    ? headerLabelStyle(context).copyWith(
-                                        color: context.colors.primaryDeep,
-                                      )
-                                    : headerLabelStyle(context),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                tiers[i].isUncapped
-                                    ? '${tiers[i].min.toStringAsFixed(0)}–No limit'
-                                    : '${tiers[i].min.toStringAsFixed(0)}–${tiers[i].max.toStringAsFixed(0)}',
-                                style: headerRangeStyle(context),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
+                          Container(
+                            height: rowContentHeight,
                             width: double.infinity,
-                            alignment: Alignment.center,
+                            alignment: Alignment.centerLeft,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
-                              vertical: 14,
+                              vertical: 10,
                             ),
                             decoration: BoxDecoration(
                               border: Border(
                                 top: BorderSide(color: context.colors.border),
-                                left: BorderSide(color: context.colors.border),
                               ),
                             ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: context.colors.primaryChipBg,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    '₱${formatMoney(tiers[i].rate)}',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.colors.primaryDeep,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (tiers[i].expressRate != null) ...[
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: context.colors.accentChipBg,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      '₱${formatMoney(tiers[i].expressRate!)}',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: context.colors.accent,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                            child: Text(
+                              '${origin.isEmpty ? '—' : origin} → ${destination.isEmpty ? '—' : destination}',
+                              style: cellStyle(
+                                context,
+                              ).copyWith(fontWeight: FontWeight.w700),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+                    // Tier columns: fill the remaining width evenly when
+                    // they fit, otherwise switch to fixed-width columns
+                    // with a visible, draggable horizontal scrollbar — same
+                    // pattern as the rate wizard's breakweight matrix table,
+                    // for a rate with many tiers (e.g. ODA/Pickup Fee
+                    // configs, which can have several per location).
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          Widget buildTierColumns(double columnWidth) {
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                for (var i = 0; i < tiers.length; i++)
+                                  SizedBox(
+                                    width: columnWidth,
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          height: 48,
+                                          alignment: Alignment.center,
+                                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                                          decoration: BoxDecoration(
+                                            color: context.colors.surfaceSubtle,
+                                            border: Border(
+                                              left: BorderSide(color: context.colors.border),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                i == 0 ? 'MINIMUM' : 'TIER ${i + 1}',
+                                                style: i == 0
+                                                    ? headerLabelStyle(context).copyWith(
+                                                        color: context.colors.primaryDeep,
+                                                      )
+                                                    : headerLabelStyle(context),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                tiers[i].isUncapped
+                                                    ? '${tiers[i].min.toStringAsFixed(0)}–No limit'
+                                                    : '${tiers[i].min.toStringAsFixed(0)}–${tiers[i].max.toStringAsFixed(0)}',
+                                                style: headerRangeStyle(context),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Container(
+                                          height: rowContentHeight,
+                                          width: double.infinity,
+                                          alignment: Alignment.center,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 14,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            border: Border(
+                                              top: BorderSide(color: context.colors.border),
+                                              left: BorderSide(color: context.colors.border),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 6,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: context.colors.primaryChipBg,
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  '₱${formatMoney(tiers[i].rate)}',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: context.colors.primaryDeep,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (tiers[i].expressRate != null) ...[
+                                                const SizedBox(height: 6),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 6,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: context.colors.accentChipBg,
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: Text(
+                                                    '₱${formatMoney(tiers[i].expressRate!)}',
+                                                    style: TextStyle(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: context.colors.accent,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            );
+                          }
+
+                          final naturalWidth = tiers.length * tierColWidth;
+                          final fillWidth = naturalWidth <= constraints.maxWidth;
+                          final columnWidth = fillWidth
+                              ? constraints.maxWidth / tiers.length
+                              : tierColWidth;
+                          final content = buildTierColumns(columnWidth);
+
+                          if (fillWidth) return content;
+                          return _HorizontalScrollPane(child: content);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
       ],
+    );
+  }
+}
+
+/// Wraps horizontally-overflowing content in a scroll view with a visible,
+/// always-on, draggable scrollbar so the overflow is discoverable — a plain
+/// [SingleChildScrollView] gives no hint that there's more to see. Same
+/// pattern as the rate wizard's matrix table.
+class _HorizontalScrollPane extends StatefulWidget {
+  const _HorizontalScrollPane({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_HorizontalScrollPane> createState() => _HorizontalScrollPaneState();
+}
+
+class _HorizontalScrollPaneState extends State<_HorizontalScrollPane> {
+  final _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scrollbar(
+      controller: _controller,
+      thumbVisibility: true,
+      trackVisibility: true,
+      child: SingleChildScrollView(
+        controller: _controller,
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(bottom: 10),
+        child: widget.child,
+      ),
     );
   }
 }
@@ -1760,9 +1817,13 @@ class _ResultBody extends StatelessWidget {
             Expanded(
               child: _WeightStat(
                 label: 'VOL',
+                // Volumetric figure is priced by [state.divisor] — sea
+                // freight defaults that to 1,000,000 (cm³ per m³), so the
+                // result is CBM, not kg; every other mode keeps the usual
+                // /6000 volumetric-kg divisor.
                 value: result.volumetricWeight == null
                     ? '—'
-                    : '${displayValue(result.volumetricWeight!).toStringAsFixed(state.roundedDisplay ? 0 : 1)}KG',
+                    : '${displayValue(result.volumetricWeight!).toStringAsFixed(state.roundedDisplay ? 0 : 1)}${state.freightMode == FreightMode.sea ? 'CBM' : 'KG'}',
               ),
             ),
             Expanded(

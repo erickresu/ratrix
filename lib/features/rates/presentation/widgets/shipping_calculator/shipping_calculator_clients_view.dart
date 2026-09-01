@@ -44,12 +44,8 @@ class ShippingCalculatorClientsView extends StatelessWidget {
     final gridDelegate = _clientGridDelegate(columns);
     final gridPadding = isMobile ? _clientGridPaddingMobile : _clientGridPadding;
 
-    final searchField = ShadInput(
-      placeholder: const Text('Search clients...'),
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: Icon(CupertinoIcons.search, size: 16, color: context.colors.textMuted),
-      ),
+    final searchField = _ClientSearchField(
+      initialValue: state.calcClientSearch,
       onChanged: (v) => bloc.add(ShippingCalculatorClientSearchChanged(v)),
     );
 
@@ -254,6 +250,75 @@ class _CalcClientCard extends StatelessWidget {
             ],
           ),
         ),
+    );
+  }
+}
+
+/// Client search field with a clear ("x") button — only shown once there's
+/// text to clear. Owns its own [TextEditingController] (rather than relying
+/// on `ShadInput.initialValue`, which only seeds once and can't be
+/// programmatically cleared afterward) so the clear button can actually
+/// empty the visible field, not just reset the bloc's search query.
+class _ClientSearchField extends StatefulWidget {
+  const _ClientSearchField({required this.initialValue, required this.onChanged});
+
+  final String initialValue;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_ClientSearchField> createState() => _ClientSearchFieldState();
+}
+
+class _ClientSearchFieldState extends State<_ClientSearchField> {
+  late final _controller = TextEditingController(text: widget.initialValue);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    _controller.clear();
+    widget.onChanged('');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: _controller,
+      builder: (context, _) {
+        return Row(
+          children: [
+            Expanded(
+              child: ShadInput(
+                controller: _controller,
+                placeholder: const Text('Search clients...'),
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(CupertinoIcons.search, size: 16, color: context.colors.textMuted),
+                ),
+                onChanged: widget.onChanged,
+              ),
+            ),
+            if (_controller.text.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Material(
+                color: context.colors.surfaceMuted,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: _clear,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(CupertinoIcons.clear, size: 15, color: context.colors.textMuted),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

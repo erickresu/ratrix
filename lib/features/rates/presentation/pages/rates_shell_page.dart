@@ -9,6 +9,7 @@ import '../../../clients/data/repositories/clients_repository.dart';
 import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
+import '../bloc/shipping_calculator_bloc.dart';
 import '../widgets/audit_trail_view.dart';
 import '../widgets/create_rate_wizard/wizard_page.dart';
 import '../widgets/custom_client_rates_view.dart';
@@ -110,9 +111,7 @@ class _RatesShellViewState extends State<_RatesShellView> {
       ),
       RatesView.shippingCalculatorClients =>
         const ShippingCalculatorClientsView(),
-      RatesView.shippingCalculatorForm => ShippingCalculatorFormView(
-        key: ValueKey('shipping-calc-${state.selectedCalcClientId}'),
-      ),
+      RatesView.shippingCalculatorForm => const ShippingCalculatorFormView(),
       RatesView.auditTrail => const AuditTrailView(),
     };
 
@@ -124,7 +123,7 @@ class _RatesShellViewState extends State<_RatesShellView> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final openRatio = (272 / screenWidth).clamp(0.05, 0.95);
 
-    return AdvancedDrawer(
+    final shell = AdvancedDrawer(
       controller: _drawerController,
       backdropColor: RatesColors.dark.sidebarBg,
       openRatio: openRatio,
@@ -165,6 +164,23 @@ class _RatesShellViewState extends State<_RatesShellView> {
         ),
         body: content,
       ),
+    );
+
+    // Provided above the `content` switch (not inside
+    // `ShippingCalculatorFormView` itself) so it survives navigating away
+    // and back — e.g. tapping "Edit this rate" from the calculator jumps to
+    // RatesView.create, which fully unmounts `content`'s previous subtree;
+    // without this, everything the user typed (route, weight, dimensions,
+    // declared value) would reset to blank on return. Keyed on the client
+    // id so switching to a *different* calculator client still starts
+    // fresh, and skipped entirely once no calculator client is selected.
+    final calcClientId = state.selectedCalcClientId;
+    if (calcClientId == null) return shell;
+    return BlocProvider<ShippingCalculatorBloc>(
+      key: ValueKey('calc-bloc-$calcClientId'),
+      create: (_) =>
+          ShippingCalculatorBloc(getIt<RatesRepository>(), clientId: calcClientId),
+      child: shell,
     );
   }
 }

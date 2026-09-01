@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/client_rate.dart';
+import '../../domain/entities/conditional_addon_config.dart';
 import '../../domain/entities/ratrix_rate.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../../domain/entities/rates_fk_ids.dart';
@@ -21,8 +22,16 @@ class ShippingCalculatorBloc
           emit(state.copyWith(rateType: event.rateType, clearRateTable: true)),
     );
     on<CalcFreightModeChanged>(
-      (event, emit) =>
-          emit(state.copyWith(freightMode: event.mode, clearRateTable: true)),
+      (event, emit) => emit(
+        state.copyWith(
+          freightMode: event.mode,
+          // Sea freight prices by CBM (cubic meters), not kg — L×W×H in cm
+          // over 1,000,000 gives m³ directly, vs air's usual /6000
+          // volumetric-kg divisor.
+          divisor: event.mode == FreightMode.sea ? '1000000' : '6000',
+          clearRateTable: true,
+        ),
+      ),
     );
     on<CalcServiceModeChanged>(
       (event, emit) =>
@@ -78,6 +87,13 @@ class ShippingCalculatorBloc
         emit,
         event.index,
         (d) => d.copyWith(height: event.value),
+      ),
+    );
+    on<CalcDimensionPackagesChanged>(
+      (event, emit) => _updateDimension(
+        emit,
+        event.index,
+        (d) => d.copyWith(packages: event.value),
       ),
     );
     on<CalcDivisorChanged>(
@@ -176,7 +192,11 @@ class ShippingCalculatorBloc
         weight: '',
         declaredValue: '',
         dimensions: const [CalcDimension()],
-        divisor: '6000',
+        // Respect the currently selected freight mode's default rather
+        // than always resetting to air/land's 6000 — this fires whenever a
+        // rate table is picked, which happens right after selecting a sea
+        // freight mode and was clobbering that mode's 1,000,000 default.
+        divisor: state.freightMode == FreightMode.sea ? '1000000' : '6000',
         resultComputed: false,
         clearSubmitError: true,
       ),
@@ -265,7 +285,8 @@ class ShippingCalculatorBloc
       final length = num.tryParse(d.length.trim()) ?? 0;
       final width = num.tryParse(d.width.trim()) ?? 0;
       final height = num.tryParse(d.height.trim()) ?? 0;
-      cbm += (length * width * height) / 1000000;
+      final packages = num.tryParse(d.packages.trim()) ?? 1;
+      cbm += (length * width * height) / 1000000 * packages;
     }
     final volumetricWeight = state.popupVolumetricWeight;
 
@@ -333,6 +354,19 @@ class ShippingCalculatorBloc
       addFlat('Arrastre charge', addons.arrastre);
       addFlat('Hazardous goods handling', addons.hazardousGoodsHandling);
       addFlat('Other fees', addons.othersNonVat);
+      // ODA/Pickup Fee: a plain decimal on the rate always wins; otherwise
+      // auto-looked-up from the bracket-config against this route's
+      // destination/origin (see _conditionalCharge).
+      addFlat(
+        'ODA',
+        addons.oda ??
+            _conditionalCharge(addons.odaConfig, route.destination, chargeableWeight),
+      );
+      addFlat(
+        'Pickup fee',
+        addons.pickupFee ??
+            _conditionalCharge(addons.pickupFeeConfig, route.origin, chargeableWeight),
+      );
     }
 
     final subTotal =
@@ -496,6 +530,47 @@ class ShippingCalculatorBloc
               '${pricingOption.label} isn\'t supported by the calculator yet.',
         );
     }
+  }
+
+  /// ODA/Pickup Fee auto-lookup: [config] is null when the rate has no
+  /// bracket-config for this addon (nothing to charge). Otherwise, matches
+  /// [location] (the selected route's destination for ODA, origin for
+  /// Pickup Fee) against each configured entry's `locationId` — checked
+  /// against every one of the address's own geography ids (city/province/
+  /// region/island/barangay) rather than one fixed level, since the config
+  /// was authored at whichever granularity its own `format` used. On a
+  /// match, charges the breakweight tier [chargeableWeight] falls into at
+  /// that tier's flat rate (no per-kg multiplication) — the only formula
+  /// seen in practice (`charge_option: 3`, Flat Breakweight). No match, or
+  /// weight outside every tier, means no charge — not an error, since ODA/
+  /// Pickup Fee are conditional add-ons, not required pricing.
+  num? _conditionalCharge(
+    ConditionalAddonConfig? config,
+    RatrixAddress? location,
+    num chargeableWeight,
+  ) {
+    if (config == null || location == null) return null;
+    final locationIds = {
+      location.id,
+      location.cityId,
+      location.provinceId,
+      location.regionId,
+      location.islandId,
+      location.barangayId,
+    }..removeWhere((id) => id == null);
+    if (locationIds.isEmpty) return null;
+
+    for (final entry in config.routes) {
+      if (entry.locationId == null || !locationIds.contains(entry.locationId)) {
+        continue;
+      }
+      for (final tier in entry.breakweights) {
+        if (chargeableWeight >= tier.min && chargeableWeight <= tier.max) {
+          return tier.rate;
+        }
+      }
+    }
+    return null;
   }
 }
 

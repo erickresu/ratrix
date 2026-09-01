@@ -6,7 +6,8 @@ import 'shipping_calculator_form_view.dart';
 /// column stacks Service/Freight + Routing side by side above Cargo
 /// Details, with Submit pinned to its bottom edge; the right column docks
 /// the freight breakdown panel (always visible, no need for a result
-/// modal) with the "Generate Invoice PDF" action beneath it.
+/// modal) — its own header menu holds "How was it calculated?" and
+/// "Generate Invoice PDF", so there's no separate button row here.
 class ShippingCalculatorFormWeb extends StatelessWidget {
   const ShippingCalculatorFormWeb({super.key, required this.parts});
 
@@ -19,14 +20,14 @@ class ShippingCalculatorFormWeb extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          parts.header,
-          const SizedBox(height: 24),
-          // Force both columns' button rows (Reset/Calculate on the left,
-          // Generate Invoice PDF on the right) to sit level with each
-          // other — `IntrinsicHeight` + `stretch` gives both columns the
-          // taller one's height, and `spaceBetween` pins each column's
-          // last child (its button row) to that shared bottom edge instead
-          // of trailing wherever its own content happened to end.
+          // `parts.header` ("Back"/"Calculate Freight"/subtitle) lives
+          // inside the left column below, not above this whole Row — that,
+          // plus `IntrinsicHeight` + `stretch` here, is what makes the
+          // breakdown box a direct stretched sibling of the left column:
+          // its top lands level with "Calculate Freight" itself and its
+          // bottom lands level with the Reset/Calculate row, matching the
+          // left column's full height exactly rather than a guessed fixed
+          // pixel value that drifts whenever that content's height changes.
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -34,25 +35,21 @@ class ShippingCalculatorFormWeb extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(flex: 3, child: parts.serviceFreightCard),
-                                const SizedBox(width: 20),
-                                Expanded(flex: 2, child: parts.routingCard),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          parts.cargoDetailsCard,
-                        ],
+                      parts.header,
+                      const SizedBox(height: 24),
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(flex: 3, child: parts.serviceFreightCard),
+                            const SizedBox(width: 20),
+                            Expanded(flex: 2, child: parts.routingCard),
+                          ],
+                        ),
                       ),
+                      const SizedBox(height: 20),
+                      parts.cargoDetailsCard,
                       Padding(
                         padding: const EdgeInsets.only(top: 20),
                         child: parts.submitButton,
@@ -61,24 +58,7 @@ class ShippingCalculatorFormWeb extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 24),
-                SizedBox(
-                  width: 400,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // `Expanded` grows the card to fill the same height
-                      // as the left column's details cards (both columns
-                      // are stretched by the outer `IntrinsicHeight`),
-                      // instead of the card sizing to its own content and
-                      // leaving a big empty gap before the button.
-                      Expanded(child: parts.breakdownPanel),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 20),
-                        child: parts.pdfButtonSlot,
-                      ),
-                    ],
-                  ),
-                ),
+                SizedBox(width: 400, child: parts.breakdownPanel),
               ],
             ),
           ),

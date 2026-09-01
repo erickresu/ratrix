@@ -6,6 +6,8 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'conditional_addon_config.dart';
+
 part 'ratrix_rate.freezed.dart';
 
 /// Laravel decimal-cast columns (all the `ratrix_addons` money fields,
@@ -188,6 +190,12 @@ abstract class RatrixAddons with _$RatrixAddons {
     num? roadToll,
     num? othersNonVat,
     num? hazardousGoodsHandling,
+    // Bracket-config form of `oda`/`pickup_fee` — `custom_addons.oda_config`/
+    // `.pickup_fee_config`, per-destination/per-origin breakweight tiers
+    // instead of one flat number. See `oda`/`pickupFee` above for the
+    // simple-decimal form these coexist with.
+    ConditionalAddonConfig? odaConfig,
+    ConditionalAddonConfig? pickupFeeConfig,
   }) = _RatrixAddons;
 
   const RatrixAddons._();
@@ -220,6 +228,23 @@ abstract class RatrixAddons with _$RatrixAddons {
         roadToll: _asNum(json['road_toll']),
         othersNonVat: _asNum(json['others_non_vat']),
         hazardousGoodsHandling: _asNum(json['hazardous_goods_handling']),
+        odaConfig: ConditionalAddonConfig.fromJson(
+          // Laravel serializes an empty PHP associative array as `[]`, not
+          // `{}` — an empty/unset `custom_addons` comes back as a List, not
+          // a Map, so this can't be a hard `as` cast.
+          json['custom_addons'] is Map<String, dynamic>
+              ? (json['custom_addons'] as Map<String, dynamic>)['oda_config']
+              : null,
+          locationKey: 'destination',
+          locationIdKey: 'destination_id',
+        ),
+        pickupFeeConfig: ConditionalAddonConfig.fromJson(
+          json['custom_addons'] is Map<String, dynamic>
+              ? (json['custom_addons'] as Map<String, dynamic>)['pickup_fee_config']
+              : null,
+          locationKey: 'origin',
+          locationIdKey: 'origin_id',
+        ),
       );
 
   Map<String, dynamic> toJson() => {

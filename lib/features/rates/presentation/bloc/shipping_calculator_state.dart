@@ -6,22 +6,39 @@ typedef RouteChoice = ({String origin, String destination});
 /// One piece's L x W x H — the cargo can have multiple pieces, each with
 /// its own dimensions, and volumetric weight sums across all of them.
 class CalcDimension extends Equatable {
-  const CalcDimension({this.length = '', this.width = '', this.height = ''});
+  const CalcDimension({
+    this.length = '',
+    this.width = '',
+    this.height = '',
+    this.packages = '1',
+  });
 
   final String length;
   final String width;
   final String height;
 
-  CalcDimension copyWith({String? length, String? width, String? height}) {
+  /// Number of identical pieces at this length/width/height — this row's
+  /// volumetric weight is multiplied by this count, not just summed once
+  /// per row. Defaults to '1' (a single piece), same across every freight
+  /// mode.
+  final String packages;
+
+  CalcDimension copyWith({
+    String? length,
+    String? width,
+    String? height,
+    String? packages,
+  }) {
     return CalcDimension(
       length: length ?? this.length,
       width: width ?? this.width,
       height: height ?? this.height,
+      packages: packages ?? this.packages,
     );
   }
 
   @override
-  List<Object?> get props => [length, width, height];
+  List<Object?> get props => [length, width, height, packages];
 }
 
 /// Result of a breakweight pricing calculation — covers all 7 bracket-pricing
@@ -194,8 +211,15 @@ class ShippingCalculatorState extends Equatable {
   /// freight mode + service mode — the calculator only offers a rate table
   /// that was actually saved under this exact combination, so it can't
   /// compute against a rate that doesn't apply to the selected scenario.
+  /// Expired rates (`expiryDate` in the past) are excluded — there's
+  /// nothing to compute against a rate that's no longer valid.
   List<ClientRate> get availableRateTables => clientRates
-      .where((r) => r.freightMode == freightMode && r.serviceMode == serviceMode)
+      .where(
+        (r) =>
+            r.freightMode == freightMode &&
+            r.serviceMode == serviceMode &&
+            (r.expiryDate == null || r.expiryDate!.isAfter(DateTime.now())),
+      )
       .toList();
 
   /// Distinct origin/destination pairs actually saved on the selected rate
@@ -284,7 +308,8 @@ class ShippingCalculatorState extends Equatable {
       final length = num.tryParse(d.length.trim()) ?? 0;
       final width = num.tryParse(d.width.trim()) ?? 0;
       final height = num.tryParse(d.height.trim()) ?? 0;
-      total += (length * width * height) / divisor;
+      final packages = num.tryParse(d.packages.trim()) ?? 1;
+      total += (length * width * height) / divisor * packages;
     }
     return total;
   }

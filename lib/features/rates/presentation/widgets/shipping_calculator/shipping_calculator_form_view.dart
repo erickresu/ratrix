@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
-import '../../../../../core/di/injection_container.dart';
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../../../core/utils/money_formatting.dart';
-import '../../../data/repositories/rates_repository.dart';
 import '../../../domain/entities/client.dart';
 import '../../../domain/entities/client_rate.dart';
+import '../../../domain/entities/conditional_addon_config.dart';
 import '../../../domain/entities/ratrix_rate.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rates_shell_bloc.dart';
@@ -32,7 +31,6 @@ typedef ShippingCalculatorFormParts = ({
   Widget cargoDetailsCard,
   Widget submitButton,
   Widget breakdownPanel,
-  Widget pdfButtonSlot,
 });
 
 class ShippingCalculatorFormView extends StatelessWidget {
@@ -44,10 +42,12 @@ class ShippingCalculatorFormView extends StatelessWidget {
     final client = shellState.selectedCalcClient;
     if (client == null) return const SizedBox.shrink();
 
-    return BlocProvider(
-      create: (_) => ShippingCalculatorBloc(getIt<RatesRepository>(), clientId: client.id),
-      child: _CalculatorView(client: client),
-    );
+    // ShippingCalculatorBloc is now provided by RatesShellPage, above the
+    // view switch — not created here — so its state (route, weight,
+    // dimensions, declared value, calc result) survives navigating away
+    // (e.g. "Edit this rate") and back, instead of resetting every time
+    // this widget remounts.
+    return _CalculatorView(client: client);
   }
 }
 
@@ -100,8 +100,7 @@ class _CalculatorView extends StatelessWidget {
       routingCard: const _RoutingCard(),
       cargoDetailsCard: const _CargoDetailsCard(),
       submitButton: _SubmitButton(client: client),
-      breakdownPanel: FreightBreakdownPanel(client: client, showButton: false),
-      pdfButtonSlot: _GeneratePdfButtonSlot(client: client),
+      breakdownPanel: FreightBreakdownPanel(client: client),
     );
 
     return Breakpoints.isMobile(context)
@@ -572,6 +571,7 @@ class _CargoDetailsCard extends StatelessWidget {
               tiers: state.selectedRouteTiers,
               serviceLevel: state.serviceLevel,
               addons: state.selectedRate?.addons,
+              rateId: state.selectedRate?.id,
             ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,7 +666,9 @@ class _CbmCalculatorDialog extends StatelessWidget {
     if (divisor == null || divisor <= 0 || length == null || width == null || height == null) {
       return '—';
     }
-    return '${((length * width * height) / divisor).toStringAsFixed(2)} kg';
+    final packages = num.tryParse(d.packages.trim()) ?? 1;
+    final unit = state.freightMode == FreightMode.sea ? 'CBM' : 'kg';
+    return '${((length * width * height) / divisor * packages).toStringAsFixed(2)} $unit';
   }
 
   @override
@@ -680,7 +682,7 @@ class _CbmCalculatorDialog extends StatelessWidget {
       padding: EdgeInsets.zero,
       closeIcon: const SizedBox.shrink(),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 620, maxHeight: 680),
+        constraints: const BoxConstraints(maxWidth: 760, maxHeight: 680),
         child: Padding(
           padding: const EdgeInsets.all(28),
           child: Column(
@@ -762,13 +764,21 @@ class _CbmCalculatorDialog extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           SizedBox(
-                            width: 72,
+                            width: 96,
                             child: Text(
                               'Weight',
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
                             ),
                           ),
-                          if (state.dimensions.length > 1) const SizedBox(width: 50),
+                          const SizedBox(width: 14),
+                          SizedBox(
+                            width: 60,
+                            child: Text(
+                              'Quantity',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
+                            ),
+                          ),
+                          if (state.dimensions.length > 1) const SizedBox(width: 36),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -804,7 +814,7 @@ class _CbmCalculatorDialog extends StatelessWidget {
                             ),
                             const SizedBox(width: 10),
                             SizedBox(
-                              width: 72,
+                              width: 96,
                               height: _fieldHeight,
                               child: Align(
                                 alignment: Alignment.centerRight,
@@ -828,13 +838,27 @@ class _CbmCalculatorDialog extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 14),
+                            SizedBox(
+                              width: 60,
+                              child: _DimensionField(
+                                dimKey: 'calc-dim-p-$i',
+                                initialValue: state.dimensions[i].packages,
+                                onChanged: (v) => bloc.add(
+                                  CalcDimensionPackagesChanged(i, v),
+                                ),
+                              ),
+                            ),
                             if (state.dimensions.length > 1) ...[
-                              const SizedBox(width: 18),
+                              const SizedBox(width: 4),
                               SizedBox(
+                                width: 32,
                                 height: _fieldHeight,
                                 child: IconButton(
                                   icon: Icon(CupertinoIcons.trash, size: 16, color: context.colors.destructive),
                                   tooltip: 'Remove dimension',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
                                   onPressed: () => bloc.add(CalcDimensionRemoved(i)),
                                 ),
                               ),
@@ -851,6 +875,15 @@ class _CbmCalculatorDialog extends StatelessWidget {
                       const SizedBox(height: 28),
                       const _FieldLabel('Divisor'),
                       ShadInput(
+                        // `initialValue` only seeds the controller once and
+                        // won't pick up state.divisor's freight-mode-driven
+                        // default (6000 air/land, 1,000,000 sea) on its own.
+                        // Keying on freightMode (not divisor itself — that
+                        // would reset the field, and the cursor, on every
+                        // keystroke) forces a fresh seed only when the mode
+                        // actually changes, while still leaving the value
+                        // fully editable by hand afterward.
+                        key: ValueKey('calc-divisor-${state.freightMode}'),
                         initialValue: state.divisor,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         onChanged: (v) => bloc.add(CalcDivisorChanged(v)),
@@ -877,14 +910,18 @@ class _CbmCalculatorDialog extends StatelessWidget {
                               ),
                               const Spacer(),
                               Text(
-                                '${state.popupVolumetricWeight!.toStringAsFixed(2)} kg',
+                                '${state.popupVolumetricWeight!.toStringAsFixed(2)} ${state.freightMode == FreightMode.sea ? 'CBM' : 'kg'}',
                                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
                               ),
                             ],
                           ),
                         )
                       else ...[
-                        const _FieldLabel('Computed Weight (kg)'),
+                        _FieldLabel(
+                          state.freightMode == FreightMode.sea
+                              ? 'Computed Weight (CBM)'
+                              : 'Computed Weight (kg)',
+                        ),
                         SizedBox(
                           width: double.infinity,
                           height: _fieldHeight,
@@ -927,6 +964,7 @@ class _RouteTiersInfoButton extends StatelessWidget {
     required this.tiers,
     required this.serviceLevel,
     this.addons,
+    this.rateId,
   });
 
   final String origin;
@@ -935,9 +973,23 @@ class _RouteTiersInfoButton extends StatelessWidget {
   final ServiceLevel serviceLevel;
   final RatrixAddons? addons;
 
-  void _showDialog(BuildContext context) => showShadDialog<void>(
+  /// The rate this popup describes — lets the "edit" pencil icon on
+  /// [RouteTiersTable] jump straight into the wizard for it. Null (no
+  /// pencil shown) only if the rate somehow loaded without an id.
+  final String? rateId;
+
+  void _showDialog(BuildContext context) {
+    // Captured here, before the dialog opens — `showShadDialog` pushes
+    // onto the root Navigator, outside this widget's `RatesShellBloc`
+    // scope, so the dialog can't `context.read` it directly (same reason
+    // `freight_breakdown_dialog.dart`'s "Edit this rate" button re-provides
+    // it via `BlocProvider.value` below).
+    final shellBloc = context.read<RatesShellBloc>();
+    showShadDialog<void>(
         context: context,
-        builder: (dialogContext) => ShadDialog(
+        builder: (dialogContext) => BlocProvider.value(
+          value: shellBloc,
+          child: ShadDialog(
           radius: BorderRadius.circular(16),
           backgroundColor: dialogContext.colors.surface,
           padding: EdgeInsets.zero,
@@ -980,15 +1032,33 @@ class _RouteTiersInfoButton extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
+                      if (rateId != null) ...[
+                        Material(
+                          color: dialogContext.colors.primary,
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () {
+                              Navigator.of(dialogContext).pop();
+                              shellBloc.add(EditRateRequested(rateId!));
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.all(8),
+                              child: Icon(CupertinoIcons.pencil, size: 15, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       Material(
-                        color: dialogContext.colors.surfaceMuted,
+                        color: dialogContext.colors.destructive,
                         shape: const CircleBorder(),
                         child: InkWell(
                           customBorder: const CircleBorder(),
                           onTap: () => Navigator.of(dialogContext).pop(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(CupertinoIcons.xmark, size: 15, color: dialogContext.colors.textMuted),
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(CupertinoIcons.xmark, size: 15, color: Colors.white),
                           ),
                         ),
                       ),
@@ -1013,7 +1083,9 @@ class _RouteTiersInfoButton extends StatelessWidget {
               ),
             ),
           ),
-      );
+        ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1096,9 +1168,20 @@ class _AddonsSummary extends StatelessWidget {
         ('Hazardous Goods Handling', '₱${formatMoney(addons.hazardousGoodsHandling!)}'),
       if (addons.othersNonVat != null && addons.othersNonVat != 0)
         ('Other Fees', '₱${formatMoney(addons.othersNonVat!)}'),
+      // Plain-decimal ODA/Pickup Fee only — the bracket-config form
+      // (per-destination/origin breakweight tiers) is shown separately
+      // below, since it doesn't fit a single (label, amount) row.
+      if (addons.oda != null && addons.oda != 0)
+        ('ODA', '₱${formatMoney(addons.oda!)}'),
+      if (addons.pickupFee != null && addons.pickupFee != 0)
+        ('Pickup Fee', '₱${formatMoney(addons.pickupFee!)}'),
     ];
 
-    if (rows.isEmpty) return const SizedBox.shrink();
+    if (rows.isEmpty &&
+        addons.odaConfig == null &&
+        addons.pickupFeeConfig == null) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1125,28 +1208,77 @@ class _AddonsSummary extends StatelessWidget {
               ],
             ),
           ),
+        if (addons.odaConfig != null) ...[
+          const SizedBox(height: 10),
+          _ConditionalAddonSummary(
+            label: 'ODA',
+            config: addons.odaConfig!,
+            matchesDestination: true,
+          ),
+        ],
+        if (addons.pickupFeeConfig != null) ...[
+          const SizedBox(height: 10),
+          _ConditionalAddonSummary(
+            label: 'Pickup Fee',
+            config: addons.pickupFeeConfig!,
+            matchesDestination: false,
+          ),
+        ],
       ],
     );
   }
 }
 
-/// Renders `GeneratePdfButton` in its own slot outside `FreightBreakdownPanel`
-/// (which is told `showButton: false`) so it can sit in a separate bottom-
-/// aligned row alongside the form's Reset/Calculate buttons — see
-/// `ShippingCalculatorFormWeb`.
-class _GeneratePdfButtonSlot extends StatelessWidget {
-  const _GeneratePdfButtonSlot({required this.client});
+/// Renders one ODA/Pickup Fee bracket-config (`custom_addons.oda_config`/
+/// `.pickup_fee_config`) as its own compact block — one sub-row per
+/// configured destination/origin, each listing its breakweight tiers, since
+/// this doesn't reduce to a single flat amount like the rest of
+/// [_AddonsSummary]'s rows.
+class _ConditionalAddonSummary extends StatelessWidget {
+  const _ConditionalAddonSummary({
+    required this.label,
+    required this.config,
+    required this.matchesDestination,
+  });
 
-  final Client client;
+  final String label;
+  final ConditionalAddonConfig config;
+
+  /// ODA entries key off destination, Pickup Fee off origin — decides which
+  /// side of [RouteTiersTable]'s "origin → destination" line the location
+  /// label lands on.
+  final bool matchesDestination;
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<ShippingCalculatorBloc>().state;
-    final result = state.calcResultRevealed ? state.calcResult : null;
-    if (result == null || result.error != null) return const SizedBox.shrink();
-    return GeneratePdfButton(state: state, client: client);
+    if (config.routes.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(CupertinoIcons.location_solid, size: 13, color: context.colors.primaryDeep),
+            const SizedBox(width: 6),
+            Text(
+              '$label (by location)',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.colors.textBody),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        for (var i = 0; i < config.routes.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          RouteTiersTable(
+            origin: matchesDestination ? '' : (config.routes[i].locationLabel ?? ''),
+            destination: matchesDestination ? (config.routes[i].locationLabel ?? '') : '',
+            tiers: config.routes[i].breakweights,
+          ),
+        ],
+      ],
+    );
   }
 }
+
 
 class _SubmitButton extends StatelessWidget {
   const _SubmitButton({required this.client});

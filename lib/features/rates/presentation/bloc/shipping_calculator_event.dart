@@ -117,6 +117,16 @@ class CalcDimensionHeightChanged extends ShippingCalculatorEvent {
   List<Object?> get props => [index, value];
 }
 
+class CalcDimensionPackagesChanged extends ShippingCalculatorEvent {
+  const CalcDimensionPackagesChanged(this.index, this.value);
+
+  final int index;
+  final String value;
+
+  @override
+  List<Object?> get props => [index, value];
+}
+
 class CalcDivisorChanged extends ShippingCalculatorEvent {
   const CalcDivisorChanged(this.value);
 
