@@ -4,10 +4,34 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../../core/utils/breakpoints.dart';
+import '../../../domain/entities/location_option.dart';
+import '../../../domain/entities/matrix_row.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rate_wizard_bloc.dart';
 import '../../rates_colors.dart';
 import 'rate_matrix_table.dart';
+
+/// Distinct destinations (ODA) or origins (Pickup Fee) already entered in
+/// the main Rate Matrix step, as pickable [LocationOption]s — ODA/Pickup
+/// conditions only ever make sense tied to a route this rate actually has,
+/// so this reuses that data instead of a fresh geo-search. Only rows where
+/// the user picked a real suggestion (not just typed free text) carry a
+/// resolved option with a usable id, so free-text-only rows are skipped.
+List<LocationOption> _routeLocationChoices(
+  List<MatrixRow> matrixRows, {
+  required bool destinations,
+}) {
+  final seen = <String>{};
+  final choices = <LocationOption>[];
+  for (final row in matrixRows) {
+    final option = destinations ? row.destinationOption : row.originOption;
+    if (option == null) continue;
+    final key = option.id ?? option.label;
+    if (!seen.add(key)) continue;
+    choices.add(option);
+  }
+  return choices;
+}
 
 const _conditionalTypeIcons = {
   ConditionalType.oda: CupertinoIcons.location_slash,
@@ -22,6 +46,8 @@ class Step3ConditionalAddons extends StatelessWidget {
     final bloc = context.read<RateWizardBloc>();
     final state = context.watch<RateWizardBloc>().state;
     final isMobile = Breakpoints.isMobile(context);
+    final destinationChoices = _routeLocationChoices(state.matrixRows, destinations: true);
+    final originChoices = _routeLocationChoices(state.matrixRows, destinations: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,22 +164,38 @@ class Step3ConditionalAddons extends StatelessWidget {
               RateMatrixTable(
                 matrixRows: state.conditionalMatrixRows,
                 breakweights: state.conditionalBreakweights,
-                originPlaceholder: 'Search origin...',
-                destinationPlaceholder: 'Search destination...',
-                originSearchResults: state.originSearchResults,
-                destinationSearchResults: state.destinationSearchResults,
-                originSearchLoading: state.originSearchLoading,
-                destinationSearchLoading: state.destinationSearchLoading,
-                originSearchType: state.originSearchType,
-                destinationSearchType: state.destinationSearchType,
+                // ODA only ever matches by destination, Pickup Fee only
+                // ever matches by origin — matches how
+                // custom_addons.oda_config/.pickup_fee_config are keyed on
+                // the backend, so there's no point offering the other
+                // field here.
+                showOrigin: state.conditionalType == ConditionalType.pickup,
+                showDestination: state.conditionalType == ConditionalType.oda,
+                // Only one location field ever shows here, so the pane
+                // doesn't need the main matrix's wider fixed width —
+                // 30% of the table's own width, not the usual 50/50 split.
+                leftPaneWidthFraction: 0.3,
+                // No "match by" dropdown, and no live geo-search either —
+                // ODA/Pickup conditions only make sense tied to a route
+                // this rate actually has, so the choices are exactly the
+                // distinct destinations/origins already entered in the
+                // main Rate Matrix step (see `_routeLocationChoices`), not
+                // a fresh search against the whole geography database.
+                showMatchByFilter: false,
+                originSearchType: LocationSearchType.province,
+                destinationSearchType: LocationSearchType.province,
+                originPlaceholder: 'Select origin from routes above...',
+                destinationPlaceholder: 'Select destination from routes above...',
+                originSearchResults: originChoices,
+                destinationSearchResults: destinationChoices,
                 onOriginChanged: (i, v) =>
                     bloc.add(ConditionalOriginChanged(i, v)),
                 onDestinationChanged: (i, v) =>
                     bloc.add(ConditionalDestinationChanged(i, v)),
-                onOriginQueryChanged: (q) => bloc.add(LocationSearchQueryChanged(LocationField.origin, q)),
-                onDestinationQueryChanged: (q) => bloc.add(LocationSearchQueryChanged(LocationField.destination, q)),
-                onOriginSearchTypeChanged: (t) => bloc.add(LocationSearchTypeChanged(LocationField.origin, t)),
-                onDestinationSearchTypeChanged: (t) => bloc.add(LocationSearchTypeChanged(LocationField.destination, t)),
+                onOriginSelected: (i, option, text) =>
+                    bloc.add(ConditionalOriginSelected(i, option, text)),
+                onDestinationSelected: (i, option, text) =>
+                    bloc.add(ConditionalDestinationSelected(i, option, text)),
                 onCellChanged: (i, bi, v) =>
                     bloc.add(ConditionalCellChanged(i, bi, v)),
                 onBreakweightMinChanged: (i, v) =>

@@ -814,9 +814,9 @@ class _RecentRatesTable extends StatelessWidget {
 
   Widget _typeBadge(BuildContext context, RateType type, bool compact) {
     final isPublished = type == RateType.published;
-    final bg = isPublished
-        ? context.colors.primaryChipBg
-        : context.colors.customBg;
+    // Neutral secondary background for both variants — distinguished by
+    // text color only, instead of a saturated gold/purple chip.
+    final bg = context.colors.surfaceMuted;
     return ShadBadge(
       backgroundColor: bg,
       // These badges aren't interactive (no onPressed), so pin the hover

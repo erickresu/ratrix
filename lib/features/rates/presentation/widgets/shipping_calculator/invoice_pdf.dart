@@ -8,7 +8,8 @@ import '../../../domain/entities/client.dart';
 import '../../../domain/entities/rates_fk_ids.dart';
 import '../../bloc/shipping_calculator_bloc.dart';
 
-const _goldDeep = PdfColor.fromInt(0xFFB8890F);
+// Matches `RatesColors.light.primaryHover`'s muted brass tone.
+const _goldDeep = PdfColor.fromInt(0xFFA07F3D);
 const _textBody = PdfColor.fromInt(0xFF1A1F26);
 const _textMuted = PdfColor.fromInt(0xFF6B7280);
 const _border = PdfColor.fromInt(0xFFE2E5EA);

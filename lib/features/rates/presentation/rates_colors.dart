@@ -87,13 +87,16 @@ class RatesColors extends ThemeExtension<RatesColors> {
   final Gradient primaryButtonGradient;
 
   static const light = RatesColors(
-    primary: Color(0xFFD4A017),
-    primaryHover: Color(0xFFB8890F),
-    primaryDeep: Color(0xFF7A5B0A),
-    primaryDeeper: Color(0xFF5C4407),
-    primarySoftBg: Color(0xFFFBF0DA),
-    primaryChipBg: Color(0xFFF3DFA8),
-    primaryBorder: Color(0xFFE0BD5C),
+    // Muted brass/bronze instead of a bright saturated gold — same warm
+    // hue family, lower saturation and a touch darker so it doesn't read
+    // as "loud" against white surfaces.
+    primary: Color(0xFFB8934A),
+    primaryHover: Color(0xFFA07F3D),
+    primaryDeep: Color(0xFF6B5228),
+    primaryDeeper: Color(0xFF4F3D1E),
+    primarySoftBg: Color(0xFFF5EFE0),
+    primaryChipBg: Color(0xFFE8DCC0),
+    primaryBorder: Color(0xFFC9B587),
     sidebarBg: Color(0xFF0F1B2E),
     sidebarPanelBg: Color(0xFF1A2C47),
     pageBg: Color(0xFFF1F5F9),
@@ -127,18 +130,22 @@ class RatesColors extends ThemeExtension<RatesColors> {
     primaryButtonGradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFFE6B325), Color(0xFFB8890F)],
+      colors: [Color(0xFFC4A05C), Color(0xFFA07F3D)],
     ),
   );
 
   static const dark = RatesColors(
-    primary: Color(0xFFF2C94C),
-    primaryHover: Color(0xFFE0B33A),
-    primaryDeep: Color(0xFFF7DA8A),
-    primaryDeeper: Color(0xFFFCEBC0),
-    primarySoftBg: Color(0xFF332A0F),
-    primaryChipBg: Color(0xFF3D3110),
-    primaryBorder: Color(0xFF4F3E14),
+    // Dark mode's gold was the brightest offender (a vivid, near-neon
+    // yellow against near-black surfaces) — muted to the same brass
+    // family as light mode, just lightened enough to stay legible on
+    // dark backgrounds.
+    primary: Color(0xFFC9A55C),
+    primaryHover: Color(0xFFB8924A),
+    primaryDeep: Color(0xFFD9BC85),
+    primaryDeeper: Color(0xFFE6D3AC),
+    primarySoftBg: Color(0xFF2E2818),
+    primaryChipBg: Color(0xFF3A3018),
+    primaryBorder: Color(0xFF4A3E22),
 
     sidebarBg: Color(0xFF0F1B2E),
     sidebarPanelBg: Color(0xFF1A2C47),
@@ -181,7 +188,7 @@ class RatesColors extends ThemeExtension<RatesColors> {
     primaryButtonGradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFFE0B33A), Color(0xFFB8890F)],
+      colors: [Color(0xFFB8924A), Color(0xFF97753A)],
     ),
   );
 

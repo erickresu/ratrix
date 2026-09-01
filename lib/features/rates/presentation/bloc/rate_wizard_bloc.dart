@@ -397,7 +397,12 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       final rows = _updateAt(
         state.conditionalMatrixRows,
         event.rowIndex,
-        (r) => r.copyWith(origin: event.value),
+        // Text no longer matches what `originOption` was resolved for —
+        // clear it, same as the main matrix's `OriginChanged`, so a
+        // hand-edited value doesn't submit a stale location id.
+        (r) => r.origin == event.value
+            ? r
+            : r.copyWith(origin: event.value, originOption: null),
       );
       emit(state.copyWith(conditionalMatrixRows: rows));
     });
@@ -405,7 +410,25 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       final rows = _updateAt(
         state.conditionalMatrixRows,
         event.rowIndex,
-        (r) => r.copyWith(destination: event.value),
+        (r) => r.destination == event.value
+            ? r
+            : r.copyWith(destination: event.value, destinationOption: null),
+      );
+      emit(state.copyWith(conditionalMatrixRows: rows));
+    });
+    on<ConditionalOriginSelected>((event, emit) {
+      final rows = _updateAt(
+        state.conditionalMatrixRows,
+        event.rowIndex,
+        (r) => r.copyWith(origin: event.displayText, originOption: event.option),
+      );
+      emit(state.copyWith(conditionalMatrixRows: rows));
+    });
+    on<ConditionalDestinationSelected>((event, emit) {
+      final rows = _updateAt(
+        state.conditionalMatrixRows,
+        event.rowIndex,
+        (r) => r.copyWith(destination: event.displayText, destinationOption: event.option),
       );
       emit(state.copyWith(conditionalMatrixRows: rows));
     });

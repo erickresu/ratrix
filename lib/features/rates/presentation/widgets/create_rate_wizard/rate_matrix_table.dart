@@ -42,10 +42,38 @@ class RateMatrixTable extends StatelessWidget {
     this.onDestinationSearchTypeChanged,
     this.isExcessPricing = false,
     this.useExpressRates = false,
+    this.showOrigin = true,
+    this.showDestination = true,
+    this.leftPaneWidthFraction,
+    this.showMatchByFilter = true,
   });
 
   final List<domain.MatrixRow> matrixRows;
   final List<Breakweight> breakweights;
+
+  /// Hides the Origin/Destination column respectively — used by the
+  /// Conditional Add-ons matrix, where ODA only ever matches by
+  /// destination and Pickup Fee only ever matches by origin (matches how
+  /// `custom_addons.oda_config`/`.pickup_fee_config` are keyed on the
+  /// backend, and how the calculator's auto-match reads them back). Both
+  /// default true for the main Rate Matrix step, which needs both.
+  final bool showOrigin;
+  final bool showDestination;
+
+  /// Overrides the fixed `_leftPaneWidth`/`_leftPaneWidthMobile` constants
+  /// with a fraction of the table's own actual rendered width instead —
+  /// e.g. the Conditional Add-ons matrix only ever shows one location
+  /// field (see [showOrigin]/[showDestination]) so it doesn't need the
+  /// main matrix's wider two-field pane. Null keeps the fixed-pixel
+  /// behavior the main Rate Matrix step already relies on.
+  final double? leftPaneWidthFraction;
+
+  /// Hides the inline "match by" (Island/City/Province/etc) dropdown on
+  /// whichever location field is shown — the Conditional Add-ons matrix
+  /// only ever needs city/province matching (matches
+  /// `custom_addons.oda_config`/`.pickup_fee_config`'s own `format`), so
+  /// there's no real choice to offer there.
+  final bool showMatchByFilter;
 
   /// Shows/edits [domain.MatrixRow.expressRates] instead of `.rates` — used
   /// by the Rate Matrix step's Express tab. Not used by the Conditional
@@ -105,6 +133,10 @@ class RateMatrixTable extends StatelessWidget {
   // horizontally as one unit on mobile, so a wider pane is safe.
   static const _leftPaneWidthMobile = 460.0;
   static const _removeColWidth = 40.0;
+  /// Floor for [leftPaneWidthFraction]-computed widths — a single location
+  /// field still needs enough room for its "match by" label plus a usable
+  /// text-entry area even on a narrow viewport.
+  static const _leftPaneMinWidth = 200.0;
   static const _compactInputPadding = EdgeInsets.symmetric(
     horizontal: 6,
     vertical: 8,
@@ -147,8 +179,10 @@ class RateMatrixTable extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Expanded(child: _HeaderLabel(label: 'Origin')),
-                    const Expanded(child: _HeaderLabel(label: 'Destination')),
+                    if (showOrigin)
+                      const Expanded(child: _HeaderLabel(label: 'Origin')),
+                    if (showDestination)
+                      const Expanded(child: _HeaderLabel(label: 'Destination')),
                     if (onRemoveRoute != null)
                       const SizedBox(width: _removeColWidth),
                   ],
@@ -165,48 +199,60 @@ class RateMatrixTable extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 4, 0),
-                          child: _LocationField(
-                            key: ValueKey('origin-$i-$originPlaceholder'),
-                            value: matrixRows[i].origin,
-                            placeholder: originPlaceholder,
-                            options: originSearchResults,
-                            loading: originSearchLoading,
-                            formatOption: originSearchType.formatOption,
-                            matchByType: originSearchType,
-                            onMatchByChanged: onOriginSearchTypeChanged,
-                            onChanged: (v) => onOriginChanged(i, v),
-                            onQueryChanged: onOriginQueryChanged,
-                            onOptionSelected: onOriginSelected == null
-                                ? null
-                                : (option, text) => onOriginSelected!(i, option, text),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 0, 16, 0),
-                          child: _LocationField(
-                            key: ValueKey(
-                              'destination-$i-$destinationPlaceholder',
+                      if (showOrigin)
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              0,
+                              showDestination ? 4 : 16,
+                              0,
                             ),
-                            value: matrixRows[i].destination,
-                            placeholder: destinationPlaceholder,
-                            options: destinationSearchResults,
-                            loading: destinationSearchLoading,
-                            formatOption: destinationSearchType.formatOption,
-                            matchByType: destinationSearchType,
-                            onMatchByChanged: onDestinationSearchTypeChanged,
-                            onChanged: (v) => onDestinationChanged(i, v),
-                            onQueryChanged: onDestinationQueryChanged,
-                            onOptionSelected: onDestinationSelected == null
-                                ? null
-                                : (option, text) => onDestinationSelected!(i, option, text),
+                            child: _LocationField(
+                              key: ValueKey('origin-$i-$originPlaceholder'),
+                              value: matrixRows[i].origin,
+                              placeholder: originPlaceholder,
+                              options: originSearchResults,
+                              loading: originSearchLoading,
+                              formatOption: originSearchType.formatOption,
+                              matchByType: showMatchByFilter ? originSearchType : null,
+                              onMatchByChanged: showMatchByFilter ? onOriginSearchTypeChanged : null,
+                              onChanged: (v) => onOriginChanged(i, v),
+                              onQueryChanged: onOriginQueryChanged,
+                              onOptionSelected: onOriginSelected == null
+                                  ? null
+                                  : (option, text) => onOriginSelected!(i, option, text),
+                            ),
                           ),
                         ),
-                      ),
+                      if (showDestination)
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              showOrigin ? 4 : 16,
+                              0,
+                              16,
+                              0,
+                            ),
+                            child: _LocationField(
+                              key: ValueKey(
+                                'destination-$i-$destinationPlaceholder',
+                              ),
+                              value: matrixRows[i].destination,
+                              placeholder: destinationPlaceholder,
+                              options: destinationSearchResults,
+                              loading: destinationSearchLoading,
+                              formatOption: destinationSearchType.formatOption,
+                              matchByType: showMatchByFilter ? destinationSearchType : null,
+                              onMatchByChanged: showMatchByFilter ? onDestinationSearchTypeChanged : null,
+                              onChanged: (v) => onDestinationChanged(i, v),
+                              onQueryChanged: onDestinationQueryChanged,
+                              onOptionSelected: onDestinationSelected == null
+                                  ? null
+                                  : (option, text) => onDestinationSelected!(i, option, text),
+                            ),
+                          ),
+                        ),
                       if (onRemoveRoute != null)
                         SizedBox(
                           width: _removeColWidth,
@@ -374,24 +420,41 @@ class _MobileLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bwRemoveDisabled = table.breakweights.length <= 1 || table.isExcessPricing;
-    final leftPaneWidth = RateMatrixTable._leftPaneWidthMobile +
-        (table.onRemoveRoute != null ? RateMatrixTable._removeColWidth : 0);
-    final decoratedTable = table._buildTable(
-      context,
-      leftPaneWidth: leftPaneWidth,
-      breakweightPane: table._buildBreakweightPane(
-        context,
-        isMobile: true,
-        bwRemoveDisabled: bwRemoveDisabled,
-      ),
-    );
+    final removeColExtra = table.onRemoveRoute != null ? RateMatrixTable._removeColWidth : 0.0;
 
-    // The left pane alone can exceed the viewport width, so the whole
-    // table (left pane + right pane) scrolls horizontally as one unit
-    // instead of only the right pane scrolling while the left pane is fixed.
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: decoratedTable,
+    Widget buildFor(double leftPaneWidth) {
+      final decoratedTable = table._buildTable(
+        context,
+        leftPaneWidth: leftPaneWidth,
+        breakweightPane: table._buildBreakweightPane(
+          context,
+          isMobile: true,
+          bwRemoveDisabled: bwRemoveDisabled,
+        ),
+      );
+
+      // The left pane alone can exceed the viewport width, so the whole
+      // table (left pane + right pane) scrolls horizontally as one unit
+      // instead of only the right pane scrolling while the left pane is
+      // fixed.
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: decoratedTable,
+      );
+    }
+
+    final fraction = table.leftPaneWidthFraction;
+    if (fraction == null) {
+      return buildFor(RateMatrixTable._leftPaneWidthMobile + removeColExtra);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => buildFor(
+        (constraints.maxWidth * fraction).clamp(
+              RateMatrixTable._leftPaneMinWidth,
+              constraints.maxWidth,
+            ) +
+            removeColExtra,
+      ),
     );
   }
 }
@@ -404,15 +467,29 @@ class _DesktopLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bwRemoveDisabled = table.breakweights.length <= 1 || table.isExcessPricing;
-    final leftPaneWidth = RateMatrixTable._leftPaneWidth +
-        (table.onRemoveRoute != null ? RateMatrixTable._removeColWidth : 0);
-    return table._buildTable(
+    final removeColExtra = table.onRemoveRoute != null ? RateMatrixTable._removeColWidth : 0.0;
+
+    Widget buildFor(double leftPaneWidth) => table._buildTable(
       context,
       leftPaneWidth: leftPaneWidth,
       breakweightPane: table._buildBreakweightPane(
         context,
         isMobile: false,
         bwRemoveDisabled: bwRemoveDisabled,
+      ),
+    );
+
+    final fraction = table.leftPaneWidthFraction;
+    if (fraction == null) {
+      return buildFor(RateMatrixTable._leftPaneWidth + removeColExtra);
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => buildFor(
+        (constraints.maxWidth * fraction).clamp(
+              RateMatrixTable._leftPaneMinWidth,
+              constraints.maxWidth,
+            ) +
+            removeColExtra,
       ),
     );
   }

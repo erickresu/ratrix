@@ -320,6 +320,33 @@ class ConditionalDestinationChanged extends RateWizardEvent {
   List<Object?> get props => [rowIndex, value];
 }
 
+/// Mirrors [OriginLocationSelected] for the Conditional Add-ons matrix —
+/// carries the full [LocationOption] so it lands on
+/// `conditionalMatrixRows[i].originOption` (destination_id/origin_id the
+/// backend actually matches ODA/Pickup Fee against), not just the display
+/// text `ConditionalOriginChanged` alone would capture.
+class ConditionalOriginSelected extends RateWizardEvent {
+  const ConditionalOriginSelected(this.rowIndex, this.option, this.displayText);
+
+  final int rowIndex;
+  final LocationOption option;
+  final String displayText;
+
+  @override
+  List<Object?> get props => [rowIndex, option, displayText];
+}
+
+class ConditionalDestinationSelected extends RateWizardEvent {
+  const ConditionalDestinationSelected(this.rowIndex, this.option, this.displayText);
+
+  final int rowIndex;
+  final LocationOption option;
+  final String displayText;
+
+  @override
+  List<Object?> get props => [rowIndex, option, displayText];
+}
+
 class ConditionalCellChanged extends RateWizardEvent {
   const ConditionalCellChanged(this.rowIndex, this.breakweightIndex, this.value);
 
