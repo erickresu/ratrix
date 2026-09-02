@@ -18,6 +18,7 @@ import '../widgets/dashboard_view.dart';
 import '../widgets/new_rate_modal.dart';
 import '../widgets/onboarding_tour.dart';
 import '../widgets/published_rates_view.dart';
+import '../widgets/ratrix_ai_chat_widget.dart';
 import '../widgets/rates_sidebar.dart';
 import '../widgets/shipping_calculator/shipping_calculator_clients_view.dart';
 import '../widgets/shipping_calculator/shipping_calculator_form_view.dart';
@@ -166,6 +167,18 @@ class _RatesShellViewState extends State<_RatesShellView> {
       ),
     );
 
+    // Full-screen so the dim backdrop behind the open chat panel actually
+    // covers the whole app (appbar + sidebar included), not just whatever
+    // bounds a nested widget inside `content` would have. Dashboard-only —
+    // gated here rather than inside `RatrixAiChatWidget` itself.
+    final shellWithChat = Stack(
+      children: [
+        shell,
+        if (state.view == RatesView.dashboard)
+          const Positioned.fill(child: RatrixAiChatWidget()),
+      ],
+    );
+
     // Provided above the `content` switch (not inside
     // `ShippingCalculatorFormView` itself) so it survives navigating away
     // and back — e.g. tapping "Edit this rate" from the calculator jumps to
@@ -175,12 +188,14 @@ class _RatesShellViewState extends State<_RatesShellView> {
     // id so switching to a *different* calculator client still starts
     // fresh, and skipped entirely once no calculator client is selected.
     final calcClientId = state.selectedCalcClientId;
-    if (calcClientId == null) return shell;
+    if (calcClientId == null) return shellWithChat;
     return BlocProvider<ShippingCalculatorBloc>(
       key: ValueKey('calc-bloc-$calcClientId'),
-      create: (_) =>
-          ShippingCalculatorBloc(getIt<RatesRepository>(), clientId: calcClientId),
-      child: shell,
+      create: (_) => ShippingCalculatorBloc(
+        getIt<RatesRepository>(),
+        clientId: calcClientId,
+      ),
+      child: shellWithChat,
     );
   }
 }

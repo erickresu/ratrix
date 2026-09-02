@@ -125,7 +125,9 @@ class DashboardView extends StatelessWidget {
             // outright rather than just discouraged — mobile keeps normal
             // scroll since its stacked/compact layout can still run taller
             // than the screen.
-            physics: isMobile ? const AlwaysScrollableScrollPhysics() : const NeverScrollableScrollPhysics(),
+            physics: isMobile
+                ? const AlwaysScrollableScrollPhysics()
+                : const NeverScrollableScrollPhysics(),
             slivers: [
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(
@@ -195,7 +197,9 @@ class DashboardView extends StatelessWidget {
                           // the viewport without needing its own scroll —
                           // "recent" only ever needs a glance, not the full
                           // history (that lives in Published/Custom Rates).
-                          child: _RecentRatesTable(rates: state.recentRates.take(5).toList()),
+                          child: _RecentRatesTable(
+                            rates: state.recentRates.take(5).toList(),
+                          ),
                         ),
                       ),
                     ],
