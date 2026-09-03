@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ratrix/core/widgets/shine_sweep.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/mr_ratrix.dart';
 import '../../../../core/widgets/pagination_bar.dart';
@@ -14,6 +15,7 @@ import 'back_pill.dart';
 import 'custom_client_rates_view_mobile.dart';
 import 'custom_client_rates_view_web.dart';
 import 'delete_rate_dialog.dart';
+import 'onboarding_tour.dart';
 import 'rate_table.dart';
 import 'status_toast.dart';
 
@@ -90,13 +92,9 @@ class CustomClientRatesView extends StatelessWidget {
       ],
     );
 
-    final createRateButton = ShadButton(
-      backgroundColor: context.colors.primary,
-      hoverBackgroundColor: context.colors.primaryHover,
-      leading: const Icon(CupertinoIcons.add, size: 17, color: Colors.white),
+    final createRateButton = _CreateRateButtonWithHint(
       onPressed: () =>
           bloc.add(const CreateCustomRateForSelectedClientRequested()),
-      child: const Text('Create New Rate'),
     );
 
     final tabsRow = Row(
@@ -208,27 +206,30 @@ class CustomClientRatesView extends StatelessWidget {
         state.clientRatesLoading
         ? buildFittedRateSkeleton(availableHeight)
         : state.filteredClientRates.isEmpty
-        ? Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(40),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: context.colors.borderStrong,
-                style: BorderStyle.solid,
-              ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const MrRatrix(size: 96),
-                const SizedBox(height: 4),
-                Text(
-                  'No ${state.clientRatesTab.label.toLowerCase()} rates for this client.',
-                  style: TextStyle(fontSize: 14, color: context.colors.textMuted),
+        ? SizedBox(
+            height: availableHeight,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(40),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: context.colors.borderStrong,
+                  style: BorderStyle.solid,
                 ),
-              ],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const MrRatrix(size: 96),
+                  const SizedBox(height: 4),
+                  Text(
+                    'No ${state.clientRatesTab.label.toLowerCase()} rates for this client.',
+                    style: TextStyle(fontSize: 14, color: context.colors.textMuted),
+                  ),
+                ],
+              ),
             ),
           )
         : ResponsiveRateTable<ClientRate>(
@@ -340,6 +341,134 @@ class CustomClientRatesView extends StatelessWidget {
               body: body,
               paginationBar: paginationBar,
             ),
+    );
+  }
+}
+
+/// Closing beat of the dashboard/custom-rate story: real spotlight + arrow
+/// on the actual Create New Rate button, via the same `TutorialCoachMark`
+/// mechanics as the rest of the tour. A plain `Positioned` arrow here got
+/// clipped by an ancestor somewhere in the header layout and never
+/// rendered — `TutorialCoachMark` draws through the root `Overlay`, so it
+/// isn't subject to that. The user clicks the real button themselves
+/// (no auto-navigate); `CustomRateTour` picks up once `WizardPage` mounts.
+class _CreateRateButtonWithHint extends StatefulWidget {
+  const _CreateRateButtonWithHint({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  State<_CreateRateButtonWithHint> createState() =>
+      _CreateRateButtonWithHintState();
+}
+
+class _CreateRateButtonWithHintState extends State<_CreateRateButtonWithHint> {
+  final _buttonKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    // TODO: gate behind a "seen" flag once the story tour end-to-end is
+    // confirmed solid — always showing for now so it's retestable every
+    // visit without clearing storage, same as the other two tour pieces.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showHint());
+  }
+
+  void _showHint() {
+    if (!mounted) return;
+    TutorialCoachMark(
+      targets: [
+        TargetFocus(
+          identify: 'create-new-rate',
+          keyTarget: _buttonKey,
+          shape: ShapeLightFocus.RRect,
+          radius: 10,
+          contents: [
+            TargetContent(
+              // Button sits at the far-right edge of the header — beside it
+              // (to the left, where the rest of the row's room is) reads
+              // clearer than above/below on a row this narrow.
+              align: ContentAlign.left,
+              builder: (context, controller) => _CreateRateHintBubble(
+                onDone: () {
+                  stopTourSpeech();
+                  controller.skip();
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+      colorShadow: Colors.black,
+      opacityShadow: 0.75,
+      paddingFocus: 8,
+      hideSkip: true,
+      onClickTarget: (_) {},
+    ).show(context: context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyedSubtree(
+      key: _buttonKey,
+      child: ShadButton(
+        backgroundColor: context.colors.primary,
+        hoverBackgroundColor: context.colors.primaryHover,
+        leading: const Icon(CupertinoIcons.add, size: 17, color: Colors.white),
+        onPressed: widget.onPressed,
+        child: const Text('Create New Rate'),
+      ),
+    );
+  }
+}
+
+class _CreateRateHintBubble extends StatefulWidget {
+  const _CreateRateHintBubble({required this.onDone});
+
+  final VoidCallback onDone;
+
+  @override
+  State<_CreateRateHintBubble> createState() => _CreateRateHintBubbleState();
+}
+
+class _CreateRateHintBubbleState extends State<_CreateRateHintBubble> {
+  static const _body =
+      "There it is — click Create New Rate when you're ready to build one.";
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => speakTourLine(_body));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // `ContentAlign.left`'s box spans the full screen width up to the
+    // target — a plain `mainAxisSize.min` Row still gets stretched to that
+    // whole tight width, so its default start-alignment packs everything
+    // against the screen's left edge instead of next to the target. `end`
+    // pins it to the target-adjacent edge instead.
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        TourSpeechBubble(
+          width: 280,
+          title: 'One more step',
+          body: _body,
+          onSpeak: () => speakTourLine(_body),
+          leftLabel: 'Skip',
+          onLeft: widget.onDone,
+          rightLabel: 'Got it!',
+          onRight: widget.onDone,
+        ),
+        const SizedBox(width: 4),
+        Icon(
+          CupertinoIcons.arrow_right,
+          size: 22,
+          color: Colors.white.withValues(alpha: 0.9),
+        ),
+      ],
     );
   }
 }

@@ -13,6 +13,7 @@ class LocalStorageService {
   static const _emailKey = 'auth_email';
   static const _userIdKey = 'auth_user_id';
   static const _onboardingSeenKey = 'onboarding_seen';
+  static const _customRateTourSeenKey = 'custom_rate_tour_seen';
 
   Future<String?> readToken() => _secure.read(
     key: _tokenKey,
@@ -36,6 +37,15 @@ class LocalStorageService {
   Future<void> writeOnboardingSeen() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_onboardingSeenKey, true);
+  }
+
+  Future<bool> readCustomRateTourSeen() async =>
+      (await SharedPreferences.getInstance()).getBool(_customRateTourSeenKey) ??
+      false;
+
+  Future<void> writeCustomRateTourSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_customRateTourSeenKey, true);
   }
 
   Future<void> writeSession({

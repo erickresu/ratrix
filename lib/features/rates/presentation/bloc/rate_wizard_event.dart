@@ -16,6 +16,19 @@ class WizardStepChanged extends RateWizardEvent {
   List<Object?> get props => [step];
 }
 
+/// Jumps straight to [step] with no `canLeaveStep0`/`canLeaveStep1`
+/// validation — [WizardStepChanged] blocks leaving a step with required
+/// fields still empty, which the story-mode tour must bypass since it
+/// auto-advances through all 4 steps on a fresh, empty rate.
+class TourStepChanged extends RateWizardEvent {
+  const TourStepChanged(this.step);
+
+  final int step;
+
+  @override
+  List<Object?> get props => [step];
+}
+
 class WizardNextStepRequested extends RateWizardEvent {
   const WizardNextStepRequested();
 }

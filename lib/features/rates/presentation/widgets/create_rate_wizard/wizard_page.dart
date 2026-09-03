@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../../../../../core/api/local_storage_service.dart';
 import '../../../../../core/di/injection_container.dart';
 import '../../../../../core/utils/breakpoints.dart';
 import '../../../data/repositories/rates_repository.dart';
@@ -17,7 +18,9 @@ import 'step0_rate_setup.dart';
 import 'step1_rate_matrix.dart';
 import 'step2_addons.dart';
 import 'step3_conditional_addons.dart';
+import 'custom_rate_tour.dart';
 import 'step_rail.dart';
+import 'wizard_tour_keys.dart';
 
 class WizardPage extends StatelessWidget {
   const WizardPage({super.key, required this.isCustom});
@@ -38,13 +41,43 @@ class WizardPage extends StatelessWidget {
         clientName: selectedClient?.name,
         existingRate: existingRate,
       ),
-      child: const _WizardView(),
+      child: _WizardView(isNewCustomRate: isCustom && existingRate == null),
     );
   }
 }
 
-class _WizardView extends StatelessWidget {
-  const _WizardView();
+class _WizardView extends StatefulWidget {
+  const _WizardView({required this.isNewCustomRate});
+
+  /// Only a brand-new (not editing) Custom Rate gets the story tour —
+  /// editing an existing rate skips it, same spirit as the dashboard tour
+  /// only running once per browser via `writeOnboardingSeen`.
+  final bool isNewCustomRate;
+
+  @override
+  State<_WizardView> createState() => _WizardViewState();
+}
+
+class _WizardViewState extends State<_WizardView> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isNewCustomRate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowTour());
+    }
+  }
+
+  Future<void> _maybeShowTour() async {
+    // TODO: re-enable the seen-check (readCustomRateTourSeen) once the
+    // tour's wizard-step sync is confirmed solid — always showing for now
+    // makes it re-testable every run without clearing storage.
+    if (!mounted) return;
+    final storage = getIt<LocalStorageService>();
+    CustomRateTour(
+      bloc: context.read<RateWizardBloc>(),
+      onFinish: storage.writeCustomRateTourSeen,
+    ).show(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,8 +139,11 @@ class _WizardView extends StatelessWidget {
                 );
                 shellBloc.add(
                   WizardExitRequested(
+                    // Land back on the client's own rate list, not the
+                    // dashboard — otherwise the rate they just created is
+                    // never actually shown to them.
                     fallback: wizardState.isCustom
-                        ? RatesView.dashboard
+                        ? RatesView.customClientRates
                         : RatesView.publishedRates,
                   ),
                 );
@@ -295,12 +331,18 @@ class _StepContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
-        switch (state.step) {
-          0 => const Step0RateSetup(),
-          1 => const Step1RateMatrix(),
-          2 => const Step2Addons(),
-          _ => const Step3ConditionalAddons(),
-        },
+        // Keyed on the actual step content (fields/table/etc), not just
+        // the title above — the tour should spotlight what the user is
+        // meant to interact with, not a label.
+        KeyedSubtree(
+          key: WizardTourKeys.forStep(state.step),
+          child: switch (state.step) {
+            0 => const Step0RateSetup(),
+            1 => const Step1RateMatrix(),
+            2 => const Step2Addons(),
+            _ => const Step3ConditionalAddons(),
+          },
+        ),
       ],
     );
   }

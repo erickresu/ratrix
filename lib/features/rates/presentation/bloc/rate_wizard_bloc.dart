@@ -47,6 +47,7 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       if (event.step > 1 && !state.canLeaveStep1) return;
       emit(state.copyWith(step: event.step));
     });
+    on<TourStepChanged>((event, emit) => emit(state.copyWith(step: event.step)));
     on<WizardNextStepRequested>((event, emit) {
       if (state.step == 0 && !state.canLeaveStep0) return;
       if (state.step == 1 && !state.canLeaveStep1) return;

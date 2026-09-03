@@ -29,7 +29,7 @@ DateTime? _lastSpokenAt;
 /// can remount the step content (retriggering `initState`) faster than the
 /// speech finishes, which sounded like the line looping. Drop a repeat of
 /// the same line within 800ms rather than restarting it.
-Future<void> _speak(String text) async {
+Future<void> speakTourLine(String text) async {
   var spoken = text.replaceAll(
     RegExp('Ratrix', caseSensitive: false),
     'Raytrix',
@@ -52,6 +52,8 @@ Future<void> _speak(String text) async {
   await Future.delayed(const Duration(milliseconds: 150));
   await _tts.speak(spoken);
 }
+
+void stopTourSpeech() => _tts.stop();
 
 class _Step {
   const _Step(this.title, this.body, this.key, this.align);
@@ -84,7 +86,8 @@ final _kSteps = [
   ),
   _Step(
     'Custom Rates',
-    'Rates negotiated for one specific client instead of everyone.',
+    'Rates negotiated for one specific client instead of everyone. '
+        "Let's actually build one together — jumping in now.",
     SidebarTourKeys.customRatesNav,
     ContentAlign.right,
   ),
@@ -188,8 +191,9 @@ class OnboardingTour {
 /// ([_TourContentState]) and the standalone [OnboardingIntro] scene: a
 /// title + tap-to-replay speaker icon, "Cerro: " narration body, and a
 /// Skip/primary button pair.
-class _SpeechBubble extends StatelessWidget {
-  const _SpeechBubble({
+class TourSpeechBubble extends StatelessWidget {
+  const TourSpeechBubble({
+    super.key,
     this.width,
     this.padding = const EdgeInsets.all(26),
     required this.title,
@@ -352,10 +356,10 @@ class _TourContentState extends State<_TourContent> {
   }
 
   Future<void> _speakStep() =>
-      _speak('${widget.step.title}. ${widget.step.body}');
+      speakTourLine('${widget.step.title}. ${widget.step.body}');
 
   Widget _buildBubble(BuildContext context, {required bool isMobile}) {
-    return _SpeechBubble(
+    return TourSpeechBubble(
       width: isMobile ? double.infinity : 300,
       padding: EdgeInsets.all(isMobile ? 20 : 26),
       title: widget.step.title,
@@ -439,7 +443,7 @@ class _OnboardingIntroState extends State<OnboardingIntro> {
     super.dispose();
   }
 
-  Future<void> _speakIntro() => _speak('$_kIntroTitle $_kIntroBody');
+  Future<void> _speakIntro() => speakTourLine('$_kIntroTitle $_kIntroBody');
 
   @override
   Widget build(BuildContext context) {
@@ -470,7 +474,7 @@ class _OnboardingIntroState extends State<OnboardingIntro> {
                     height: 12,
                     child: CustomPaint(painter: _UpTailPainter()),
                   ),
-                  _SpeechBubble(
+                  TourSpeechBubble(
                     width: bubbleWidth,
                     title: _kIntroTitle,
                     body: _kIntroBody,

@@ -65,13 +65,29 @@ class _RatesShellViewState extends State<_RatesShellView> {
 
   Future<void> _maybeShowOnboarding() async {
     final storage = getIt<LocalStorageService>();
-    final seen = await storage.readOnboardingSeen();
-    if (seen || !mounted) return;
+    // TODO: re-enable the seen-check (readOnboardingSeen) once the tour
+    // chain into CustomRateTour is confirmed solid — always showing for now
+    // so both tours are retestable every login without clearing storage.
+    if (!mounted) return;
     setState(() => _tourActive = true);
     _drawerController.showDrawer();
     await Future.delayed(const Duration(milliseconds: 300));
     if (!mounted) return;
-    await showOnboarding(context, onFinish: storage.writeOnboardingSeen);
+    final shellBloc = context.read<RatesShellBloc>();
+    await showOnboarding(
+      context,
+      onFinish: () {
+        storage.writeOnboardingSeen();
+        // Continue the story straight into a client's rate list — same
+        // path as picking one manually — so the Create New Rate
+        // spotlight/arrow can pick up from there. No auto-navigate into
+        // the wizard itself; the user still clicks the real button.
+        final clients = shellBloc.state.clients;
+        if (clients.isNotEmpty) {
+          shellBloc.add(ClientRatesRequested(clients.first.id));
+        }
+      },
+    );
     if (mounted) setState(() => _tourActive = false);
   }
 
