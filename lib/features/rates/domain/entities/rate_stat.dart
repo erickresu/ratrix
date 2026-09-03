@@ -8,5 +8,6 @@ abstract class RateStat with _$RateStat {
     required String label,
     required String value,
     required String delta,
+    @Default('') String breakdown,
   }) = _RateStat;
 }

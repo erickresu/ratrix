@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RateStat {
 
- String get label; String get value; String get delta;
+ String get label; String get value; String get delta; String get breakdown;
 /// Create a copy of RateStat
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $RateStatCopyWith<RateStat> get copyWith => _$RateStatCopyWithImpl<RateStat>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RateStat&&(identical(other.label, label) || other.label == label)&&(identical(other.value, value) || other.value == value)&&(identical(other.delta, delta) || other.delta == delta));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RateStat&&(identical(other.label, label) || other.label == label)&&(identical(other.value, value) || other.value == value)&&(identical(other.delta, delta) || other.delta == delta)&&(identical(other.breakdown, breakdown) || other.breakdown == breakdown));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,label,value,delta);
+int get hashCode => Object.hash(runtimeType,label,value,delta,breakdown);
 
 @override
 String toString() {
-  return 'RateStat(label: $label, value: $value, delta: $delta)';
+  return 'RateStat(label: $label, value: $value, delta: $delta, breakdown: $breakdown)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $RateStatCopyWith<$Res>  {
   factory $RateStatCopyWith(RateStat value, $Res Function(RateStat) _then) = _$RateStatCopyWithImpl;
 @useResult
 $Res call({
- String label, String value, String delta
+ String label, String value, String delta, String breakdown
 });
 
 
@@ -62,11 +62,12 @@ class _$RateStatCopyWithImpl<$Res>
 
 /// Create a copy of RateStat
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? label = null,Object? value = null,Object? delta = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? label = null,Object? value = null,Object? delta = null,Object? breakdown = null,}) {
   return _then(_self.copyWith(
 label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,delta: null == delta ? _self.delta : delta // ignore: cast_nullable_to_non_nullable
+as String,breakdown: null == breakdown ? _self.breakdown : breakdown // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -152,10 +153,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String label,  String value,  String delta)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String label,  String value,  String delta,  String breakdown)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RateStat() when $default != null:
-return $default(_that.label,_that.value,_that.delta);case _:
+return $default(_that.label,_that.value,_that.delta,_that.breakdown);case _:
   return orElse();
 
 }
@@ -173,10 +174,10 @@ return $default(_that.label,_that.value,_that.delta);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String label,  String value,  String delta)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String label,  String value,  String delta,  String breakdown)  $default,) {final _that = this;
 switch (_that) {
 case _RateStat():
-return $default(_that.label,_that.value,_that.delta);case _:
+return $default(_that.label,_that.value,_that.delta,_that.breakdown);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -193,10 +194,10 @@ return $default(_that.label,_that.value,_that.delta);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String label,  String value,  String delta)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String label,  String value,  String delta,  String breakdown)?  $default,) {final _that = this;
 switch (_that) {
 case _RateStat() when $default != null:
-return $default(_that.label,_that.value,_that.delta);case _:
+return $default(_that.label,_that.value,_that.delta,_that.breakdown);case _:
   return null;
 
 }
@@ -208,12 +209,13 @@ return $default(_that.label,_that.value,_that.delta);case _:
 
 
 class _RateStat implements RateStat {
-  const _RateStat({required this.label, required this.value, required this.delta});
+  const _RateStat({required this.label, required this.value, required this.delta, this.breakdown = ''});
   
 
 @override final  String label;
 @override final  String value;
 @override final  String delta;
+@override@JsonKey() final  String breakdown;
 
 /// Create a copy of RateStat
 /// with the given fields replaced by the non-null parameter values.
@@ -225,16 +227,16 @@ _$RateStatCopyWith<_RateStat> get copyWith => __$RateStatCopyWithImpl<_RateStat>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RateStat&&(identical(other.label, label) || other.label == label)&&(identical(other.value, value) || other.value == value)&&(identical(other.delta, delta) || other.delta == delta));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RateStat&&(identical(other.label, label) || other.label == label)&&(identical(other.value, value) || other.value == value)&&(identical(other.delta, delta) || other.delta == delta)&&(identical(other.breakdown, breakdown) || other.breakdown == breakdown));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,label,value,delta);
+int get hashCode => Object.hash(runtimeType,label,value,delta,breakdown);
 
 @override
 String toString() {
-  return 'RateStat(label: $label, value: $value, delta: $delta)';
+  return 'RateStat(label: $label, value: $value, delta: $delta, breakdown: $breakdown)';
 }
 
 
@@ -245,7 +247,7 @@ abstract mixin class _$RateStatCopyWith<$Res> implements $RateStatCopyWith<$Res>
   factory _$RateStatCopyWith(_RateStat value, $Res Function(_RateStat) _then) = __$RateStatCopyWithImpl;
 @override @useResult
 $Res call({
- String label, String value, String delta
+ String label, String value, String delta, String breakdown
 });
 
 
@@ -262,11 +264,12 @@ class __$RateStatCopyWithImpl<$Res>
 
 /// Create a copy of RateStat
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? label = null,Object? value = null,Object? delta = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? label = null,Object? value = null,Object? delta = null,Object? breakdown = null,}) {
   return _then(_RateStat(
 label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
 as String,delta: null == delta ? _self.delta : delta // ignore: cast_nullable_to_non_nullable
+as String,breakdown: null == breakdown ? _self.breakdown : breakdown // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

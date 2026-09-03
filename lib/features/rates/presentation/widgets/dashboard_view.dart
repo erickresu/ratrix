@@ -141,16 +141,19 @@ class DashboardView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          for (final stat in state.stats) ...[
-                            Expanded(
-                              child: _StatCard(stat: stat, compact: isMobile),
-                            ),
-                            if (stat != state.stats.last)
-                              SizedBox(width: isMobile ? 10 : 20),
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (final stat in state.stats) ...[
+                              Expanded(
+                                child: _StatCard(stat: stat, compact: isMobile),
+                              ),
+                              if (stat != state.stats.last)
+                                SizedBox(width: isMobile ? 10 : 20),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 40),
                       Row(
@@ -357,12 +360,12 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              gradient: context.colors.primaryButtonGradient,
-            ),
-          ),
+          // Container(
+          //   height: 4,
+          //   decoration: BoxDecoration(
+          //     gradient: context.colors.primaryButtonGradient,
+          //   ),
+          // ),
           Padding(
             padding: EdgeInsets.fromLTRB(
               compact ? 10 : 24,
@@ -450,7 +453,7 @@ class _StatCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isPositive
                           ? context.colors.successBg
-                          : context.colors.surfaceSubtle,
+                          : context.colors.destructive.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -463,7 +466,7 @@ class _StatCard extends StatelessWidget {
                           size: compact ? 9 : 11,
                           color: isPositive
                               ? context.colors.successText
-                              : context.colors.textMuted,
+                              : context.colors.destructive,
                         ),
                         SizedBox(width: compact ? 2 : 3),
                         ConstrainedBox(
@@ -479,7 +482,7 @@ class _StatCard extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                               color: isPositive
                                   ? context.colors.successText
-                                  : context.colors.textMuted,
+                                  : context.colors.destructive,
                             ),
                           ),
                         ),
@@ -487,6 +490,19 @@ class _StatCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (stat.breakdown.isNotEmpty) ...[
+                  SizedBox(height: compact ? 6 : 8),
+                  Text(
+                    stat.breakdown,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: compact ? 10 : 11,
+                      fontWeight: FontWeight.w500,
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -539,6 +555,9 @@ class _RecentRatesTable extends StatelessWidget {
       vertical: 18,
     );
     final fieldGap = SizedBox(width: compact ? 10 : 16);
+    // Wider than the standard gap — ROUTE text runs close to full width
+    // and read cramped against CLIENT right after it.
+    final routeClientGap = SizedBox(width: compact ? 30 : 60);
     // Client names run long ("Magna Prime Chemical Technologies
     // Incorporated") and fill most of their column, leaving the standard
     // gap looking cramped against the TYPE badge right after it.
@@ -555,9 +574,9 @@ class _RecentRatesTable extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Expanded(flex: 14, child: Text('ROUTE', style: headerStyle)),
-              fieldGap,
-              Expanded(flex: 26, child: Text('CLIENT', style: headerStyle)),
+              Expanded(flex: 11, child: Text('ROUTE', style: headerStyle)),
+              routeClientGap,
+              Expanded(flex: 19, child: Text('CLIENT', style: headerStyle)),
               clientTypeGap,
               Expanded(flex: 10, child: Text('TYPE', style: headerStyle)),
               fieldGap,
@@ -591,12 +610,12 @@ class _RecentRatesTable extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  flex: 14,
+                  flex: 11,
                   child: _RouteCell(route: rate.route, compact: compact),
                 ),
-                fieldGap,
+                routeClientGap,
                 Expanded(
-                  flex: 26,
+                  flex: 19,
                   child: rate.client == '—'
                       ? Text(
                           'All clients',

@@ -80,14 +80,26 @@ class RatesRepository {
   Future<List<RateStat>> fetchStats() async {
     final rates = await _fetchAllRates();
 
-    final activeCount = rates.where((r) => !r.isExpired).length;
+    final activeRates = rates.where((r) => !r.isExpired).toList();
+    final activeCount = activeRates.length;
+    final publishedActiveCount = activeRates.where((r) => !r.isCustom).length;
+    final customActiveCount = activeRates.where((r) => r.isCustom).length;
     final clientIds = rates
         .where((r) => r.isCustom && r.clientId != null)
         .map((r) => r.clientId)
         .toSet();
-    final totalRoutes = rates.fold<int>(0, (sum, r) => sum + r.routes.length);
-
     final now = DateTime.now();
+    final alreadyExpiredCount = rates.where((r) => r.isExpired).length;
+    // Expires within the next 7 days, not already expired.
+    final nearlyExpiredCutoff = now.add(const Duration(days: 7));
+    final nearlyExpiredCount = rates
+        .where(
+          (r) =>
+              r.rateExpiry != null &&
+              r.rateExpiry!.isAfter(now) &&
+              r.rateExpiry!.isBefore(nearlyExpiredCutoff),
+        )
+        .length;
     final weekAgo = now.subtract(const Duration(days: 7));
     String deltaFor(bool Function(RatrixRate) matches) {
       final createdThisWeek = rates
@@ -106,12 +118,14 @@ class RatesRepository {
         label: 'Active rates',
         value: '$activeCount',
         delta: deltaFor((r) => !r.isExpired),
+        breakdown: 'Published $publishedActiveCount · Custom $customActiveCount · Total $activeCount',
       ),
       RateStat(label: 'Clients', value: '${clientIds.length}', delta: ''),
       RateStat(
-        label: 'Total routes',
-        value: '$totalRoutes',
-        delta: deltaFor((_) => true),
+        label: 'Nearly expired',
+        value: '$nearlyExpiredCount',
+        delta: '',
+        breakdown: 'Already expired $alreadyExpiredCount',
       ),
     ];
   }
