@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_advanced_drawer/flutter_advanced_drawer.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../../../../core/api/local_storage_service.dart';
 import '../../../../core/di/injection_container.dart';
@@ -15,10 +16,9 @@ import '../widgets/create_rate_wizard/wizard_page.dart';
 import '../widgets/custom_client_rates_view.dart';
 import '../widgets/custom_clients_view.dart';
 import '../widgets/dashboard_view.dart';
+import '../widgets/tutorial/app_tour.dart';
 import '../widgets/new_rate_modal.dart';
-import '../widgets/onboarding_tour.dart';
 import '../widgets/published_rates_view.dart';
-import '../widgets/ratrix_ai_chat_widget.dart';
 import '../widgets/rates_sidebar.dart';
 import '../widgets/shipping_calculator/shipping_calculator_clients_view.dart';
 import '../widgets/shipping_calculator/shipping_calculator_form_view.dart';
@@ -33,7 +33,20 @@ class RatesShellPage extends StatelessWidget {
       create: (_) =>
           RatesShellBloc(getIt<RatesRepository>(), getIt<ClientsRepository>())
             ..add(const RatesDataRequested()),
-      child: const _RatesShellView(),
+      // Wraps sidebar + dashboard + wizard — the one stable ancestor every
+      // `tourShowcase`-wrapped target (across all three) shares, and where
+      // `AppTour` drives the whole cross-screen sequence from.
+      child: ShowCaseWidget(
+        onComplete: (_, key) => AppTour.active?.handleStepComplete(key),
+        onFinish: () => AppTour.active?.handleSequenceFinished(),
+        // showcaseview nudges its tooltip back and forth on a loop by
+        // default (its "moving animation" forwards then reverses forever,
+        // meant to draw the eye) — reads as the whole card bouncing
+        // continuously. Off, since every step already gets attention from
+        // the dim overlay + spotlight cutout.
+        disableMovingAnimation: true,
+        builder: (_) => const _RatesShellView(),
+      ),
     );
   }
 }
@@ -50,45 +63,27 @@ class _RatesShellViewState extends State<_RatesShellView> {
     AdvancedDrawerValue.visible(),
   );
 
-  // While the tour runs, the sidebar's `onNavigated` (which hides the
-  // drawer) is suppressed — every tour step spotlights a nav item that only
-  // exists in the tree while the drawer is open, so it must not collapse
-  // for the duration regardless of what state it was in before the tour
-  // started or anything that happens while it's showing.
-  bool _tourActive = false;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowOnboarding());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startTour());
   }
 
-  Future<void> _maybeShowOnboarding() async {
-    final storage = getIt<LocalStorageService>();
+  /// Starts the full walkthrough from the beginning — used both for the
+  /// automatic first-visit trigger and the sidebar/dashboard's manual
+  /// "replay" entry point. Drives the real dashboard, sidebar, and wizard
+  /// screens directly (via `showcaseview`), auto-navigating between them
+  /// as the tour progresses — see `AppTour`.
+  void _startTour() {
     // TODO: re-enable the seen-check (readOnboardingSeen) once the tour
-    // chain into CustomRateTour is confirmed solid — always showing for now
-    // so both tours are retestable every login without clearing storage.
+    // is confirmed solid — always showing for now so it's retestable every
+    // login without clearing storage.
     if (!mounted) return;
-    setState(() => _tourActive = true);
-    _drawerController.showDrawer();
-    await Future.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
-    final shellBloc = context.read<RatesShellBloc>();
-    await showOnboarding(
-      context,
-      onFinish: () {
-        storage.writeOnboardingSeen();
-        // Continue the story straight into a client's rate list — same
-        // path as picking one manually — so the Create New Rate
-        // spotlight/arrow can pick up from there. No auto-navigate into
-        // the wizard itself; the user still clicks the real button.
-        final clients = shellBloc.state.clients;
-        if (clients.isNotEmpty) {
-          shellBloc.add(ClientRatesRequested(clients.first.id));
-        }
-      },
-    );
-    if (mounted) setState(() => _tourActive = false);
+    final storage = getIt<LocalStorageService>();
+    AppTour(
+      shellContext: context,
+      onFinish: storage.writeOnboardingSeen,
+    ).show(context);
   }
 
   @override
@@ -111,14 +106,15 @@ class _RatesShellViewState extends State<_RatesShellView> {
             child: const NewRateModal(),
           ),
         ).then((_) {
-          if (context.mounted)
+          if (context.mounted) {
             context.read<RatesShellBloc>().add(const NewRateModalClosed());
+          }
         });
       });
     }
 
     final content = switch (state.view) {
-      RatesView.dashboard => const DashboardView(),
+      RatesView.dashboard => DashboardView(onReplayTour: _startTour),
       RatesView.customClients => const CustomClientsView(),
       RatesView.customClientRates => const CustomClientRatesView(),
       RatesView.publishedRates => const PublishedRatesView(),
@@ -150,7 +146,8 @@ class _RatesShellViewState extends State<_RatesShellView> {
       // click did nothing until the drawer was closed separately.
       drawer: SafeArea(
         child: RatesSidebar(
-          onNavigated: _tourActive ? null : _drawerController.hideDrawer,
+          onNavigated: _drawerController.hideDrawer,
+          onReplayTour: _startTour,
         ),
       ),
       child: Scaffold(
@@ -183,18 +180,6 @@ class _RatesShellViewState extends State<_RatesShellView> {
       ),
     );
 
-    // Full-screen so the dim backdrop behind the open chat panel actually
-    // covers the whole app (appbar + sidebar included), not just whatever
-    // bounds a nested widget inside `content` would have. Dashboard-only —
-    // gated here rather than inside `RatrixAiChatWidget` itself.
-    final shellWithChat = Stack(
-      children: [
-        shell,
-        if (state.view == RatesView.dashboard)
-          const Positioned.fill(child: RatrixAiChatWidget()),
-      ],
-    );
-
     // Provided above the `content` switch (not inside
     // `ShippingCalculatorFormView` itself) so it survives navigating away
     // and back — e.g. tapping "Edit this rate" from the calculator jumps to
@@ -204,14 +189,14 @@ class _RatesShellViewState extends State<_RatesShellView> {
     // id so switching to a *different* calculator client still starts
     // fresh, and skipped entirely once no calculator client is selected.
     final calcClientId = state.selectedCalcClientId;
-    if (calcClientId == null) return shellWithChat;
+    if (calcClientId == null) return shell;
     return BlocProvider<ShippingCalculatorBloc>(
       key: ValueKey('calc-bloc-$calcClientId'),
       create: (_) => ShippingCalculatorBloc(
         getIt<RatesRepository>(),
         clientId: calcClientId,
       ),
-      child: shellWithChat,
+      child: shell,
     );
   }
 }

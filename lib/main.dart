@@ -7,6 +7,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'core/di/injection_container.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_cubit.dart';
+import 'core/utils/web_chat_widget.dart';
 import 'features/auth/data/repositories/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/pages/login_page.dart';
@@ -107,6 +108,11 @@ class _AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = context.watch<AuthBloc>().state.status;
+    // The wyred chat bubble lives outside the Flutter tree (injected via
+    // <script> in web/index.html), so it has to be hidden explicitly on
+    // screens where it shouldn't show — login/splash — rather than by
+    // omitting a widget.
+    setWebChatVisible(status == AuthStatus.authenticated);
     return switch (status) {
       AuthStatus.unknown => const _SplashView(),
       AuthStatus.unauthenticated => const LoginPage(),

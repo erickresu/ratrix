@@ -104,7 +104,6 @@ class Step1RateMatrix extends StatelessWidget {
             ),
           ],
         ),
-        /*
         Divider(height: 25, color: context.colors.border),
         Builder(builder: (context) {
           final markupDescription = Column(
@@ -194,7 +193,6 @@ class Step1RateMatrix extends StatelessWidget {
             ],
           );
         }),
-        */
         const SizedBox(height: 16),
         RateMatrixTable(
           matrixRows: state.matrixRows,

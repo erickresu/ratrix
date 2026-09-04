@@ -48,9 +48,48 @@
 
   <!-- AI chatbot widget (wyred.tech) — renders its own floating bubble via
        an iframe on its own domain, so it isn't part of the Flutter widget
-       tree at all. Web-only: nothing else can run a <script> embed.
-       Commented out for the meantime.
-  <script src="https://chat.wyred.tech/embed.js" data-project="ae7cb8c0-cdd2-4f59-bc9d-1eba1159e3a5" data-key="pk_live_wDb1ftzpYdZ8lgIXpZpLxWTv1p53Fd42"></script>
-  -->
+       tree at all. Web-only: nothing else can run a <script> embed. -->
+  <script src="https://chat.wyred.tech/embed.js" data-base-url="https://chat.wyred.tech" data-api-url="https://api.chat.wyred.tech" data-project="52e73789-ad6d-4a37-97bb-7d35cacc6fe5" data-key="pk_live_P9DbOhKSj3IOOH0r7LFHpkKCtcZgSjqI"></script>
+
+  <!-- Lets Flutter hide the wyred chat bubble on screens where it shouldn't
+       show (e.g. login, or while the app tour is running). embed.js
+       (chat.wyred.tech) appends two separate elements to <body>: the
+       visible bubble/launcher/greeting in `#samantha-widget-container`
+       (this is the one actually visible at rest — toggled below), and the
+       chat panel itself in `#samantha-widget-iframe` (already
+       `display:none` by default, only shown once the user opens it — left
+       alone here so restoring visibility doesn't force it open). An
+       earlier version of this guessed the widget's mount point as
+       "whatever new direct child of body shows up first," which bound to
+       the iframe (appended before the container) and left the actually-
+       visible bubble uncontrolled — hiding it did nothing. Targeting the
+       container's known id directly is reliable regardless of append
+       order. -->
+  <script>
+    window.RatrixChat = (function () {
+      var containerId = 'samantha-widget-container';
+      var pending = false; // hidden until Flutter says otherwise (login/splash default)
+
+      function apply() {
+        var el = document.getElementById(containerId);
+        if (el) el.style.display = pending ? '' : 'none';
+      }
+
+      // embed.js's <script> tag runs after this one, so the container
+      // doesn't exist yet on first `apply()` — re-apply whenever body
+      // gains a child until it's found, then stop watching.
+      var observer = new MutationObserver(function () {
+        apply();
+        if (document.getElementById(containerId)) observer.disconnect();
+      });
+      observer.observe(document.body, { childList: true });
+
+      function setVisible(visible) {
+        pending = visible;
+        apply();
+      }
+      return { setVisible: setVisible };
+    })();
+  </script>
 </body>
 </html>

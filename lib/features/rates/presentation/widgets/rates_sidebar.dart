@@ -8,15 +8,20 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
-import 'sidebar_tour_keys.dart';
+import 'tutorial/tour_keys.dart';
+import 'tutorial/tour_step_card.dart';
 
 class RatesSidebar extends StatelessWidget {
-  const RatesSidebar({super.key, this.onNavigated});
+  const RatesSidebar({super.key, this.onNavigated, required this.onReplayTour});
 
   /// Called after a nav tap dispatches its event — closes the
   /// `AdvancedDrawer` on the compact layout. Left null on desktop, where the
   /// sidebar is inline and there's nothing to close.
   final VoidCallback? onNavigated;
+
+  /// "Tutorial" nav item — replays the full `AppTour` walkthrough from the
+  /// start, same as the dashboard's info-icon replay button.
+  final VoidCallback onReplayTour;
 
   @override
   Widget build(BuildContext context) {
@@ -50,12 +55,21 @@ class RatesSidebar extends StatelessWidget {
         children: [
           const _Logo(),
           const SizedBox(height: 24),
-          _NavItem(
-            key: SidebarTourKeys.homeNav,
-            icon: CupertinoIcons.house,
-            label: 'Home',
-            active: isDashboard,
-            onTap: () => navigate(() => bloc.add(const RatesHomeRequested())),
+          tourShowcase(
+            context: context,
+            key: TourKeys.homeNav,
+            title: 'Your Dashboard',
+            body:
+                'This is your dashboard — a quick look at active rates, '
+                "clients, and what's changed recently.",
+            isLast: false,
+            child: _NavItem(
+              icon: CupertinoIcons.house,
+              label: 'Home',
+              active: isDashboard,
+              onTap: () =>
+                  navigate(() => bloc.add(const RatesHomeRequested())),
+            ),
           ),
           const SizedBox(height: 4),
           _NavParent(
@@ -73,22 +87,38 @@ class RatesSidebar extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _SubNavItem(
-                      key: SidebarTourKeys.publishedRatesNav,
-                      icon: CupertinoIcons.arrow_up,
-                      label: 'Publish Rates',
-                      active: isPublishActive,
-                      onTap: () => navigate(
-                        () => bloc.add(const PublishedRatesRequested()),
+                    tourShowcase(
+                      context: context,
+                      key: TourKeys.publishedRatesNav,
+                      title: 'Publish Rates',
+                      body:
+                          'Standard rates visible to every client on their '
+                          'route.',
+                      isLast: false,
+                      child: _SubNavItem(
+                        icon: CupertinoIcons.arrow_up,
+                        label: 'Publish Rates',
+                        active: isPublishActive,
+                        onTap: () => navigate(
+                          () => bloc.add(const PublishedRatesRequested()),
+                        ),
                       ),
                     ),
-                    _SubNavItem(
-                      key: SidebarTourKeys.customRatesNav,
-                      icon: CupertinoIcons.list_bullet,
-                      label: 'Custom Rates',
-                      active: isCustomActive,
-                      onTap: () => navigate(
-                        () => bloc.add(const CustomClientsRequested()),
+                    tourShowcase(
+                      context: context,
+                      key: TourKeys.customRatesNav,
+                      title: 'Custom Rates',
+                      body:
+                          'Rates negotiated for one specific client instead '
+                          'of everyone.',
+                      isLast: false,
+                      child: _SubNavItem(
+                        icon: CupertinoIcons.list_bullet,
+                        label: 'Custom Rates',
+                        active: isCustomActive,
+                        onTap: () => navigate(
+                          () => bloc.add(const CustomClientsRequested()),
+                        ),
                       ),
                     ),
                   ],
@@ -97,21 +127,51 @@ class RatesSidebar extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 4),
-          _NavItem(
-            key: SidebarTourKeys.shippingCalculatorNav,
-            icon: Icons.local_shipping_rounded,
-            label: 'Shipping Calculator',
-            active: isCalculatorActive,
-            onTap: () =>
-                navigate(() => bloc.add(const ShippingCalculatorRequested())),
+          tourShowcase(
+            context: context,
+            key: TourKeys.calculatorNav,
+            title: 'Shipping Calculator',
+            body:
+                'Quote a shipment instantly using whatever rates are '
+                'already on file — no manual math.',
+            isLast: false,
+            child: _NavItem(
+              icon: Icons.local_shipping_rounded,
+              label: 'Shipping Calculator',
+              active: isCalculatorActive,
+              onTap: () => navigate(
+                () => bloc.add(const ShippingCalculatorRequested()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          tourShowcase(
+            context: context,
+            key: TourKeys.auditTrailNav,
+            title: 'Audit Trail',
+            body:
+                'Every create, update, and delete gets logged here, so you '
+                'can always check what changed.',
+            isLast: false,
+            child: _NavItem(
+              icon: CupertinoIcons.clock,
+              label: 'Audit Trail',
+              active: isAuditTrailActive,
+              onTap: () =>
+                  navigate(() => bloc.add(const AuditTrailRequested())),
+            ),
           ),
           const SizedBox(height: 4),
           _NavItem(
-            key: SidebarTourKeys.auditTrailNav,
-            icon: CupertinoIcons.clock,
-            label: 'Audit Trail',
-            active: isAuditTrailActive,
-            onTap: () => navigate(() => bloc.add(const AuditTrailRequested())),
+            icon: CupertinoIcons.play_circle,
+            label: 'Tutorial',
+            active: false,
+            // Deliberately skips `navigate()` — every other item closes
+            // the compact-layout drawer after dispatching, but the tour's
+            // first half spotlights sidebar items themselves, so the
+            // drawer needs to stay open for it to have anything to point
+            // at.
+            onTap: onReplayTour,
           ),
           const Spacer(),
           const _ThemeToggleRow(),

@@ -14,11 +14,13 @@ import '../../domain/entities/rates_enums.dart';
 import '../../domain/entities/recent_rate.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
-import 'onboarding_tour.dart';
-import 'sidebar_tour_keys.dart';
+import 'tutorial/tour_keys.dart';
+import 'tutorial/tour_step_card.dart';
 
 class DashboardView extends StatelessWidget {
-  const DashboardView({super.key});
+  const DashboardView({super.key, required this.onReplayTour});
+
+  final VoidCallback onReplayTour;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +66,7 @@ class DashboardView extends StatelessWidget {
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
-                              onTap: () => showOnboarding(context),
+                              onTap: onReplayTour,
                               child: Padding(
                                 padding: const EdgeInsets.all(4),
                                 child: Icon(
@@ -89,30 +91,39 @@ class DashboardView extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                key: SidebarTourKeys.createRateNav,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.colors.primary.withValues(alpha: 0.35),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+              tourShowcase(
+                context: context,
+                key: TourKeys.createRateButton,
+                title: "Now Let's Create a Rate",
+                body:
+                    "You've seen the essentials — now let's put it into "
+                    "practice. Tap Next and I'll walk you through building "
+                    'one, live.',
+                isLast: false,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.colors.primary.withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ShadButton(
+                    backgroundColor: context.colors.primary,
+                    hoverBackgroundColor: context.colors.primaryHover,
+                    leading: const Icon(
+                      CupertinoIcons.add,
+                      size: 17,
+                      color: Colors.white,
                     ),
-                  ],
-                ),
-                child: ShadButton(
-                  backgroundColor: context.colors.primary,
-                  hoverBackgroundColor: context.colors.primaryHover,
-                  leading: const Icon(
-                    CupertinoIcons.add,
-                    size: 17,
-                    color: Colors.white,
+                    onPressed: () => context.read<RatesShellBloc>().add(
+                      const NewRateModalOpened(),
+                    ),
+                    child: const Text('Create new rate'),
                   ),
-                  onPressed: () => context.read<RatesShellBloc>().add(
-                    const NewRateModalOpened(),
-                  ),
-                  child: const Text('Create new rate'),
                 ),
               ),
             ],
