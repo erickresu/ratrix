@@ -17,12 +17,16 @@ const _clientGridRows = 3;
 const _clientGridPadding = EdgeInsets.fromLTRB(125, 0, 125, 28);
 const _clientGridPaddingMobile = EdgeInsets.fromLTRB(24, 0, 24, 28);
 
+// Matches `ShippingCalculatorClientsView`'s card sizing — its 3-row grid
+// fits within the Expanded region above the pagination bar; this one's
+// taller cards (184px + 28px gaps) didn't, and with scrolling disabled on
+// desktop the bottom row just clipped behind the pagination bar instead.
 SliverGridDelegateWithFixedCrossAxisCount _clientGridDelegate(int crossAxisCount) {
   return SliverGridDelegateWithFixedCrossAxisCount(
     crossAxisCount: crossAxisCount,
-    mainAxisSpacing: 28,
-    crossAxisSpacing: 28,
-    mainAxisExtent: 184,
+    mainAxisSpacing: 20,
+    crossAxisSpacing: 20,
+    mainAxisExtent: 168,
   );
 }
 
@@ -80,14 +84,13 @@ class CustomClientsView extends StatelessWidget {
       ],
     );
 
-    // Desktop/tablet pages always fit their fixed 3-row grid within the
-    // Expanded region, so scrolling is disabled there. On mobile that's not
-    // true — 3 rows of 184px cards can exceed the viewport left after the
-    // header and pagination bar, and a non-scrollable grid just clips
-    // instead of ever showing the rest.
-    final physics = isMobile
-        ? const AlwaysScrollableScrollPhysics()
-        : const NeverScrollableScrollPhysics();
+    // `ShippingCalculatorClientsView` (same shared `ClientPickerPageWeb`
+    // layout) disables scrolling on desktop since its grid always fits —
+    // but "always fits" depends on the user's actual window height, which
+    // varies. Staying scrollable everywhere costs nothing when the grid
+    // already fits (there's simply nothing to scroll) and avoids clipping
+    // the bottom row behind the pagination bar on a shorter window.
+    const physics = AlwaysScrollableScrollPhysics();
 
     final body = Expanded(
       child: state.isLoading
@@ -233,24 +236,70 @@ class _ClientCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: context.colors.surfaceSubtle,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              client.accountNumber,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: context.colors.textMutedStrong,
-                                fontFamily: 'monospace',
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: context.colors.surfaceSubtle,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  client.accountNumber,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.colors.textMutedStrong,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 1,
+                                height: 11,
+                                color: context.colors.border,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: context.colors.surfaceSubtle,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        CupertinoIcons.mail_solid,
+                                        size: 11,
+                                        color: context.colors.textFaint,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Flexible(
+                                        child: Text(
+                                          client.email,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: context.colors.textMutedStrong,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -264,28 +313,6 @@ class _ClientCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            CupertinoIcons.mail_solid,
-                            size: 12,
-                            color: context.colors.textFaint,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              client.email,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: context.colors.textMuted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
