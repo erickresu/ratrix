@@ -23,22 +23,22 @@ class ShippingCalculatorFormWeb extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // `IntrinsicHeight` bounds this Row inside the page's
-            // `SingleChildScrollView` (otherwise the left column's Column
-            // would get unbounded height) — `start` alignment (not
-            // `stretch`) keeps each side at its own natural height instead
-            // of forcing the breakdown panel to match the left column's,
-            // which made it grow uncomfortably tall whenever the form had
-            // more fields than the panel needed.
+            parts.backPill,
+            const SizedBox(height: 24),
+            // `IntrinsicHeight` + `stretch` makes the breakdown panel match
+            // the left column's height exactly, top to bottom — the back
+            // pill sits above this whole Row (not inside the left column)
+            // so both sides start level with "Calculate Freight" instead
+            // of the panel starting higher, at "Back".
             IntrinsicHeight(
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        parts.header,
+                        parts.titleBlock,
                         const SizedBox(height: 24),
                         IntrinsicHeight(
                           child: Row(
@@ -63,11 +63,7 @@ class ShippingCalculatorFormWeb extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 24),
-                  SizedBox(
-                    width: 400,
-                    height: 700,
-                    child: parts.breakdownPanel,
-                  ),
+                  SizedBox(width: 400, child: parts.breakdownPanel),
                 ],
               ),
             ),

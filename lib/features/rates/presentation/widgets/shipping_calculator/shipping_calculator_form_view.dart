@@ -25,7 +25,8 @@ const _fieldHeight = 44.0;
 /// [ShippingCalculatorFormMobile] — they differ only in how these are
 /// arranged, not in what they are.
 typedef ShippingCalculatorFormParts = ({
-  Widget header,
+  Widget backPill,
+  Widget titleBlock,
   Widget serviceFreightCard,
   Widget routingCard,
   Widget cargoDetailsCard,
@@ -60,11 +61,12 @@ class _CalculatorView extends StatelessWidget {
   Widget build(BuildContext context) {
     final shellBloc = context.read<RatesShellBloc>();
 
-    final header = Column(
+    final backPill = BackPill(onTap: () => shellBloc.add(const ShippingCalculatorBackRequested()));
+
+    final titleBlock = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        BackPill(onTap: () => shellBloc.add(const ShippingCalculatorBackRequested())),
-        const SizedBox(height: 24),
         Row(
           children: [
             Text(
@@ -95,7 +97,8 @@ class _CalculatorView extends StatelessWidget {
     );
 
     final parts = (
-      header: header,
+      backPill: backPill,
+      titleBlock: titleBlock,
       serviceFreightCard: const _ServiceFreightCard(),
       routingCard: const _RoutingCard(),
       cargoDetailsCard: const _CargoDetailsCard(),
@@ -1278,7 +1281,6 @@ class _ConditionalAddonSummary extends StatelessWidget {
     );
   }
 }
-
 
 class _SubmitButton extends StatelessWidget {
   const _SubmitButton({required this.client});

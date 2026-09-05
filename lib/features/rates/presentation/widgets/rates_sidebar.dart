@@ -189,7 +189,7 @@ class _Logo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Align(
-      alignment: Alignment.centerLeft,
+      alignment: Alignment.center,
       child: Text(
         'CERRO RATRIX',
         style: TextStyle(

@@ -119,7 +119,7 @@ class CustomClientRatesView extends StatelessWidget {
     final freightFilter = SizedBox(
       width: 170,
       child: ShadSelect<String>(
-        placeholder: const Text('Freight mode'),
+        placeholder: const Text('Mode'),
         initialValue: state.clientRateFreightFilter?.name ?? _kAllValue,
         selectedOptionBuilder: (context, value) => Text(
           value == _kAllValue
@@ -171,7 +171,7 @@ class CustomClientRatesView extends StatelessWidget {
     final searchField = SizedBox(
       width: 260,
       child: ShadInput(
-        placeholder: const Text('Search by charge code, freight mode...'),
+        placeholder: const Text('Search by charge code, mode...'),
         leading: Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Icon(
@@ -237,16 +237,11 @@ class CustomClientRatesView extends StatelessWidget {
         : ResponsiveRateTable<ClientRate>(
             rates: state.pagedClientRates,
             columns: const [
-              RateTableColumn(label: 'MODE', flex: 2, width: 90),
               RateTableColumn(label: 'SERVICE', flex: 2, width: 90),
               RateTableColumn(label: 'ROUTES', flex: 2, width: 90),
               RateTableColumn(label: 'STATUS', flex: 3, width: 130),
             ],
             cellBuilders: [
-              (context, rate, {required compact}) => Align(
-                alignment: Alignment.centerLeft,
-                child: rateModeBadge(context, rate.freightMode),
-              ),
               (context, rate, {required compact}) => Text(
                 rate.serviceMode.label,
                 maxLines: 1,

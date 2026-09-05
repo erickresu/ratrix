@@ -24,7 +24,7 @@ class CustomClientRatesPageMobile extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 40),
+          padding: const EdgeInsets.fromLTRB(24, 48, 24, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

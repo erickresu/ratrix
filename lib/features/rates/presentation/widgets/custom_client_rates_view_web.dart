@@ -25,7 +25,7 @@ class CustomClientRatesPageWeb extends StatelessWidget {
       children: [
         PagePadding(
           top: 48,
-          bottom: 40,
+          bottom: 20,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

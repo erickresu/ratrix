@@ -60,7 +60,11 @@ Future<void> showFreightBreakdownDialog(
   // button): on desktop, send the result over to the docked panel; on
   // mobile, clear it so the next Calculate press is guaranteed a fresh
   // null -> non-null transition.
-  calcBloc.add(keepResultForPanel ? const CalcResultRevealed() : const CalcResultDismissed());
+  calcBloc.add(
+    keepResultForPanel
+        ? const CalcResultRevealed()
+        : const CalcResultDismissed(),
+  );
 }
 
 /// Calculating beat -> result reveal, in one dialog. Kept as a single
@@ -82,7 +86,9 @@ class _FreightBreakdownFlowState extends State<_FreightBreakdownFlow> {
   Widget build(BuildContext context) {
     return _revealed
         ? _FreightBreakdownDialog(client: widget.client)
-        : _CalculatingDialog(onFinished: () => setState(() => _revealed = true));
+        : _CalculatingDialog(
+            onFinished: () => setState(() => _revealed = true),
+          );
   }
 }
 
@@ -115,7 +121,8 @@ List<_CalcStep> _calculationSteps(ShippingCalculatorState state) {
 
   if (result.chargeableWeight != null) {
     steps.add((
-      text: 'Chargeable weight = ${result.chargeableWeight!.toStringAsFixed(2)} kg',
+      text:
+          'Chargeable weight = ${result.chargeableWeight!.toStringAsFixed(2)} kg',
       runningTotal: null,
     ));
   }
@@ -132,10 +139,15 @@ List<_CalcStep> _calculationSteps(ShippingCalculatorState state) {
   // All the add-on fees (fuel surcharge + every flat fee) land in one
   // combined line rather than one line per fee — a rate with a dozen
   // add-ons would otherwise turn the tape into a slog.
-  final addonsTotal = (result.fuelSurcharge ?? 0) + result.flatFees.values.fold<num>(0, (sum, v) => sum + v);
+  final addonsTotal =
+      (result.fuelSurcharge ?? 0) +
+      result.flatFees.values.fold<num>(0, (sum, v) => sum + v);
   if (addonsTotal != 0) {
     running += addonsTotal;
-    steps.add((text: '+ Add-ons = ${money(addonsTotal)}', runningTotal: running));
+    steps.add((
+      text: '+ Add-ons = ${money(addonsTotal)}',
+      runningTotal: running,
+    ));
   }
 
   final subTotal = result.subTotal ?? running;
@@ -145,7 +157,8 @@ List<_CalcStep> _calculationSteps(ShippingCalculatorState state) {
   if (state.vatMode == VatMode.standard) {
     running += state.vatAmount;
     steps.add((
-      text: '+ VAT (${(ShippingCalculatorState.vatRate * 100).toStringAsFixed(0)}%) = ${money(state.vatAmount)}',
+      text:
+          '+ VAT (${(ShippingCalculatorState.vatRate * 100).toStringAsFixed(0)}%) = ${money(state.vatAmount)}',
       runningTotal: running,
     ));
   }
@@ -254,7 +267,9 @@ class _CalculatingDialogState extends State<_CalculatingDialog> {
   @override
   Widget build(BuildContext context) {
     final previousLine = _completedLines.isEmpty ? '' : _completedLines.last;
-    final activeChar = _typedText.isEmpty ? null : _typedText[_typedText.length - 1];
+    final activeChar = _typedText.isEmpty
+        ? null
+        : _typedText[_typedText.length - 1];
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: _dialogMaxWidth(context)),
@@ -297,7 +312,11 @@ class _CalculatingDialogState extends State<_CalculatingDialog> {
                   ),
                 )
               else
-                _CalculatorBody(previousLine: previousLine, currentLine: _typedText, activeChar: activeChar),
+                _CalculatorBody(
+                  previousLine: previousLine,
+                  currentLine: _typedText,
+                  activeChar: activeChar,
+                ),
             ],
           ),
         ),
@@ -332,13 +351,19 @@ class _MascotSpeechBubble extends StatelessWidget {
             child: Container(
               width: 14,
               height: 14,
-              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(3)),
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
           ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: Text(
             text,
             style: TextStyle(
@@ -379,11 +404,20 @@ class _CalculatorBody extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF2B2E33),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 16, offset: Offset(0, 8))],
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          _CalculatorScreen(previousLine: previousLine, currentLine: currentLine),
+          _CalculatorScreen(
+            previousLine: previousLine,
+            currentLine: currentLine,
+          ),
           const SizedBox(height: 12),
           for (final row in _keyRows) ...[
             Row(
@@ -411,7 +445,10 @@ class _CalculatorBody extends StatelessWidget {
 }
 
 class _CalculatorScreen extends StatelessWidget {
-  const _CalculatorScreen({required this.previousLine, required this.currentLine});
+  const _CalculatorScreen({
+    required this.previousLine,
+    required this.currentLine,
+  });
 
   final String previousLine;
   final String currentLine;
@@ -425,8 +462,13 @@ class _CalculatorScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF16261C),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.4), width: 2),
-        boxShadow: [BoxShadow(color: lcdText.withValues(alpha: 0.15), blurRadius: 10)],
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.4),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(color: lcdText.withValues(alpha: 0.15), blurRadius: 10),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -503,7 +545,11 @@ class _SkipButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(CupertinoIcons.forward_end_fill, size: 12, color: context.colors.textMutedStrong),
+              Icon(
+                CupertinoIcons.forward_end_fill,
+                size: 12,
+                color: context.colors.textMutedStrong,
+              ),
             ],
           ),
         ),
@@ -518,22 +564,32 @@ class _CalculatorKey extends StatelessWidget {
   final String label;
   final bool active;
 
-  bool get _isOperator => const {'AC', '⌫', '%', '÷', '×', '−', '+', '='}.contains(label);
+  bool get _isOperator =>
+      const {'AC', '⌫', '%', '÷', '×', '−', '+', '='}.contains(label);
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = _isOperator ? const Color(0xFF3D6B52) : const Color(0xFF454951);
+    final baseColor = _isOperator
+        ? const Color(0xFF3D6B52)
+        : const Color(0xFF454951);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 90),
       curve: Curves.easeOut,
       height: 46,
-      transform: active ? Matrix4.diagonal3Values(0.92, 0.92, 1) : Matrix4.identity(),
+      transform: active
+          ? Matrix4.diagonal3Values(0.92, 0.92, 1)
+          : Matrix4.identity(),
       transformAlignment: Alignment.center,
       decoration: BoxDecoration(
         color: active ? const Color(0xFF7CF9A6) : baseColor,
         borderRadius: BorderRadius.circular(10),
         boxShadow: active
-            ? [BoxShadow(color: const Color(0xFF7CF9A6).withValues(alpha: 0.6), blurRadius: 8)]
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF7CF9A6).withValues(alpha: 0.6),
+                  blurRadius: 8,
+                ),
+              ]
             : null,
       ),
       alignment: Alignment.center,
@@ -542,7 +598,9 @@ class _CalculatorKey extends StatelessWidget {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w700,
-          color: active ? const Color(0xFF16261C) : Colors.white.withValues(alpha: 0.85),
+          color: active
+              ? const Color(0xFF16261C)
+              : Colors.white.withValues(alpha: 0.85),
         ),
       ),
     );
@@ -567,79 +625,80 @@ class FreightBreakdownPanel extends StatelessWidget {
     // `calcResultRevealed`'s doc comment.
     final result = state.calcResultRevealed ? state.calcResult : null;
 
-    if (result == null) {
-      return Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: context.colors.surface,
-          border: Border.all(color: context.colors.border),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              CupertinoIcons.arrow_down_circle,
-              size: 32,
-              color: context.colors.textFaint,
+    return result == null
+        ? Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: context.colors.surface,
+              border: Border.all(color: context.colors.border),
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Freight Breakdown',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: context.colors.textMutedStrong,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Fill in the details and calculate to see the breakdown here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: context.colors.textMuted),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: _PulsingBorderCard(
-            borderRadius: BorderRadius.circular(16),
+            alignment: Alignment.center,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _DialogHeader(state: state, client: client),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                    child: result.error != null
-                        ? _ErrorBody(
-                            message: result.error!,
-                            origin: state.origin,
-                            destination: state.destination,
-                            tiers: result.routeTiers,
-                            onEditRate: state.selectedRate == null
-                                ? null
-                                : () {
-                                    final rateId = state.selectedRate!.id;
-                                    context.read<RatesShellBloc>().add(
-                                      EditRateRequested(rateId),
-                                    );
-                                  },
-                          )
-                        : const _ResultBody(),
+                Icon(
+                  CupertinoIcons.arrow_down_circle,
+                  size: 32,
+                  color: context.colors.textFaint,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Freight Breakdown',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textMutedStrong,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Fill in the details and calculate to see the breakdown here.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.colors.textMuted,
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-      ],
-    );
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _PulsingBorderCard(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Column(
+                    children: [
+                      _DialogHeader(state: state, client: client),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                          child: result.error != null
+                              ? _ErrorBody(
+                                  message: result.error!,
+                                  origin: state.origin,
+                                  destination: state.destination,
+                                  tiers: result.routeTiers,
+                                  onEditRate: state.selectedRate == null
+                                      ? null
+                                      : () {
+                                          final rateId = state.selectedRate!.id;
+                                          context.read<RatesShellBloc>().add(
+                                            EditRateRequested(rateId),
+                                          );
+                                        },
+                                )
+                              : const _ResultBody(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
   }
 }
 
@@ -997,13 +1056,21 @@ class _HeaderMenuButtonState extends State<_HeaderMenuButton> {
       onSelected: _handleSelected,
       color: context.colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      icon: const Icon(CupertinoIcons.ellipsis_vertical, size: 18, color: Colors.white),
+      icon: const Icon(
+        CupertinoIcons.ellipsis_vertical,
+        size: 18,
+        color: Colors.white,
+      ),
       itemBuilder: (context) => [
         PopupMenuItem(
           value: _HeaderMenuAction.howCalculated,
           child: Row(
             children: [
-              Icon(CupertinoIcons.number, size: 15, color: context.colors.textMuted),
+              Icon(
+                CupertinoIcons.number,
+                size: 15,
+                color: context.colors.textMuted,
+              ),
               const SizedBox(width: 10),
               const Text('How was it calculated?'),
             ],
@@ -1013,7 +1080,11 @@ class _HeaderMenuButtonState extends State<_HeaderMenuButton> {
           value: _HeaderMenuAction.generatePdf,
           child: Row(
             children: [
-              Icon(CupertinoIcons.arrow_down_doc, size: 15, color: context.colors.textMuted),
+              Icon(
+                CupertinoIcons.arrow_down_doc,
+                size: 15,
+                color: context.colors.textMuted,
+              ),
               const SizedBox(width: 10),
               const Text('Generate Invoice PDF'),
             ],
@@ -1028,23 +1099,28 @@ class _HeaderMenuButtonState extends State<_HeaderMenuButton> {
 /// in the Calculation Breakdown popup so the numbers below it aren't just
 /// asserted, they're explained.
 String _formulaFor(PricingOption option) => switch (option) {
-      PricingOption.fixedBreakweight => 'Chargeable weight × the matched bracket\'s rate.',
-      PricingOption.minimumFixedBreakweight =>
-        'A flat fee within the first bracket, regardless of actual weight; weight × rate for any bracket beyond it.',
-      PricingOption.flatBreakweight => 'A flat fee for whichever bracket the weight falls into — never multiplied by weight.',
-      PricingOption.cummulativeBreakweight =>
-        'Each bracket the weight passes through is charged separately at that bracket\'s rate, then summed.',
-      PricingOption.minimumCummulativeBreakweight =>
-        'A flat entrance fee for the first bracket, then each further bracket charged per kg and summed.',
-      PricingOption.excessBreakweight =>
-        'The base bracket priced per kg, plus everything beyond it priced at the excess bracket\'s rate.',
-      PricingOption.minimumExcessBreakweight =>
-        'A flat base-bracket fee, plus everything beyond it priced at the excess bracket\'s rate.',
-      PricingOption.routeBased || PricingOption.timeBased =>
-        'Not yet computed by this calculator.',
-    };
+  PricingOption.fixedBreakweight =>
+    'Chargeable weight × the matched bracket\'s rate.',
+  PricingOption.minimumFixedBreakweight =>
+    'A flat fee within the first bracket, regardless of actual weight; weight × rate for any bracket beyond it.',
+  PricingOption.flatBreakweight =>
+    'A flat fee for whichever bracket the weight falls into — never multiplied by weight.',
+  PricingOption.cummulativeBreakweight =>
+    'Each bracket the weight passes through is charged separately at that bracket\'s rate, then summed.',
+  PricingOption.minimumCummulativeBreakweight =>
+    'A flat entrance fee for the first bracket, then each further bracket charged per kg and summed.',
+  PricingOption.excessBreakweight =>
+    'The base bracket priced per kg, plus everything beyond it priced at the excess bracket\'s rate.',
+  PricingOption.minimumExcessBreakweight =>
+    'A flat base-bracket fee, plus everything beyond it priced at the excess bracket\'s rate.',
+  PricingOption.routeBased ||
+  PricingOption.timeBased => 'Not yet computed by this calculator.',
+};
 
-void _showCalculationBreakdown(BuildContext context, ShippingCalculatorState state) {
+void _showCalculationBreakdown(
+  BuildContext context,
+  ShippingCalculatorState state,
+) {
   showShadDialog<void>(
     context: context,
     builder: (dialogContext) => _CalculationBreakdownDialog(state: state),
@@ -1076,9 +1152,13 @@ class _CalculationBreakdownDialog extends StatelessWidget {
     }
     for (final entry in result.flatFees.entries) {
       if (entry.key == 'Valuation' && addons?.valuationType == 'percentage') {
-        addonLines.add('${entry.key}: ${addons?.valuation} % of declared value = ${money(entry.value)}');
+        addonLines.add(
+          '${entry.key}: ${addons?.valuation} % of declared value = ${money(entry.value)}',
+        );
       } else {
-        addonLines.add('${entry.key}: ${money(entry.value)} (flat, from rate config)');
+        addonLines.add(
+          '${entry.key}: ${money(entry.value)} (flat, from rate config)',
+        );
       }
     }
 
@@ -1110,7 +1190,11 @@ class _CalculationBreakdownDialog extends StatelessWidget {
                       gradient: context.colors.primaryButtonGradient,
                       borderRadius: BorderRadius.circular(11),
                     ),
-                    child: const Icon(CupertinoIcons.number, size: 18, color: Colors.white),
+                    child: const Icon(
+                      CupertinoIcons.number,
+                      size: 18,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1119,12 +1203,19 @@ class _CalculationBreakdownDialog extends StatelessWidget {
                       children: [
                         Text(
                           'Calculation Breakdown',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.colors.textBody),
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: context.colors.textBody,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Every figure, traced back to its source',
-                          style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.colors.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -1137,7 +1228,11 @@ class _CalculationBreakdownDialog extends StatelessWidget {
                       onTap: () => Navigator.of(context).pop(),
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: Icon(CupertinoIcons.xmark, size: 15, color: context.colors.textMuted),
+                        child: Icon(
+                          CupertinoIcons.xmark,
+                          size: 15,
+                          color: context.colors.textMuted,
+                        ),
                       ),
                     ),
                   ),
@@ -1153,12 +1248,14 @@ class _CalculationBreakdownDialog extends StatelessWidget {
                         icon: CupertinoIcons.tag_fill,
                         title: 'Rate used',
                         lines: [
-                          if (state.selectedChargeCode != null) 'Charge code: ${state.selectedChargeCode}',
+                          if (state.selectedChargeCode != null)
+                            'Charge code: ${state.selectedChargeCode}',
                           if (state.pricingOption != null) ...[
                             'Pricing option: ${state.pricingOption!.label}',
                             'Formula: ${_formulaFor(state.pricingOption!)}',
                           ],
-                          if (result.matchedTierMin != null && result.matchedTierMax != null)
+                          if (result.matchedTierMin != null &&
+                              result.matchedTierMax != null)
                             'Matched bracket: ${result.matchedTierMin!.toStringAsFixed(0)}–'
                                 '${result.matchedTierMax! >= 999999999 ? 'No limit' : '${result.matchedTierMax!.toStringAsFixed(0)} kg'}'
                                 '${result.tierRate != null ? ' @ ${money(result.tierRate!)}/kg' : ''}',
@@ -1168,31 +1265,43 @@ class _CalculationBreakdownDialog extends StatelessWidget {
                         icon: CupertinoIcons.cube_box_fill,
                         title: 'Base freight',
                         lines: [
-                          if (result.chargeableWeight != null) 'Chargeable weight: ${result.chargeableWeight!.toStringAsFixed(2)} kg',
-                          if (result.tierRate != null && result.chargeableWeight != null)
+                          if (result.chargeableWeight != null)
+                            'Chargeable weight: ${result.chargeableWeight!.toStringAsFixed(2)} kg',
+                          if (result.tierRate != null &&
+                              result.chargeableWeight != null)
                             '${result.chargeableWeight!.toStringAsFixed(2)} kg × ${money(result.tierRate!)}/kg = ${money(result.baseFreight ?? 0)}'
                           else
                             'Base freight = ${money(result.baseFreight ?? 0)}',
                         ],
                       ),
                       if (addonLines.isNotEmpty)
-                        _BreakdownSection(icon: CupertinoIcons.plus_circle_fill, title: 'Add-ons', lines: addonLines),
+                        _BreakdownSection(
+                          icon: CupertinoIcons.plus_circle_fill,
+                          title: 'Add-ons',
+                          lines: addonLines,
+                        ),
                       _BreakdownSection(
                         icon: CupertinoIcons.equal_square_fill,
                         title: 'Sub-total',
-                        lines: ['Base freight + add-ons = ${money(result.subTotal ?? 0)}'],
+                        lines: [
+                          'Base freight + add-ons = ${money(result.subTotal ?? 0)}',
+                        ],
                       ),
                       _BreakdownSection(
                         icon: CupertinoIcons.percent,
                         title: 'VAT',
                         lines: switch (state.vatMode) {
-                          VatMode.exempt => const ['VAT-Exempt Sale — no VAT applied.'],
-                          VatMode.zeroRated => const ['Zero-Rated Sale — no VAT applied.'],
+                          VatMode.exempt => const [
+                            'VAT-Exempt Sale — no VAT applied.',
+                          ],
+                          VatMode.zeroRated => const [
+                            'Zero-Rated Sale — no VAT applied.',
+                          ],
                           VatMode.standard => [
-                              state.vatInclusive
-                                  ? 'VAT already included in the sub-total — backed out as sub-total ÷ 1.12 × 0.12 = ${money(state.vatAmount)}'
-                                  : '12% of the VATable sub-total = ${money(state.vatAmount)}',
-                            ],
+                            state.vatInclusive
+                                ? 'VAT already included in the sub-total — backed out as sub-total ÷ 1.12 × 0.12 = ${money(state.vatAmount)}'
+                                : '12% of the VATable sub-total = ${money(state.vatAmount)}',
+                          ],
                         },
                       ),
                       const SizedBox(height: 4),
@@ -1212,7 +1321,11 @@ class _CalculationBreakdownDialog extends StatelessWidget {
 /// Renders `label = value`/`label: value` lines with the tail after the
 /// last `=`/`:` bolded — the answer stands out, the working stays quiet.
 Widget _emphasizedLine(BuildContext context, String text) {
-  final baseStyle = TextStyle(fontSize: 13, color: context.colors.textMutedStrong, height: 1.5);
+  final baseStyle = TextStyle(
+    fontSize: 13,
+    color: context.colors.textMutedStrong,
+    height: 1.5,
+  );
   final eqIndex = text.lastIndexOf(' = ');
   final colonIndex = text.indexOf(': ');
   final (cut, markerLength) = eqIndex != -1 ? (eqIndex, 3) : (colonIndex, 2);
@@ -1225,7 +1338,10 @@ Widget _emphasizedLine(BuildContext context, String text) {
         TextSpan(text: text.substring(0, cut + markerLength)),
         TextSpan(
           text: text.substring(cut + markerLength),
-          style: TextStyle(fontWeight: FontWeight.w700, color: context.colors.textBody),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: context.colors.textBody,
+          ),
         ),
       ],
     ),
@@ -1233,7 +1349,11 @@ Widget _emphasizedLine(BuildContext context, String text) {
 }
 
 class _BreakdownSection extends StatelessWidget {
-  const _BreakdownSection({required this.icon, required this.title, required this.lines});
+  const _BreakdownSection({
+    required this.icon,
+    required this.title,
+    required this.lines,
+  });
 
   final IconData icon;
   final String title;
@@ -1312,13 +1432,21 @@ class _GrandTotalCard extends StatelessWidget {
           if (suffix.isNotEmpty)
             Text(
               suffix,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
             )
           else
             Flexible(
               child: Text(
                 prefix,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
                 textAlign: TextAlign.right,
               ),
             ),
@@ -1480,7 +1608,9 @@ class RouteTiersTable extends StatelessWidget {
     // without needing to lay the whole row out first — required for the
     // tier columns to scroll horizontally below (a horizontally-scrolling
     // SingleChildScrollView doesn't support intrinsic-height queries).
-    final rowContentHeight = tiers.any((t) => t.expressRate != null) ? 96.0 : 68.0;
+    final rowContentHeight = tiers.any((t) => t.expressRate != null)
+        ? 96.0
+        : 68.0;
     const tierColWidth = 130.0;
 
     return Column(
@@ -1519,9 +1649,15 @@ class RouteTiersTable extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _RateLegendDot(color: context.colors.primaryDeep, label: 'Regular'),
+                    _RateLegendDot(
+                      color: context.colors.primaryDeep,
+                      label: 'Regular',
+                    ),
                     const SizedBox(width: 14),
-                    _RateLegendDot(color: context.colors.accent, label: 'Express'),
+                    _RateLegendDot(
+                      color: context.colors.accent,
+                      label: 'Express',
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -1552,7 +1688,10 @@ class RouteTiersTable extends StatelessWidget {
                             alignment: Alignment.centerLeft,
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             color: context.colors.surfaceSubtle,
-                            child: Text('ROUTE', style: headerLabelStyle(context)),
+                            child: Text(
+                              'ROUTE',
+                              style: headerLabelStyle(context),
+                            ),
                           ),
                           Container(
                             height: rowContentHeight,
@@ -1600,21 +1739,32 @@ class RouteTiersTable extends StatelessWidget {
                                         Container(
                                           height: 48,
                                           alignment: Alignment.center,
-                                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: context.colors.surfaceSubtle,
                                             border: Border(
-                                              left: BorderSide(color: context.colors.border),
+                                              left: BorderSide(
+                                                color: context.colors.border,
+                                              ),
                                             ),
                                           ),
                                           child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
                                               Text(
-                                                i == 0 ? 'MINIMUM' : 'TIER ${i + 1}',
+                                                i == 0
+                                                    ? 'MINIMUM'
+                                                    : 'TIER ${i + 1}',
                                                 style: i == 0
-                                                    ? headerLabelStyle(context).copyWith(
-                                                        color: context.colors.primaryDeep,
+                                                    ? headerLabelStyle(
+                                                        context,
+                                                      ).copyWith(
+                                                        color: context
+                                                            .colors
+                                                            .primaryDeep,
                                                       )
                                                     : headerLabelStyle(context),
                                               ),
@@ -1623,7 +1773,9 @@ class RouteTiersTable extends StatelessWidget {
                                                 tiers[i].isUncapped
                                                     ? '${tiers[i].min.toStringAsFixed(0)}–No limit'
                                                     : '${tiers[i].min.toStringAsFixed(0)}–${tiers[i].max.toStringAsFixed(0)}',
-                                                style: headerRangeStyle(context),
+                                                style: headerRangeStyle(
+                                                  context,
+                                                ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -1640,53 +1792,74 @@ class RouteTiersTable extends StatelessWidget {
                                           ),
                                           decoration: BoxDecoration(
                                             border: Border(
-                                              top: BorderSide(color: context.colors.border),
-                                              left: BorderSide(color: context.colors.border),
+                                              top: BorderSide(
+                                                color: context.colors.border,
+                                              ),
+                                              left: BorderSide(
+                                                color: context.colors.border,
+                                              ),
                                             ),
                                           ),
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 10,
-                                                  vertical: 6,
-                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6,
+                                                    ),
                                                 decoration: BoxDecoration(
-                                                  color: context.colors.primaryChipBg,
-                                                  borderRadius: BorderRadius.circular(6),
+                                                  color: context
+                                                      .colors
+                                                      .primaryChipBg,
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
                                                 ),
                                                 child: Text(
                                                   '₱${formatMoney(tiers[i].rate)}',
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.w700,
-                                                    color: context.colors.primaryDeep,
+                                                    color: context
+                                                        .colors
+                                                        .primaryDeep,
                                                   ),
                                                   maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              if (tiers[i].expressRate != null) ...[
+                                              if (tiers[i].expressRate !=
+                                                  null) ...[
                                                 const SizedBox(height: 6),
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
-                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 6,
+                                                      ),
                                                   decoration: BoxDecoration(
-                                                    color: context.colors.accentChipBg,
-                                                    borderRadius: BorderRadius.circular(6),
+                                                    color: context
+                                                        .colors
+                                                        .accentChipBg,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          6,
+                                                        ),
                                                   ),
                                                   child: Text(
                                                     '₱${formatMoney(tiers[i].expressRate!)}',
                                                     style: TextStyle(
                                                       fontSize: 10,
-                                                      fontWeight: FontWeight.w700,
-                                                      color: context.colors.accent,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color:
+                                                          context.colors.accent,
                                                     ),
                                                     maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                               ],
@@ -1701,7 +1874,8 @@ class RouteTiersTable extends StatelessWidget {
                           }
 
                           final naturalWidth = tiers.length * tierColWidth;
-                          final fillWidth = naturalWidth <= constraints.maxWidth;
+                          final fillWidth =
+                              naturalWidth <= constraints.maxWidth;
                           final columnWidth = fillWidth
                               ? constraints.maxWidth / tiers.length
                               : tierColWidth;
@@ -1779,7 +1953,11 @@ class _RateLegendDot extends StatelessWidget {
         const SizedBox(width: 5),
         Text(
           label,
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: context.colors.textMutedStrong,
+          ),
         ),
       ],
     );
@@ -1796,8 +1974,7 @@ class _ResultBody extends StatelessWidget {
     final result = state.calcResult!;
 
     num displayValue(num v) => state.roundedDisplay ? v.roundToDouble() : v;
-    String money(num? v) =>
-        v == null ? '—' : formatMoney(displayValue(v));
+    String money(num? v) => v == null ? '—' : formatMoney(displayValue(v));
 
     final grandTotal = displayValue(state.grandTotal);
 

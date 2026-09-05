@@ -407,10 +407,10 @@ class _RecentRatesTable extends StatelessWidget {
       horizontal: compact ? 18 : 24,
       vertical: 18,
     );
-    final fieldGap = SizedBox(width: compact ? 10 : 16);
+    final fieldGap = SizedBox(width: compact ? 6 : 10);
     // Wider than the standard gap — ROUTE text runs close to full width
     // and read cramped against CLIENT right after it.
-    final routeClientGap = SizedBox(width: compact ? 30 : 60);
+    final routeClientGap = SizedBox(width: compact ? 40 : 90);
     // Client names run long ("Magna Prime Chemical Technologies
     // Incorporated") and fill most of their column, leaving the standard
     // gap looking cramped against the TYPE badge right after it.
@@ -427,9 +427,9 @@ class _RecentRatesTable extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Expanded(flex: 11, child: Text('ROUTE', style: headerStyle)),
+              Expanded(flex: 35, child: Text('ROUTE', style: headerStyle)),
               routeClientGap,
-              Expanded(flex: 19, child: Text('CLIENT', style: headerStyle)),
+              Expanded(flex: 35, child: Text('CLIENT', style: headerStyle)),
               clientTypeGap,
               Expanded(flex: 10, child: Text('TYPE', style: headerStyle)),
               fieldGap,
@@ -463,12 +463,12 @@ class _RecentRatesTable extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  flex: 11,
+                  flex: 35,
                   child: _RouteCell(route: rate.route, compact: compact),
                 ),
                 routeClientGap,
                 Expanded(
-                  flex: 19,
+                  flex: 35,
                   child: rate.client == '—'
                       ? Text(
                           'All clients',
@@ -731,23 +731,12 @@ class _RecentRatesTable extends StatelessWidget {
         horizontal: compact ? 8 : 10,
         vertical: compact ? 3 : 4,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            status.label,
-            style: TextStyle(
-              fontSize: compact ? 10 : 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+      child: Text(
+        status.label,
+        style: TextStyle(
+          fontSize: compact ? 10 : 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -761,7 +750,10 @@ class _RouteCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fontSize = compact ? 12.0 : 14.0;
+    // Same size as every other cell in the row (CLIENT, TYPE, RATE,
+    // STATUS all use 12) — this used to run bigger on desktop for no
+    // reason, reading oversized next to the rest of the row.
+    const fontSize = 12.0;
     final parts = route.split('→').map((p) => p.trim()).toList();
     if (parts.length != 2) {
       return Text(

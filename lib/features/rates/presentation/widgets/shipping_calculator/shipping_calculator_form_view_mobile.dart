@@ -16,7 +16,9 @@ class ShippingCalculatorFormMobile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          parts.header,
+          parts.backPill,
+          const SizedBox(height: 24),
+          parts.titleBlock,
           const SizedBox(height: 24),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
