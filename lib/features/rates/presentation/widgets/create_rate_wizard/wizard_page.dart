@@ -89,6 +89,20 @@ class _WizardView extends StatelessWidget {
               // message field at all — so the toast surfaces its real
               // charge_code rather than a made-up generic string.
               final chargeCode = state.savedChargeCode;
+              final shellBloc = context.read<RatesShellBloc>();
+              final wizardState = context.read<RateWizardBloc>().state;
+              // `RatesDataRequested` refreshes the dashboard/Published Rates
+              // list, but a custom rate's own client rate list
+              // (`selectedClientRates`) is only ever loaded via
+              // `ClientRatesRequested` — without also firing it here, saving
+              // an edit to a custom rate (e.g. a breakweight tier) would
+              // report success but the Custom Client Rates table would keep
+              // showing the pre-edit values until some unrelated action
+              // happened to refetch it.
+              final clientId = wizardState.clientId;
+              if (wizardState.isCustom && clientId != null) {
+                shellBloc.add(ClientRatesRequested(clientId));
+              }
               if (state.lastSubmitStayedOnPage) {
                 showStatusToast(
                   context,
@@ -99,10 +113,8 @@ class _WizardView extends StatelessWidget {
                 // The rate list screens don't live-update — without this,
                 // the just-saved changes stay invisible there until some
                 // other action happens to trigger a refetch.
-                context.read<RatesShellBloc>().add(const RatesDataRequested());
+                shellBloc.add(const RatesDataRequested());
               } else {
-                final shellBloc = context.read<RatesShellBloc>();
-                final wizardState = context.read<RateWizardBloc>().state;
                 final isEditing = wizardState.editingRateId != null;
                 showStatusToast(
                   context,
@@ -380,6 +392,7 @@ class _WizardFooter extends StatelessWidget {
     final canLeaveStep1 = context.select(
       (RateWizardBloc b) => b.state.canLeaveStep1,
     );
+    final isCustom = context.select((RateWizardBloc b) => b.state.isCustom);
     final isMobile = Breakpoints.isMobile(context);
     final blockedByFreightMode = step == 0 && !canLeaveStep0;
     final blockedByBreakweights = step == 1 && !canLeaveStep1;
@@ -441,6 +454,22 @@ class _WizardFooter extends StatelessWidget {
         ? [saveChangesButton, nextButton]
         : [nextButton];
 
+    // Step 0's "Back" exits the wizard entirely instead of stepping
+    // backward (there's no earlier step to go to) — without this, the only
+    // way out was the small header pill, and pressing this same-looking
+    // footer button read as broken since it visibly did nothing.
+    final exitButton = ShadButton.outline(
+      leading: const Icon(CupertinoIcons.chevron_left, size: 15),
+      onPressed: () => context.read<RatesShellBloc>().add(
+        WizardExitRequested(
+          fallback: isCustom
+              ? RatesView.customClientRates
+              : RatesView.publishedRates,
+        ),
+      ),
+      child: const Text('Back'),
+    );
+
     final leading = step > 0
         ? ShadButton.outline(
             leading: const Icon(CupertinoIcons.chevron_left, size: 15),
@@ -451,6 +480,8 @@ class _WizardFooter extends StatelessWidget {
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              exitButton,
+              const SizedBox(width: 12),
               Icon(
                 CupertinoIcons.info_circle,
                 size: 14,
@@ -468,7 +499,7 @@ class _WizardFooter extends StatelessWidget {
               ),
             ],
           )
-        : const SizedBox.shrink();
+        : exitButton;
 
     return Container(
       decoration: BoxDecoration(
@@ -491,7 +522,10 @@ class _WizardFooter extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 10),
                       child: SizedBox(width: double.infinity, child: button),
                     ),
-                  if (step > 0 || blockedByFreightMode) leading,
+                  // Always shown now — step 0 renders a real exit button
+                  // instead of nothing, so there's no longer a case where
+                  // `leading` is an empty SizedBox worth skipping.
+                  leading,
                 ],
               )
             : Row(
