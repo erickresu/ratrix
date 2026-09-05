@@ -5,7 +5,6 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/horizontal_scroll_table.dart';
 import '../../../../core/widgets/skeleton_box.dart';
-import '../../domain/entities/rates_enums.dart';
 import '../rates_colors.dart';
 
 /// Active/Expired-style pill tab, shared by every rate list's tab row.
@@ -97,18 +96,6 @@ class RateSortByExpiryToggle extends StatelessWidget {
     );
   }
 }
-
-/// Freight-mode badge used in every rate table's MODE column.
-Widget rateModeBadge(BuildContext context, FreightMode mode) => ShadBadge(
-  backgroundColor: context.colors.successBg.withValues(alpha: 0.6),
-  hoverBackgroundColor: context.colors.successBg.withValues(alpha: 0.6),
-  foregroundColor: context.colors.primaryDeep,
-  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-  child: Text(
-    mode.label,
-    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-  ),
-);
 
 /// Active/expired status badge used in every rate table's STATUS column.
 Widget rateStatusBadge(
@@ -271,6 +258,8 @@ class ResponsiveRateTable<T> extends StatelessWidget {
     required this.deletingRateId,
     required this.onEdit,
     required this.onDelete,
+    this.chargeCodeFlex = 3,
+    this.actionsFlex,
   }) : assert(columns.length == cellBuilders.length);
 
   final List<T> rates;
@@ -281,6 +270,14 @@ class ResponsiveRateTable<T> extends StatelessWidget {
   final String? deletingRateId;
   final ValueChanged<T> onEdit;
   final ValueChanged<T> onDelete;
+
+  /// Desktop flex share of the fixed CHARGE CODE column, on the same scale
+  /// as [RateTableColumn.flex] — defaults to the original hardcoded ratio.
+  final int chargeCodeFlex;
+
+  /// Desktop flex share of the actions column — omit to keep the original
+  /// fixed 80px width instead of a proportional one.
+  final int? actionsFlex;
 
   static const _headerStyle = TextStyle(
     fontSize: 12,
@@ -346,7 +343,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                flex: 3,
+                flex: chargeCodeFlex,
                 child: Text(
                   'CHARGE CODE',
                   style: _headerStyle.copyWith(color: _headerTextColor),
@@ -360,7 +357,10 @@ class ResponsiveRateTable<T> extends StatelessWidget {
                     style: _headerStyle.copyWith(color: _headerTextColor),
                   ),
                 ),
-              const SizedBox(width: 80),
+              if (actionsFlex != null)
+                Expanded(flex: actionsFlex!, child: const SizedBox())
+              else
+                const SizedBox(width: 80),
             ],
           ),
         ),
@@ -381,7 +381,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              flex: 3,
+              flex: chargeCodeFlex,
               child: Text(
                 chargeCodeOf(rate),
                 maxLines: 1,
@@ -399,7 +399,13 @@ class ResponsiveRateTable<T> extends StatelessWidget {
                 flex: columns[i].flex,
                 child: cellBuilders[i](context, rate, compact: false),
               ),
-            _actions(context, width: 80, rate: rate, deleting: deleting),
+            if (actionsFlex != null)
+              Expanded(
+                flex: actionsFlex!,
+                child: _actions(context, width: 80, rate: rate, deleting: deleting),
+              )
+            else
+              _actions(context, width: 80, rate: rate, deleting: deleting),
           ],
         ),
       ),

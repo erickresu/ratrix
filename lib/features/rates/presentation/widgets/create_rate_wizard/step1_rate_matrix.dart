@@ -104,6 +104,8 @@ class Step1RateMatrix extends StatelessWidget {
             ),
           ],
         ),
+        // Express rate markup — disabled for now.
+        /*
         Divider(height: 25, color: context.colors.border),
         Builder(builder: (context) {
           final markupDescription = Column(
@@ -193,6 +195,7 @@ class Step1RateMatrix extends StatelessWidget {
             ],
           );
         }),
+        */
         const SizedBox(height: 16),
         RateMatrixTable(
           matrixRows: state.matrixRows,
@@ -236,6 +239,7 @@ class Step1RateMatrix extends StatelessWidget {
           onRemoveRoute: (i) => bloc.add(RouteRemoveRequested(i)),
           isExcessPricing: state.isExcessPricing,
           useExpressRates: state.serviceLevel == ServiceLevel.express,
+          leftPaneWidthFraction: 0.4,
         ),
         const SizedBox(height: 20),
         Row(

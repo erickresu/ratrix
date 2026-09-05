@@ -32,8 +32,8 @@ class RateMatrixTable extends StatelessWidget {
     this.destinationSearchResults = const [],
     this.originSearchLoading = false,
     this.destinationSearchLoading = false,
-    this.originSearchType = LocationSearchType.island,
-    this.destinationSearchType = LocationSearchType.island,
+    this.originSearchType = LocationSearchType.cityProvince,
+    this.destinationSearchType = LocationSearchType.cityProvince,
     this.onOriginQueryChanged,
     this.onDestinationQueryChanged,
     this.onOriginSelected,
@@ -1051,7 +1051,9 @@ class _BreakweightHeaderCell extends StatelessWidget {
                                 border: ShadBorder.all(color: context.colors.destructive),
                                 focusedBorder: ShadBorder.all(color: context.colors.destructive, width: 2),
                               )
-                            : null,
+                            : ShadDecoration(
+                                border: ShadBorder.all(color: context.colors.borderStrong),
+                              ),
                         onChanged: onMaxChanged,
                       ),
               ),

@@ -616,14 +616,14 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
   /// which filter was used — only the resolved address — so this is a
   /// best-effort read of which id field is actually populated:
   /// `cityId` set → City search; only `provinceId` set → Province search;
-  /// only `islandId` set → Island search. Falls back to Island (the
+  /// only `islandId` set → Island search. Falls back to City/Province (the
   /// wizard's default) when nothing is set, e.g. a brand-new route.
   static LocationSearchType _inferSearchType(RatrixAddress? address) {
-    if (address == null) return LocationSearchType.island;
+    if (address == null) return LocationSearchType.cityProvince;
     if (address.cityId != null) return LocationSearchType.cityProvince;
     if (address.provinceId != null) return LocationSearchType.province;
     if (address.islandId != null) return LocationSearchType.island;
-    return LocationSearchType.island;
+    return LocationSearchType.cityProvince;
   }
 
   /// Rebuilds the `LocationOption` a saved route's address represents, so a

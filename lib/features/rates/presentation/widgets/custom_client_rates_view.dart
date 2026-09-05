@@ -172,6 +172,9 @@ class CustomClientRatesView extends StatelessWidget {
       width: 260,
       child: ShadInput(
         placeholder: const Text('Search by charge code, mode...'),
+        decoration: ShadDecoration(
+          border: ShadBorder.all(color: context.colors.borderStrong),
+        ),
         leading: Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Icon(
@@ -236,10 +239,12 @@ class CustomClientRatesView extends StatelessWidget {
           )
         : ResponsiveRateTable<ClientRate>(
             rates: state.pagedClientRates,
+            chargeCodeFlex: 50,
+            actionsFlex: 15,
             columns: const [
-              RateTableColumn(label: 'SERVICE', flex: 2, width: 90),
-              RateTableColumn(label: 'ROUTES', flex: 2, width: 90),
-              RateTableColumn(label: 'STATUS', flex: 3, width: 130),
+              RateTableColumn(label: 'SERVICE', flex: 15, width: 90),
+              RateTableColumn(label: 'ROUTES', flex: 15, width: 90),
+              RateTableColumn(label: 'STATUS', flex: 20, width: 130),
             ],
             cellBuilders: [
               (context, rate, {required compact}) => Text(

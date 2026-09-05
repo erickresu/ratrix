@@ -295,6 +295,9 @@ class _ClientSearchFieldState extends State<_ClientSearchField> {
               child: ShadInput(
                 controller: _controller,
                 placeholder: const Text('Search clients...'),
+                decoration: ShadDecoration(
+                  border: ShadBorder.all(color: context.colors.borderStrong),
+                ),
                 leading: Padding(
                   padding: const EdgeInsets.only(left: 4),
                   child: Icon(CupertinoIcons.search, size: 16, color: context.colors.textMuted),

@@ -47,6 +47,9 @@ class CustomClientsView extends StatelessWidget {
 
     final searchField = ShadInput(
       placeholder: const Text('Search clients...'),
+      decoration: ShadDecoration(
+        border: ShadBorder.all(color: context.colors.borderStrong),
+      ),
       leading: Padding(
         padding: const EdgeInsets.only(left: 4),
         child: Icon(

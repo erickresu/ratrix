@@ -207,7 +207,6 @@ class PublishedRatesView extends StatelessWidget {
             rates: state.pagedPublishedRates,
             columns: const [
               RateTableColumn(label: 'ROUTE', flex: 3, width: 150),
-              RateTableColumn(label: 'MODE', flex: 2, width: 90),
               RateTableColumn(label: 'SERVICE', flex: 2, width: 90),
               RateTableColumn(label: 'STATUS', flex: 3, width: 130),
             ],
@@ -220,10 +219,6 @@ class PublishedRatesView extends StatelessWidget {
                   fontSize: compact ? 13 : 12,
                   color: context.colors.textMutedStrong,
                 ),
-              ),
-              (context, rate, {required compact}) => Align(
-                alignment: Alignment.centerLeft,
-                child: rateModeBadge(context, rate.freightMode),
               ),
               (context, rate, {required compact}) => Text(
                 rate.serviceMode.label,
