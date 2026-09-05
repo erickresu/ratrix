@@ -8,6 +8,7 @@ import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../domain/entities/client.dart';
 import '../../domain/entities/client_rate.dart';
+import '../../domain/entities/expiring_soon_rate.dart';
 import '../../domain/entities/published_rate.dart';
 import '../../domain/entities/rate_stat.dart';
 import '../../domain/entities/rates_enums.dart';
@@ -269,12 +270,20 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
     List<ClientRate> allClientRates = const [];
     List<PublishedRate> publishedRates = const [];
     try {
-      stats = await _repository.fetchStats();
-      recentRates = await _repository.fetchRecentRates(
+      // Independent requests — fire them all before awaiting any of them,
+      // so they run concurrently instead of one after another; total wait
+      // time becomes the slowest single call instead of their sum.
+      final overviewFuture = _repository.fetchDashboardOverview(
         clientNamesById: clientNamesById,
       );
-      allClientRates = await _repository.fetchAllClientRates();
-      publishedRates = await _repository.fetchAllPublishedRates();
+      final allClientRatesFuture = _repository.fetchAllClientRates();
+      final publishedRatesFuture = _repository.fetchAllPublishedRates();
+
+      final overview = await overviewFuture;
+      stats = overview.stats;
+      recentRates = overview.recentRates;
+      allClientRates = await allClientRatesFuture;
+      publishedRates = await publishedRatesFuture;
     } catch (e, st) {
       // Leave stats/recentRates/allClientRates/publishedRates at their empty
       // defaults — the dashboard renders an empty state rather than getting
@@ -290,11 +299,50 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
     for (final rate in allClientRates) {
       counts[rate.clientId] = (counts[rate.clientId] ?? 0) + 1;
     }
+
+    final activeCustomRates = allClientRates.where((r) => r.status == RateStatus.active);
+    final activePublishedRates = publishedRates.where((r) => r.status == RateStatus.active);
+    final freightModeCounts = <FreightMode, int>{};
+    for (final r in activeCustomRates) {
+      freightModeCounts[r.freightMode] = (freightModeCounts[r.freightMode] ?? 0) + 1;
+    }
+    for (final r in activePublishedRates) {
+      freightModeCounts[r.freightMode] = (freightModeCounts[r.freightMode] ?? 0) + 1;
+    }
+
+    // "Soon" = expires within 30 days from now — mirrors fetchStats'
+    // 7-day "nearly expired" stat but wider, since this card lists actual
+    // rates rather than just a count.
+    final now = DateTime.now();
+    final cutoff = now.add(const Duration(days: 30));
+    bool expiresSoon(DateTime? expiry) =>
+        expiry != null && expiry.isAfter(now) && expiry.isBefore(cutoff);
+    final expiringSoon = <ExpiringSoonRate>[
+      for (final r in activeCustomRates)
+        if (expiresSoon(r.expiryDate))
+          ExpiringSoonRate(
+            client: clientNamesById[r.clientId] ?? r.clientId,
+            chargeCode: r.chargeCode,
+            daysLeft: r.expiryDate!.difference(now).inDays,
+          ),
+      for (final r in activePublishedRates)
+        if (expiresSoon(r.expiryDate))
+          ExpiringSoonRate(
+            client: 'All clients',
+            chargeCode: r.chargeCode,
+            daysLeft: r.expiryDate!.difference(now).inDays,
+          ),
+    ]..sort((a, b) => a.daysLeft.compareTo(b.daysLeft));
+
     emit(
       state.copyWith(
         isLoading: false,
         stats: stats,
         recentRates: recentRates,
+        freightModeCounts: freightModeCounts,
+        activePublishedCount: activePublishedRates.length,
+        activeCustomCount: activeCustomRates.length,
+        expiringSoonRates: expiringSoon,
         clients: clients,
         clientRateCounts: counts,
         publishedRates: publishedRates,

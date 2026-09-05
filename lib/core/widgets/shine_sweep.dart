@@ -11,8 +11,8 @@ class ShineSweep extends StatefulWidget {
   const ShineSweep({
     super.key,
     required this.child,
-    this.period = const Duration(seconds: 2, milliseconds: 600),
-    this.pause = const Duration(milliseconds: 900),
+    this.period = const Duration(milliseconds: 3500),
+    this.pause = const Duration(milliseconds: 1500),
     this.color = Colors.white,
     this.opacity = 0.85,
     this.bandWidth = 0.28,

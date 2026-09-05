@@ -14,8 +14,6 @@ import '../../rates_colors.dart';
 import '../client_picker_page.dart';
 
 const _clientGridRows = 2;
-const _clientGridPadding = EdgeInsets.fromLTRB(125, 0, 125, 28);
-const _clientGridPaddingMobile = EdgeInsets.fromLTRB(24, 0, 24, 28);
 
 SliverGridDelegateWithFixedCrossAxisCount _clientGridDelegate(int crossAxisCount) {
   return SliverGridDelegateWithFixedCrossAxisCount(
@@ -42,7 +40,6 @@ class ShippingCalculatorClientsView extends StatelessWidget {
     final isMobile = Breakpoints.isMobile(context);
     final columns = _clientGridColumnCount(context);
     final gridDelegate = _clientGridDelegate(columns);
-    final gridPadding = isMobile ? _clientGridPaddingMobile : _clientGridPadding;
 
     final searchField = _ClientSearchField(
       initialValue: state.calcClientSearch,
@@ -73,30 +70,36 @@ class ShippingCalculatorClientsView extends StatelessWidget {
         : const NeverScrollableScrollPhysics();
 
     final body = Expanded(
-      child: state.isLoading
-          ? SkeletonShimmer(
-              child: GridView.builder(
-                padding: gridPadding,
-                physics: physics,
-                itemCount: columns * _clientGridRows,
-                gridDelegate: gridDelegate,
-                itemBuilder: (context, index) => const GridCardSkeleton(),
-              ),
-            )
-          : GridView.builder(
-              padding: gridPadding,
-              physics: physics,
-              itemCount: state.pagedCalcClients.length,
-              gridDelegate: gridDelegate,
-              itemBuilder: (context, index) {
-                final client = state.pagedCalcClients[index];
-                return _CalcClientCard(
-                  client: client,
-                  rateCount: state.clientRateCounts[client.id] ?? 0,
-                  onTap: () => bloc.add(ShippingCalculatorClientChosen(client.id)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final side = isMobile ? 24.0 : constraints.maxWidth * 0.15;
+          final gridPadding = EdgeInsets.fromLTRB(side, 0, side, 28);
+          return state.isLoading
+              ? SkeletonShimmer(
+                  child: GridView.builder(
+                    padding: gridPadding,
+                    physics: physics,
+                    itemCount: columns * _clientGridRows,
+                    gridDelegate: gridDelegate,
+                    itemBuilder: (context, index) => const GridCardSkeleton(),
+                  ),
+                )
+              : GridView.builder(
+                  padding: gridPadding,
+                  physics: physics,
+                  itemCount: state.pagedCalcClients.length,
+                  gridDelegate: gridDelegate,
+                  itemBuilder: (context, index) {
+                    final client = state.pagedCalcClients[index];
+                    return _CalcClientCard(
+                      client: client,
+                      rateCount: state.clientRateCounts[client.id] ?? 0,
+                      onTap: () => bloc.add(ShippingCalculatorClientChosen(client.id)),
+                    );
+                  },
                 );
-              },
-            ),
+        },
+      ),
     );
 
     final paginationBar = state.filteredCalcClients.isNotEmpty
@@ -203,7 +206,6 @@ class _CalcClientCard extends StatelessWidget {
                       InfoPill(
                         icon: CupertinoIcons.doc_text_fill,
                         label: 'VAT ${client.vatStatus.label}',
-                        bordered: true,
                       ),
                     ],
                   ),
@@ -216,7 +218,6 @@ class _CalcClientCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                     decoration: BoxDecoration(
-                      color: context.colors.surfaceSubtle,
                       border: Border(top: BorderSide(color: context.colors.border)),
                     ),
                     child: Row(

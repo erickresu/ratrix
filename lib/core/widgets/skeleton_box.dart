@@ -164,7 +164,7 @@ class GridCardSkeleton extends StatelessWidget {
                     children: [
                       const SkeletonBox(width: 120, height: 14),
                       const SizedBox(height: 6),
-                      const SkeletonBox(width: 80, height: 12),
+                      const SkeletonBox(width: 150, height: 12),
                     ],
                   ),
                 ),
@@ -192,7 +192,9 @@ class GridCardSkeleton extends StatelessWidget {
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            color: context.colors.surfaceSubtle,
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: context.colors.border)),
+            ),
             child: const SkeletonBox(width: 100, height: 13),
           ),
         ],

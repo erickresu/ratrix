@@ -5,6 +5,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../../core/di/injection_container.dart';
 import '../../../../../core/utils/breakpoints.dart';
+import '../../../../../core/widgets/page_padding.dart';
 import '../../../data/repositories/rates_repository.dart';
 import '../../../domain/entities/rates_enums.dart';
 import '../../bloc/rate_wizard_bloc.dart';
@@ -91,7 +92,9 @@ class _WizardView extends StatelessWidget {
               if (state.lastSubmitStayedOnPage) {
                 showStatusToast(
                   context,
-                  title: chargeCode != null ? 'Saved $chargeCode' : 'Changes saved',
+                  title: chargeCode != null
+                      ? 'Saved $chargeCode'
+                      : 'Changes saved',
                 );
                 // The rate list screens don't live-update — without this,
                 // the just-saved changes stay invisible there until some
@@ -105,7 +108,9 @@ class _WizardView extends StatelessWidget {
                   context,
                   title: chargeCode == null
                       ? (isEditing ? 'Rate updated' : 'Rate created')
-                      : (isEditing ? 'Updated $chargeCode' : 'Created $chargeCode'),
+                      : (isEditing
+                            ? 'Updated $chargeCode'
+                            : 'Created $chargeCode'),
                 );
                 shellBloc.add(
                   WizardExitRequested(
@@ -134,41 +139,39 @@ class _WizardView extends StatelessWidget {
                 builder: (context) {
                   final isMobile = Breakpoints.isMobile(context);
                   return SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      isMobile ? 24 : 125,
-                      48,
-                      isMobile ? 24 : 125,
-                      40,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _WizardHeader(),
-                        const SizedBox(height: 32),
-                        isMobile
-                            ? const _StepContent()
-                            : Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Builder(
-                                    builder: (context) {
-                                      final step = context.select(
-                                        (RateWizardBloc b) => b.state.step,
-                                      );
-                                      final bloc = context
-                                          .read<RateWizardBloc>();
-                                      return StepRail(
-                                        currentStep: step,
-                                        onStepTap: (s) =>
-                                            bloc.add(WizardStepChanged(s)),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(width: 48),
-                                  const Expanded(child: _StepContent()),
-                                ],
-                              ),
-                      ],
+                    child: PagePadding(
+                      top: 48,
+                      bottom: 40,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _WizardHeader(),
+                          const SizedBox(height: 32),
+                          isMobile
+                              ? const _StepContent()
+                              : Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Builder(
+                                      builder: (context) {
+                                        final step = context.select(
+                                          (RateWizardBloc b) => b.state.step,
+                                        );
+                                        final bloc = context
+                                            .read<RateWizardBloc>();
+                                        return StepRail(
+                                          currentStep: step,
+                                          onStepTap: (s) =>
+                                              bloc.add(WizardStepChanged(s)),
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(width: 48),
+                                    const Expanded(child: _StepContent()),
+                                  ],
+                                ),
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -209,7 +212,9 @@ class _WizardHeader extends StatelessWidget {
             Text(
               isEditing
                   ? (wizardState.isCustom ? 'Edit Custom Rate' : 'Edit Rate')
-                  : (wizardState.isCustom ? 'Create New Custom Rate' : 'New rate'),
+                  : (wizardState.isCustom
+                        ? 'Create New Custom Rate'
+                        : 'New rate'),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -380,8 +385,12 @@ class _WizardFooter extends StatelessWidget {
     final blockedByBreakweights = step == 1 && !canLeaveStep1;
 
     final nextButton = ShadButton(
-      backgroundColor: step == 3 ? context.colors.accent : context.colors.primary,
-      hoverBackgroundColor: step == 3 ? context.colors.accentHover : context.colors.primaryHover,
+      backgroundColor: step == 3
+          ? context.colors.accent
+          : context.colors.primary,
+      hoverBackgroundColor: step == 3
+          ? context.colors.accentHover
+          : context.colors.primaryHover,
       leading: step == 3
           ? (isSubmitting
                 ? const SizedBox(
@@ -397,7 +406,10 @@ class _WizardFooter extends StatelessWidget {
       trailing: step == 3
           ? null
           : const Icon(CupertinoIcons.arrow_right, size: 16),
-      onPressed: (step == 3 && isSubmitting) || blockedByFreightMode || blockedByBreakweights
+      onPressed:
+          (step == 3 && isSubmitting) ||
+              blockedByFreightMode ||
+              blockedByBreakweights
           ? null
           : () {
               if (step < 3) {
@@ -459,47 +471,45 @@ class _WizardFooter extends StatelessWidget {
         : const SizedBox.shrink();
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        isMobile ? 24 : 125,
-        24,
-        isMobile ? 24 : 125,
-        24,
-      ),
       decoration: BoxDecoration(
         color: context.colors.surface,
         border: Border(top: BorderSide(color: context.colors.border)),
       ),
-      child: isMobile
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Primary action (Next/Publish) on top, Save changes below
-                // it — reverse of trailingButtons' desktop left-to-right
-                // order, since the most important action reads first when
-                // stacked.
-                for (final button in trailingButtons.reversed)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: SizedBox(width: double.infinity, child: button),
-                  ),
-                if (step > 0 || blockedByFreightMode) leading,
-              ],
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                leading,
-                Row(
-                  children: [
-                    for (final button in trailingButtons) ...[
-                      button,
-                      if (button != trailingButtons.last)
-                        const SizedBox(width: 12),
+      child: PagePadding(
+        top: 24,
+        bottom: 24,
+        child: isMobile
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Primary action (Next/Publish) on top, Save changes below
+                  // it — reverse of trailingButtons' desktop left-to-right
+                  // order, since the most important action reads first when
+                  // stacked.
+                  for (final button in trailingButtons.reversed)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: SizedBox(width: double.infinity, child: button),
+                    ),
+                  if (step > 0 || blockedByFreightMode) leading,
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  leading,
+                  Row(
+                    children: [
+                      for (final button in trailingButtons) ...[
+                        button,
+                        if (button != trailingButtons.last)
+                          const SizedBox(width: 12),
+                      ],
                     ],
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

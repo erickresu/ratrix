@@ -14,8 +14,6 @@ import '../rates_colors.dart';
 import 'client_picker_page.dart';
 
 const _clientGridRows = 3;
-const _clientGridPadding = EdgeInsets.fromLTRB(125, 0, 125, 28);
-const _clientGridPaddingMobile = EdgeInsets.fromLTRB(24, 0, 24, 28);
 
 // Matches `ShippingCalculatorClientsView`'s card sizing — its 3-row grid
 // fits within the Expanded region above the pagination bar; this one's
@@ -46,7 +44,6 @@ class CustomClientsView extends StatelessWidget {
     final isMobile = Breakpoints.isMobile(context);
     final columns = _clientGridColumnCount(context);
     final gridDelegate = _clientGridDelegate(columns);
-    final gridPadding = isMobile ? _clientGridPaddingMobile : _clientGridPadding;
 
     final searchField = ShadInput(
       placeholder: const Text('Search clients...'),
@@ -93,30 +90,36 @@ class CustomClientsView extends StatelessWidget {
     const physics = AlwaysScrollableScrollPhysics();
 
     final body = Expanded(
-      child: state.isLoading
-          ? SkeletonShimmer(
-              child: GridView.builder(
-                padding: gridPadding,
-                physics: physics,
-                itemCount: columns * _clientGridRows,
-                gridDelegate: gridDelegate,
-                itemBuilder: (context, index) => const GridCardSkeleton(),
-              ),
-            )
-          : GridView.builder(
-              padding: gridPadding,
-              physics: physics,
-              itemCount: state.pagedClients.length,
-              gridDelegate: gridDelegate,
-              itemBuilder: (context, index) {
-                final client = state.pagedClients[index];
-                return _ClientCard(
-                  client: client,
-                  rateCount: state.clientRateCounts[client.id] ?? 0,
-                  onTap: () => bloc.add(ClientRatesRequested(client.id)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final side = isMobile ? 24.0 : constraints.maxWidth * 0.15;
+          final gridPadding = EdgeInsets.fromLTRB(side, 0, side, 28);
+          return state.isLoading
+              ? SkeletonShimmer(
+                  child: GridView.builder(
+                    padding: gridPadding,
+                    physics: physics,
+                    itemCount: columns * _clientGridRows,
+                    gridDelegate: gridDelegate,
+                    itemBuilder: (context, index) => const GridCardSkeleton(),
+                  ),
+                )
+              : GridView.builder(
+                  padding: gridPadding,
+                  physics: physics,
+                  itemCount: state.pagedClients.length,
+                  gridDelegate: gridDelegate,
+                  itemBuilder: (context, index) {
+                    final client = state.pagedClients[index];
+                    return _ClientCard(
+                      client: client,
+                      rateCount: state.clientRateCounts[client.id] ?? 0,
+                      onTap: () => bloc.add(ClientRatesRequested(client.id)),
+                    );
+                  },
                 );
-              },
-            ),
+        },
+      ),
     );
 
     final paginationBar = state.filteredClients.isNotEmpty
@@ -174,21 +177,8 @@ class _ClientCard extends StatelessWidget {
         child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: 4,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      context.colors.primary,
-                      context.colors.primaryDeep,
-                    ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                ),
-              ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -238,64 +228,32 @@ class _ClientCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: context.colors.surfaceSubtle,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  client.accountNumber,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: context.colors.textMutedStrong,
-                                    fontFamily: 'monospace',
-                                  ),
+                              Text(
+                                client.accountNumber,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.colors.textMuted,
+                                  fontFamily: 'monospace',
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 1,
-                                height: 11,
-                                color: context.colors.border,
+                              const SizedBox(width: 6),
+                              Text(
+                                '·',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: context.colors.textFaint,
+                                ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Flexible(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: context.colors.surfaceSubtle,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        CupertinoIcons.mail_solid,
-                                        size: 11,
-                                        color: context.colors.textFaint,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          client.email,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
-                                            color: context.colors.textMutedStrong,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                child: Text(
+                                  client.email,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: context.colors.textMuted,
                                   ),
                                 ),
                               ),
@@ -341,7 +299,6 @@ class _ClientCard extends StatelessWidget {
                       vertical: 11,
                     ),
                     decoration: BoxDecoration(
-                      color: context.colors.surfaceSubtle,
                       border: Border(
                         top: BorderSide(color: context.colors.border),
                       ),
@@ -354,7 +311,7 @@ class _ClientCard extends StatelessWidget {
                             Icon(
                               CupertinoIcons.tag_fill,
                               size: 12,
-                              color: context.colors.textMuted,
+                              color: context.colors.textFaint,
                             ),
                             const SizedBox(width: 6),
                             Text(

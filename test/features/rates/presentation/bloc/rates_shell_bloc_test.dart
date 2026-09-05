@@ -197,9 +197,13 @@ void main() {
 
   group('RatesDataRequested', () {
     test('tallies clientRateCounts per client from the fetched custom rates', () async {
-      when(() => repository.fetchStats()).thenAnswer((_) async => const <RateStat>[]);
-      when(() => repository.fetchRecentRates(clientNamesById: any(named: 'clientNamesById')))
-          .thenAnswer((_) async => const <RecentRate>[]);
+      when(
+        () => repository.fetchDashboardOverview(
+          clientNamesById: any(named: 'clientNamesById'),
+        ),
+      ).thenAnswer(
+        (_) async => (stats: const <RateStat>[], recentRates: const <RecentRate>[]),
+      );
       when(() => repository.fetchAllClientRates()).thenAnswer(
         (_) async => [
           _clientRate('1', clientId: 'c1'),

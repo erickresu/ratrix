@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/page_padding.dart';
 import 'audit_trail_view.dart';
 
 /// Wide-viewport Audit Trail layout: action filter and search field share
@@ -20,8 +21,9 @@ class AuditTrailPageWeb extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(125, 48, 125, 40),
+        PagePadding(
+          top: 48,
+          bottom: 40,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -38,10 +40,7 @@ class AuditTrailPageWeb extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(125, 0, 125, 24),
-            child: body,
-          ),
+          child: PagePadding(bottom: 24, child: body),
         ),
         ?paginationBar,
       ],

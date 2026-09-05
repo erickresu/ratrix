@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/page_padding.dart';
 import 'published_rates_view.dart';
 
 /// Wide-viewport Published Rates layout: title + button share one row,
@@ -20,8 +21,9 @@ class PublishedRatesPageWeb extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(125, 48, 125, 40),
+        PagePadding(
+          top: 48,
+          bottom: 40,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -49,10 +51,7 @@ class PublishedRatesPageWeb extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(125, 0, 125, 24),
-            child: body,
-          ),
+          child: PagePadding(bottom: 24, child: body),
         ),
         ?paginationBar,
       ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/page_padding.dart';
 import '../rates_colors.dart';
 import 'custom_client_rates_view.dart';
 
@@ -22,8 +23,9 @@ class CustomClientRatesPageWeb extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(125, 48, 125, 40),
+        PagePadding(
+          top: 48,
+          bottom: 40,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -62,10 +64,7 @@ class CustomClientRatesPageWeb extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(125, 0, 125, 24),
-            child: body,
-          ),
+          child: PagePadding(bottom: 24, child: body),
         ),
         ?paginationBar,
       ],

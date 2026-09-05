@@ -3,9 +3,17 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../rates_colors.dart';
 
+/// True while a tour line is actually being read aloud — drives the
+/// speaker icon's talking animation.
+final ValueNotifier<bool> isTourSpeaking = ValueNotifier(false);
+
 final _tts = FlutterTts()
   ..setPitch(0.8)
   ..setSpeechRate(0.72)
+  ..setStartHandler(() => isTourSpeaking.value = true)
+  ..setCompletionHandler(() => isTourSpeaking.value = false)
+  ..setCancelHandler(() => isTourSpeaking.value = false)
+  ..setErrorHandler((msg) => isTourSpeaking.value = false)
   // The very first utterance in a browser session gets its opening word(s)
   // eaten while the engine cold-starts — no amount of delay before the
   // real line helps, since there's nothing prior to warm it up. Fire a
@@ -44,7 +52,10 @@ Future<void> speakTourLine(String text) async {
   await _tts.speak(spoken);
 }
 
-void stopTourSpeech() => _tts.stop();
+void stopTourSpeech() {
+  _tts.stop();
+  isTourSpeaking.value = false;
+}
 
 /// White speech-bubble card: an optional [mascot] beside the title + tap-
 /// to-replay speaker icon, "Cerro: " narration body, and a Skip/primary
@@ -112,8 +123,7 @@ class TourSpeechBubble extends StatelessWidget {
                 onTap: onSpeak,
                 child: Padding(
                   padding: EdgeInsets.all(7 * scale),
-                  child: Icon(
-                    Icons.volume_up_rounded,
+                  child: _SpeakerIcon(
                     size: 17 * scale,
                     color: RatesColors.dark.primaryDeep,
                   ),
@@ -204,6 +214,61 @@ class TourSpeechBubble extends StatelessWidget {
                 ],
               ),
             ),
+    );
+  }
+}
+
+/// Static speaker icon that cycles through volume levels like a talking
+/// meter while [isTourSpeaking] is true, idle otherwise.
+class _SpeakerIcon extends StatefulWidget {
+  const _SpeakerIcon({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  State<_SpeakerIcon> createState() => _SpeakerIconState();
+}
+
+class _SpeakerIconState extends State<_SpeakerIcon>
+    with SingleTickerProviderStateMixin {
+  late final _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 600),
+  );
+
+  static const _frames = [
+    Icons.volume_mute_rounded,
+    Icons.volume_down_rounded,
+    Icons.volume_up_rounded,
+  ];
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: isTourSpeaking,
+      builder: (context, speaking, _) {
+        if (speaking) {
+          _controller.repeat();
+        } else {
+          _controller.stop();
+        }
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            final icon = speaking
+                ? _frames[(_controller.value * _frames.length).floor() % _frames.length]
+                : Icons.volume_up_rounded;
+            return Icon(icon, size: widget.size, color: widget.color);
+          },
+        );
+      },
     );
   }
 }

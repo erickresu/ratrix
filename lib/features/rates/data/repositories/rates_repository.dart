@@ -74,32 +74,28 @@ class RatesRepository {
     return const [];
   }
 
-  /// Dashboard stat cards, derived from `GET api/rates` — there's no
-  /// dedicated stats endpoint. "This week" deltas aren't derivable without
+  /// Dashboard stat cards + "recent rates" list, computed from a single
+  /// `GET api/rates` fetch — these used to be two separate methods that
+  /// each fetched the full rates list independently, doubling that request
+  /// on every dashboard load. "This week" deltas aren't derivable without
   /// inventing numbers, so the delta string is left blank when unknown.
-  Future<List<RateStat>> fetchStats() async {
+  /// `clientNamesById` (keyed by the same string ids
+  /// `ClientsRepository`/`RatesShellBloc` use) resolves the recent-rates
+  /// client column for custom rates — pass the shell's already-fetched
+  /// client list; falls back to the raw id, then '—', when unavailable.
+  Future<({List<RateStat> stats, List<RecentRate> recentRates})> fetchDashboardOverview({
+    int recentRatesLimit = 5,
+    Map<String, String>? clientNamesById,
+  }) async {
     final rates = await _fetchAllRates();
 
     final activeRates = rates.where((r) => !r.isExpired).toList();
     final activeCount = activeRates.length;
-    final publishedActiveCount = activeRates.where((r) => !r.isCustom).length;
-    final customActiveCount = activeRates.where((r) => r.isCustom).length;
     final clientIds = rates
         .where((r) => r.isCustom && r.clientId != null)
         .map((r) => r.clientId)
         .toSet();
     final now = DateTime.now();
-    final alreadyExpiredCount = rates.where((r) => r.isExpired).length;
-    // Expires within the next 7 days, not already expired.
-    final nearlyExpiredCutoff = now.add(const Duration(days: 7));
-    final nearlyExpiredCount = rates
-        .where(
-          (r) =>
-              r.rateExpiry != null &&
-              r.rateExpiry!.isAfter(now) &&
-              r.rateExpiry!.isBefore(nearlyExpiredCutoff),
-        )
-        .length;
     final weekAgo = now.subtract(const Duration(days: 7));
     String deltaFor(bool Function(RatrixRate) matches) {
       final createdThisWeek = rates
@@ -113,44 +109,27 @@ class RatesRepository {
       return createdThisWeek > 0 ? '+$createdThisWeek this week' : '';
     }
 
-    return [
+    final stats = [
       RateStat(
         label: 'Active rates',
         value: '$activeCount',
         delta: deltaFor((r) => !r.isExpired),
-        breakdown: 'Published $publishedActiveCount · Custom $customActiveCount · Total $activeCount',
       ),
       RateStat(label: 'Clients', value: '${clientIds.length}', delta: ''),
-      RateStat(
-        label: 'Nearly expired',
-        value: '$nearlyExpiredCount',
-        delta: '',
-        breakdown: 'Already expired $alreadyExpiredCount',
-      ),
     ];
-  }
 
-  /// Most-recently-created rates from `GET api/rates`, mapped into the
-  /// dashboard's `RecentRate` shape. `clientNamesById` (keyed by the same
-  /// string ids `ClientsRepository`/`RatesShellBloc` use) resolves the
-  /// client column for custom rates — pass the shell's already-fetched
-  /// client list; falls back to the raw id, then '—', when unavailable.
-  Future<List<RecentRate>> fetchRecentRates({
-    int limit = 5,
-    Map<String, String>? clientNamesById,
-  }) async {
-    final rates = await _fetchAllRates();
     final sorted = [...rates]
       ..sort((a, b) {
         if (a.createdAt != null && b.createdAt != null)
           return b.createdAt!.compareTo(a.createdAt!);
         return b.id.compareTo(a.id);
       });
-
-    return sorted
-        .take(limit)
+    final recentRates = sorted
+        .take(recentRatesLimit)
         .map((r) => _mapRecentRate(r, clientNamesById))
         .toList();
+
+    return (stats: stats, recentRates: recentRates);
   }
 
   RecentRate _mapRecentRate(

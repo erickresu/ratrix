@@ -67,8 +67,7 @@ class RatesSidebar extends StatelessWidget {
               icon: CupertinoIcons.house,
               label: 'Home',
               active: isDashboard,
-              onTap: () =>
-                  navigate(() => bloc.add(const RatesHomeRequested())),
+              onTap: () => navigate(() => bloc.add(const RatesHomeRequested())),
             ),
           ),
           const SizedBox(height: 4),
@@ -79,50 +78,44 @@ class RatesSidebar extends StatelessWidget {
           if (state.ratesMenuOpen) ...[
             const SizedBox(height: 2),
             Padding(
-              padding: const EdgeInsets.only(left: 22),
-              child: Container(
-                padding: const EdgeInsets.only(left: 14),
-                decoration: const BoxDecoration(
-                  border: Border(left: BorderSide(color: Color(0x1AFFFFFF))),
-                ),
-                child: Column(
-                  children: [
-                    tourShowcase(
-                      context: context,
-                      key: TourKeys.publishedRatesNav,
-                      title: 'Publish Rates',
-                      body:
-                          'Standard rates visible to every client on their '
-                          'route.',
-                      isLast: false,
-                      child: _SubNavItem(
-                        icon: CupertinoIcons.arrow_up,
-                        label: 'Publish Rates',
-                        active: isPublishActive,
-                        onTap: () => navigate(
-                          () => bloc.add(const PublishedRatesRequested()),
-                        ),
+              padding: const EdgeInsets.only(left: 27),
+              child: Column(
+                children: [
+                  tourShowcase(
+                    context: context,
+                    key: TourKeys.publishedRatesNav,
+                    title: 'Publish Rates',
+                    body:
+                        'Standard rates visible to every client on their '
+                        'route.',
+                    isLast: false,
+                    child: _SubNavItem(
+                      icon: CupertinoIcons.arrow_up,
+                      label: 'Publish Rates',
+                      active: isPublishActive,
+                      onTap: () => navigate(
+                        () => bloc.add(const PublishedRatesRequested()),
                       ),
                     ),
-                    tourShowcase(
-                      context: context,
-                      key: TourKeys.customRatesNav,
-                      title: 'Custom Rates',
-                      body:
-                          'Rates negotiated for one specific client instead '
-                          'of everyone.',
-                      isLast: false,
-                      child: _SubNavItem(
-                        icon: CupertinoIcons.list_bullet,
-                        label: 'Custom Rates',
-                        active: isCustomActive,
-                        onTap: () => navigate(
-                          () => bloc.add(const CustomClientsRequested()),
-                        ),
+                  ),
+                  tourShowcase(
+                    context: context,
+                    key: TourKeys.customRatesNav,
+                    title: 'Custom Rates',
+                    body:
+                        'Rates negotiated for one specific client instead '
+                        'of everyone.',
+                    isLast: false,
+                    child: _SubNavItem(
+                      icon: CupertinoIcons.list_bullet,
+                      label: 'Custom Rates',
+                      active: isCustomActive,
+                      onTap: () => navigate(
+                        () => bloc.add(const CustomClientsRequested()),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -136,12 +129,11 @@ class RatesSidebar extends StatelessWidget {
                 'already on file — no manual math.',
             isLast: false,
             child: _NavItem(
-              icon: Icons.local_shipping_rounded,
+              icon: Icons.calculate_rounded,
               label: 'Shipping Calculator',
               active: isCalculatorActive,
-              onTap: () => navigate(
-                () => bloc.add(const ShippingCalculatorRequested()),
-              ),
+              onTap: () =>
+                  navigate(() => bloc.add(const ShippingCalculatorRequested())),
             ),
           ),
           const SizedBox(height: 4),
@@ -182,9 +174,7 @@ class RatesSidebar extends StatelessWidget {
               border: Border(top: BorderSide(color: Color(0x1AFFFFFF))),
             ),
             child: Column(
-              children: [
-                _ProfileBlock(state: state, bloc: bloc),
-              ],
+              children: [_ProfileBlock(state: state, bloc: bloc)],
             ),
           ),
         ],
@@ -198,10 +188,18 @@ class _Logo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Logo asset canvas was regenerated navy (no alpha) to match
-    // `RatesColors.dark.sidebarBg` — see invoice_pdf.dart's `_brandNavy` —
-    // so it blends seamlessly against the sidebar regardless of theme.
-    return Image.asset('assets/images/ratrix_logo.png', height: 72);
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        'CERRO RATRIX',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
   }
 }
 
@@ -294,7 +292,7 @@ class _NavItem extends StatelessWidget {
               icon,
               size: 15,
               color: active
-                  ? Colors.white
+                  ? RatesColors.dark.sidebarBg
                   : Colors.white.withValues(alpha: 0.75),
             ),
             const SizedBox(width: 12),
@@ -302,7 +300,7 @@ class _NavItem extends StatelessWidget {
               label,
               style: TextStyle(
                 color: active
-                    ? Colors.white
+                    ? RatesColors.dark.sidebarBg
                     : Colors.white.withValues(alpha: 0.75),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

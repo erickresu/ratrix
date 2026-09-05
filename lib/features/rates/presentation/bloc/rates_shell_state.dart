@@ -39,6 +39,16 @@ class RatesShellState extends Equatable {
   final List<RateStat> stats;
   final List<RecentRate> recentRates;
 
+  /// Active rates (published + custom) grouped by freight mode, for the
+  /// dashboard's donut chart.
+  final Map<FreightMode, int> freightModeCounts;
+  final int activePublishedCount;
+  final int activeCustomCount;
+
+  /// Soonest-to-expire active rates (published + custom), soonest first —
+  /// the dashboard's "Expiring soon" card shows the first few.
+  final List<ExpiringSoonRate> expiringSoonRates;
+
   final List<Client> clients;
   final Map<String, int> clientRateCounts;
   final String clientSearch;
@@ -119,6 +129,10 @@ class RatesShellState extends Equatable {
     this.rateChoice,
     this.stats = const [],
     this.recentRates = const [],
+    this.freightModeCounts = const {},
+    this.activePublishedCount = 0,
+    this.activeCustomCount = 0,
+    this.expiringSoonRates = const [],
     this.clients = const [],
     this.clientRateCounts = const {},
     this.clientSearch = '',
@@ -283,6 +297,10 @@ class RatesShellState extends Equatable {
     bool clearRateChoice = false,
     List<RateStat>? stats,
     List<RecentRate>? recentRates,
+    Map<FreightMode, int>? freightModeCounts,
+    int? activePublishedCount,
+    int? activeCustomCount,
+    List<ExpiringSoonRate>? expiringSoonRates,
     List<Client>? clients,
     Map<String, int>? clientRateCounts,
     String? clientSearch,
@@ -340,6 +358,10 @@ class RatesShellState extends Equatable {
       rateChoice: clearRateChoice ? null : (rateChoice ?? this.rateChoice),
       stats: stats ?? this.stats,
       recentRates: recentRates ?? this.recentRates,
+      freightModeCounts: freightModeCounts ?? this.freightModeCounts,
+      activePublishedCount: activePublishedCount ?? this.activePublishedCount,
+      activeCustomCount: activeCustomCount ?? this.activeCustomCount,
+      expiringSoonRates: expiringSoonRates ?? this.expiringSoonRates,
       clients: clients ?? this.clients,
       clientRateCounts: clientRateCounts ?? this.clientRateCounts,
       clientSearch: clientSearch ?? this.clientSearch,
@@ -411,6 +433,10 @@ class RatesShellState extends Equatable {
     rateChoice,
     stats,
     recentRates,
+    freightModeCounts,
+    activePublishedCount,
+    activeCustomCount,
+    expiringSoonRates,
     clients,
     clientRateCounts,
     clientSearch,
