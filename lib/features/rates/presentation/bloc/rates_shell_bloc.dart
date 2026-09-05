@@ -206,13 +206,29 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
       ),
     );
     on<ShippingCalculatorRequested>(
-      (event, emit) =>
-          emit(state.copyWith(view: RatesView.shippingCalculatorClients)),
+      (event, emit) => emit(
+        state.copyWith(
+          view: RatesView.shippingCalculatorClients,
+          clearCalculatorReturnView: true,
+        ),
+      ),
     );
     on<ShippingCalculatorClientChosen>(
       (event, emit) => emit(
         state.copyWith(
           selectedCalcClientId: event.clientId,
+          clearSelectedCalcTargetChargeCode: true,
+          clearCalculatorReturnView: true,
+          view: RatesView.shippingCalculatorForm,
+        ),
+      ),
+    );
+    on<TryRateInCalculatorRequested>(
+      (event, emit) => emit(
+        state.copyWith(
+          selectedCalcClientId: event.clientId,
+          selectedCalcTargetChargeCode: event.chargeCode,
+          calculatorReturnView: state.view,
           view: RatesView.shippingCalculatorForm,
         ),
       ),
@@ -226,8 +242,12 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
       (event, emit) => emit(state.copyWith(calcClientPage: event.page)),
     );
     on<ShippingCalculatorBackRequested>(
-      (event, emit) =>
-          emit(state.copyWith(view: RatesView.shippingCalculatorClients)),
+      (event, emit) => emit(
+        state.copyWith(
+          view: state.calculatorReturnView ?? RatesView.shippingCalculatorClients,
+          clearCalculatorReturnView: true,
+        ),
+      ),
     );
     on<DeleteRateRequested>(_onDeleteRateRequested);
     on<DeleteRateErrorDismissed>(

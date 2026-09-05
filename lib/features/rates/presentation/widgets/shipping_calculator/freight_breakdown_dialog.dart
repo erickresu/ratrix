@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -673,24 +674,39 @@ class FreightBreakdownPanel extends StatelessWidget {
                     children: [
                       _DialogHeader(state: state, client: client),
                       Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                          child: result.error != null
-                              ? _ErrorBody(
-                                  message: result.error!,
-                                  origin: state.origin,
-                                  destination: state.destination,
-                                  tiers: result.routeTiers,
-                                  onEditRate: state.selectedRate == null
-                                      ? null
-                                      : () {
-                                          final rateId = state.selectedRate!.id;
-                                          context.read<RatesShellBloc>().add(
-                                            EditRateRequested(rateId),
-                                          );
-                                        },
-                                )
-                              : const _ResultBody(),
+                        // `IntrinsicHeight` (used by the outer Row to make
+                        // this panel match the left column's height) throws
+                        // if it recurses into a SingleChildScrollView's
+                        // viewport, which doesn't support intrinsic-height
+                        // queries — bypass wrapper makes it see zero height
+                        // here instead, leaving real (bounded) layout, and
+                        // therefore actual scrolling, untouched.
+                        child: _IntrinsicHeightBypass(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(
+                              24,
+                              20,
+                              24,
+                              24,
+                            ),
+                            child: result.error != null
+                                ? _ErrorBody(
+                                    message: result.error!,
+                                    origin: state.origin,
+                                    destination: state.destination,
+                                    tiers: result.routeTiers,
+                                    onEditRate: state.selectedRate == null
+                                        ? null
+                                        : () {
+                                            final rateId =
+                                                state.selectedRate!.id;
+                                            context.read<RatesShellBloc>().add(
+                                              EditRateRequested(rateId),
+                                            );
+                                          },
+                                  )
+                                : const _ResultBody(),
+                          ),
                         ),
                       ),
                     ],
@@ -700,6 +716,29 @@ class FreightBreakdownPanel extends StatelessWidget {
             ],
           );
   }
+}
+
+/// Makes an ancestor `IntrinsicHeight` treat [child] as zero-height instead
+/// of recursing into it — `SingleChildScrollView`'s viewport throws if asked
+/// for its intrinsic height, and this is the only way to dock a scrollable
+/// inside a subtree an ancestor stretches via `IntrinsicHeight`. Real
+/// (non-intrinsic) layout passes straight through to `RenderProxyBox`, so
+/// the wrapped scrollview still sizes/scrolls normally against whatever
+/// bounded height its `Expanded` parent hands it.
+class _IntrinsicHeightBypass extends SingleChildRenderObjectWidget {
+  const _IntrinsicHeightBypass({required Widget super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderIntrinsicHeightBypass();
+}
+
+class _RenderIntrinsicHeightBypass extends RenderProxyBox {
+  @override
+  double computeMinIntrinsicHeight(double width) => 0;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) => 0;
 }
 
 /// Wraps the docked result card in a slow, continuous border-color pulse
@@ -1981,6 +2020,10 @@ class _ResultBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Redundant with the big "FINAL CHARGEABLE BASIS" figure right
+        // below — WT is the same number, VOL/CBM are usually 0 outside sea
+        // freight. Commented out (not deleted) rather than removed outright.
+        /*
         Row(
           children: [
             Expanded(
@@ -2012,99 +2055,7 @@ class _ResultBody extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Center(
-          child: Text(
-            'FINAL CHARGEABLE BASIS',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-              color: context.colors.textMuted,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: result.chargeableWeight?.toStringAsFixed(0) ?? '—',
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w800,
-                    color: context.colors.textBody,
-                    height: 1,
-                  ),
-                ),
-                TextSpan(
-                  text: ' kg',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: context.colors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        const Divider(height: 1),
-        const SizedBox(height: 20),
-        Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: context.colors.successBg,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              'GRAND TOTAL PAYABLE',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
-                color: context.colors.successText,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Center(
-          child: RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: '₱',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: context.colors.primaryDeep,
-                  ),
-                ),
-                TextSpan(
-                  text: formatMoney(grandTotal),
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w800,
-                    color: context.colors.primaryDeep,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: _SegmentedToggle(
-            leftLabel: 'Exact',
-            rightLabel: 'Rounded',
-            selectedLeft: !state.roundedDisplay,
-            onSelect: (left) => bloc.add(CalcRoundedDisplayToggled(!left)),
-          ),
-        ),
-        const SizedBox(height: 24),
+        */
         Row(
           children: [
             Container(
@@ -2128,21 +2079,54 @@ class _ResultBody extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        _ChargeRow(
-          label: 'Base Freight',
-          value: money(result.baseFreight),
-          bold: true,
+        _ChargeItemsTable(
+          money: money,
+          items: [
+            (
+              description: 'Base Freight',
+              rate: result.tierRate != null
+                  ? '₱${money(result.tierRate)}/kg'
+                  : '—',
+              qty: result.chargeableWeight != null
+                  ? '${result.chargeableWeight!.toStringAsFixed(2)} kg'
+                  : '—',
+              total: result.baseFreight ?? 0,
+            ),
+            if (result.fuelSurcharge != null)
+              (
+                description: 'Fuel Surcharge',
+                rate: '—',
+                qty: '1',
+                total: result.fuelSurcharge!,
+              ),
+            for (final entry in result.flatFees.entries)
+              (description: entry.key, rate: '—', qty: '1', total: entry.value),
+          ],
         ),
-        if (result.fuelSurcharge != null)
-          _ChargeRow(
-            label: 'Fuel Surcharge',
-            value: money(result.fuelSurcharge),
-          ),
-        for (final entry in result.flatFees.entries)
-          _ChargeRow(label: entry.key, value: money(entry.value)),
         const SizedBox(height: 12),
         const Divider(height: 1),
         const SizedBox(height: 12),
+        // Chargeable-weight basis moved here, right above the totals it
+        // directly feeds into, styled as a plain row like Sub-Total/VAT
+        // instead of a separate oversized centered hero number.
+        _ChargeRow(
+          label: 'Chargeable Weight',
+          value: result.chargeableWeight == null
+              ? '—'
+              : '${result.chargeableWeight!.toStringAsFixed(0)} kg',
+          bold: true,
+        ),
+        /*
+        const SizedBox(height: 20),
+        Center(
+          child: _SegmentedToggle(
+            leftLabel: 'Exact',
+            rightLabel: 'Rounded',
+            selectedLeft: !state.roundedDisplay,
+            onSelect: (left) => bloc.add(CalcRoundedDisplayToggled(!left)),
+          ),
+        ),
+        */
         _ChargeRow(
           label: 'Sub-Total',
           value: '₱${money(result.subTotal)}',
@@ -2169,56 +2153,84 @@ class _ResultBody extends StatelessWidget {
               ),
             ),
           ),
+        const SizedBox(height: 12),
+        const Divider(height: 1),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'TOTAL PAYABLE',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+                color: context.colors.textBody,
+              ),
+            ),
+            Text(
+              '₱${formatMoney(grandTotal)}',
+              style: TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                color: context.colors.successText,
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 16),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              ShadCheckbox(
-                value: state.vatMode == VatMode.exempt,
-                label: Text(
-                  'VAT Exempt',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: context.colors.textMutedStrong,
-                  ),
-                ),
-                // Exempt/Zero Rated share one underlying VatMode — checking
-                // either clears the other, same mutual-exclusivity as before.
-                onChanged: (value) => bloc.add(
-                  CalcVatModeChanged(value ? VatMode.exempt : VatMode.standard),
-                ),
-              ),
-              const SizedBox(width: 20),
-              ShadCheckbox(
-                value: state.vatMode == VatMode.zeroRated,
-                label: Text(
-                  'VAT Zero Rated',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: context.colors.textMutedStrong,
-                  ),
-                ),
-                onChanged: (value) => bloc.add(
-                  CalcVatModeChanged(
-                    value ? VatMode.zeroRated : VatMode.standard,
-                  ),
+        // `Wrap` instead of a horizontal-scrolling Row — centers the
+        // checkboxes when they fit the panel's width (the common case) and
+        // wraps to a second line instead of needing a scrollbar when they
+        // don't, rather than always sitting left-aligned.
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 20,
+          runSpacing: 8,
+          children: [
+            ShadCheckbox(
+              value: state.vatMode == VatMode.exempt,
+              label: Text(
+                'VAT Exempt',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: context.colors.textMutedStrong,
                 ),
               ),
-              const SizedBox(width: 20),
-              ShadCheckbox(
-                value: state.vatInclusive,
-                label: Text(
-                  'VAT Inclusive?',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: context.colors.textMutedStrong,
-                  ),
-                ),
-                onChanged: (value) => bloc.add(CalcVatInclusiveToggled(value)),
+              // Exempt/Zero Rated share one underlying VatMode — checking
+              // either clears the other, same mutual-exclusivity as before.
+              onChanged: (value) => bloc.add(
+                CalcVatModeChanged(value ? VatMode.exempt : VatMode.standard),
               ),
-            ],
-          ),
+            ),
+            ShadCheckbox(
+              value: state.vatMode == VatMode.zeroRated,
+              label: Text(
+                'VAT Zero Rated',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: context.colors.textMutedStrong,
+                ),
+              ),
+              onChanged: (value) => bloc.add(
+                CalcVatModeChanged(
+                  value ? VatMode.zeroRated : VatMode.standard,
+                ),
+              ),
+            ),
+            ShadCheckbox(
+              value: state.vatInclusive,
+              label: Text(
+                'VAT Inclusive?',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: context.colors.textMutedStrong,
+                ),
+              ),
+              onChanged: (value) => bloc.add(CalcVatInclusiveToggled(value)),
+            ),
+          ],
         ),
       ],
     );
@@ -2324,6 +2336,110 @@ class _SegmentButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+typedef _BreakdownItem = ({
+  String description,
+  String rate,
+  String qty,
+  num total,
+});
+
+/// Same itemized layout as the exported PDF invoice's charges table (# /
+/// DESCRIPTION / RATE / QTY / TOTAL, bordered rows, gold header) — a rate
+/// with a dozen add-ons used to blow the old stacked-row list into a long,
+/// receipt-like scroll; a table row is compact regardless of count, and
+/// keeps what's on screen consistent with what gets printed.
+class _ChargeItemsTable extends StatelessWidget {
+  const _ChargeItemsTable({required this.items, required this.money});
+
+  final List<_BreakdownItem> items;
+  final String Function(num?) money;
+
+  @override
+  Widget build(BuildContext context) {
+    final headerStyle = const TextStyle(
+      fontSize: 10,
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
+      letterSpacing: 0.3,
+    );
+    TextStyle cellStyle({bool bold = false}) => TextStyle(
+      fontSize: 12,
+      fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+      color: context.colors.textBody,
+    );
+
+    Widget headerCell(String text, {TextAlign align = TextAlign.left}) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          child: Text(text, textAlign: align, style: headerStyle),
+        );
+    Widget bodyCell(
+      String text, {
+      TextAlign align = TextAlign.left,
+      bool bold = false,
+      // Description is the one column long enough to actually need
+      // clipping (custom fee names); the TOTAL amount must never truncate,
+      // so it opts out and just wraps instead if it ever runs out of room.
+      bool truncate = true,
+    }) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Text(
+        text,
+        textAlign: align,
+        maxLines: truncate ? 1 : null,
+        overflow: truncate ? TextOverflow.ellipsis : TextOverflow.visible,
+        style: cellStyle(bold: bold),
+      ),
+    );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Table(
+        border: TableBorder.all(color: context.colors.border, width: 0.5),
+        columnWidths: const {
+          0: FlexColumnWidth(0.4),
+          1: FlexColumnWidth(2.0),
+          2: FlexColumnWidth(1.1),
+          3: FlexColumnWidth(0.8),
+          4: FlexColumnWidth(1.6),
+        },
+        children: [
+          TableRow(
+            decoration: BoxDecoration(color: context.colors.primaryDeep),
+            children: [
+              headerCell('#'),
+              headerCell('DESCRIPTION'),
+              headerCell('RATE'),
+              headerCell('QTY'),
+              headerCell('TOTAL', align: TextAlign.right),
+            ],
+          ),
+          for (var i = 0; i < items.length; i++)
+            TableRow(
+              decoration: BoxDecoration(
+                color: i.isEven
+                    ? context.colors.surface
+                    : context.colors.surfaceSubtle,
+              ),
+              children: [
+                bodyCell('${i + 1}'),
+                bodyCell(items[i].description, bold: true),
+                bodyCell(items[i].rate),
+                bodyCell(items[i].qty),
+                bodyCell(
+                  '₱${money(items[i].total)}',
+                  align: TextAlign.right,
+                  bold: true,
+                  truncate: false,
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }

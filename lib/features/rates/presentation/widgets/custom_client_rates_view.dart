@@ -242,9 +242,10 @@ class CustomClientRatesView extends StatelessWidget {
             chargeCodeFlex: 50,
             actionsFlex: 15,
             columns: const [
-              RateTableColumn(label: 'SERVICE', flex: 15, width: 90),
-              RateTableColumn(label: 'ROUTES', flex: 15, width: 90),
-              RateTableColumn(label: 'STATUS', flex: 20, width: 130),
+              RateTableColumn(label: 'SERVICE', flex: 12, width: 90),
+              RateTableColumn(label: 'ROUTES', flex: 12, width: 90),
+              RateTableColumn(label: 'CREATED AT', flex: 13, width: 100),
+              RateTableColumn(label: 'EXPIRATION', flex: 13, width: 100),
             ],
             cellBuilders: [
               (context, rate, {required compact}) => Text(
@@ -265,12 +266,22 @@ class CustomClientRatesView extends StatelessWidget {
                   color: context.colors.textMuted,
                 ),
               ),
-              (context, rate, {required compact}) => Align(
-                alignment: Alignment.centerLeft,
-                child: rateStatusBadge(
-                  context,
-                  isActive: rate.status == RateStatus.active,
-                  label: rate.expiryLabel,
+              (context, rate, {required compact}) => Text(
+                formatRateDate(rate.createdAt),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: compact ? 13 : 12,
+                  color: context.colors.textMuted,
+                ),
+              ),
+              (context, rate, {required compact}) => Text(
+                formatRateDate(rate.expiryDate),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: compact ? 13 : 12,
+                  color: context.colors.textMutedStrong,
                 ),
               ),
             ],
@@ -278,6 +289,12 @@ class CustomClientRatesView extends StatelessWidget {
             idOf: (rate) => rate.id,
             deletingRateId: state.deletingRateId,
             onEdit: (rate) => bloc.add(EditRateRequested(rate.id)),
+            onTry: (rate) => bloc.add(
+              TryRateInCalculatorRequested(
+                clientId: client.id,
+                chargeCode: rate.chargeCode,
+              ),
+            ),
             onDelete: (rate) async {
               final confirmed = await showShadDialog<bool>(
                 context: context,

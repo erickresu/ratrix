@@ -208,7 +208,8 @@ class PublishedRatesView extends StatelessWidget {
             columns: const [
               RateTableColumn(label: 'ROUTE', flex: 3, width: 150),
               RateTableColumn(label: 'SERVICE', flex: 2, width: 90),
-              RateTableColumn(label: 'STATUS', flex: 3, width: 130),
+              RateTableColumn(label: 'CREATED AT', flex: 2, width: 110),
+              RateTableColumn(label: 'EXPIRATION', flex: 2, width: 110),
             ],
             cellBuilders: [
               (context, rate, {required compact}) => Text(
@@ -229,12 +230,22 @@ class PublishedRatesView extends StatelessWidget {
                   color: context.colors.textMutedStrong,
                 ),
               ),
-              (context, rate, {required compact}) => Align(
-                alignment: Alignment.centerLeft,
-                child: rateStatusBadge(
-                  context,
-                  isActive: rate.status == RateStatus.active,
-                  label: rate.expiryLabel,
+              (context, rate, {required compact}) => Text(
+                formatRateDate(rate.createdAt),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: compact ? 13 : 12,
+                  color: context.colors.textMuted,
+                ),
+              ),
+              (context, rate, {required compact}) => Text(
+                formatRateDate(rate.expiryDate),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: compact ? 13 : 12,
+                  color: context.colors.textMutedStrong,
                 ),
               ),
             ],

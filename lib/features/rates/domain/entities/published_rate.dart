@@ -16,5 +16,6 @@ abstract class PublishedRate with _$PublishedRate {
     required RateStatus status,
     required String expiryLabel,
     DateTime? expiryDate,
+    DateTime? createdAt,
   }) = _PublishedRate;
 }

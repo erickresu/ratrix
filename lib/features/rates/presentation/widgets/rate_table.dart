@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/horizontal_scroll_table.dart';
@@ -97,29 +96,18 @@ class RateSortByExpiryToggle extends StatelessWidget {
   }
 }
 
-/// Active/expired status badge used in every rate table's STATUS column.
-Widget rateStatusBadge(
-  BuildContext context, {
-  required bool isActive,
-  required String label,
-}) => ShadBadge(
-  backgroundColor: isActive
-      ? context.colors.successBg
-      : context.colors.surfaceMuted,
-  hoverBackgroundColor: isActive
-      ? context.colors.successBg
-      : context.colors.surfaceMuted,
-  foregroundColor: isActive
-      ? context.colors.successText
-      : context.colors.textMuted,
-  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-  child: Text(
-    label,
-    maxLines: 1,
-    overflow: TextOverflow.ellipsis,
-    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-  ),
-);
+const _kMonthAbbr = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/// Plain "MMM d, yyyy" formatter shared by rate tables' CREATED AT and
+/// expiration-date columns — date only, no time, no badge styling.
+String formatRateDate(DateTime? date) {
+  if (date == null) return '—';
+  final local = date.toLocal();
+  return '${_kMonthAbbr[local.month - 1]} ${local.day}, ${local.year}';
+}
 
 /// Measures the height it's given and reports how many [ResponsiveRateTable]
 /// rows actually fit, so a caller's page size can track the viewport
@@ -193,27 +181,32 @@ Widget buildFittedRateSkeleton(double availableHeight) {
 class _RowActionButton extends StatelessWidget {
   const _RowActionButton({
     required this.icon,
+    required this.tooltip,
     required this.background,
     required this.foreground,
     required this.onTap,
   });
 
   final IconData icon;
+  final String tooltip;
   final Color background;
   final Color foreground;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: background,
         borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(7),
-          child: Icon(icon, size: 15, color: foreground),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(icon, size: 18, color: foreground),
+          ),
         ),
       ),
     );
@@ -258,6 +251,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
     required this.deletingRateId,
     required this.onEdit,
     required this.onDelete,
+    this.onTry,
     this.chargeCodeFlex = 3,
     this.actionsFlex,
   }) : assert(columns.length == cellBuilders.length);
@@ -270,6 +264,10 @@ class ResponsiveRateTable<T> extends StatelessWidget {
   final String? deletingRateId;
   final ValueChanged<T> onEdit;
   final ValueChanged<T> onDelete;
+
+  /// Shows a calculator icon action that jumps to the Shipping Calculator
+  /// with this rate pre-selected — omit to keep just edit/delete.
+  final ValueChanged<T>? onTry;
 
   /// Desktop flex share of the fixed CHARGE CODE column, on the same scale
   /// as [RateTableColumn.flex] — defaults to the original hardcoded ratio.
@@ -546,8 +544,19 @@ class ResponsiveRateTable<T> extends StatelessWidget {
         : Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              if (onTry != null) ...[
+                _RowActionButton(
+                  icon: Icons.calculate_outlined,
+                  tooltip: 'Try in calculator',
+                  background: context.colors.successBg,
+                  foreground: context.colors.successText,
+                  onTap: () => onTry!(rate),
+                ),
+                const SizedBox(width: 6),
+              ],
               _RowActionButton(
                 icon: CupertinoIcons.pencil,
+                tooltip: 'Edit',
                 background: context.colors.primaryChipBg,
                 foreground: context.colors.primaryDeep,
                 onTap: () => onEdit(rate),
@@ -555,6 +564,7 @@ class ResponsiveRateTable<T> extends StatelessWidget {
               const SizedBox(width: 6),
               _RowActionButton(
                 icon: CupertinoIcons.trash,
+                tooltip: 'Delete',
                 background: context.colors.destructive.withValues(alpha: 0.1),
                 foreground: context.colors.destructive,
                 onTap: () => onDelete(rate),

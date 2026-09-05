@@ -30,16 +30,24 @@ class _HorizontalScrollTableState extends State<HorizontalScrollTable> {
 
   @override
   Widget build(BuildContext context) {
-    return Scrollbar(
-      controller: _controller,
-      thumbVisibility: true,
-      trackVisibility: true,
-      child: SingleChildScrollView(
-        controller: _controller,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(bottom: 10),
-        child: SizedBox(width: widget.width, child: widget.child),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Only pin the thumb/track visible when content actually overflows
+        // the available width — otherwise there's nothing to slide and an
+        // always-on scrollbar just falsely advertises one.
+        final scrollable = widget.width > constraints.maxWidth;
+        return Scrollbar(
+          controller: _controller,
+          thumbVisibility: scrollable,
+          trackVisibility: scrollable,
+          child: SingleChildScrollView(
+            controller: _controller,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(bottom: 10),
+            child: SizedBox(width: widget.width, child: widget.child),
+          ),
+        );
+      },
     );
   }
 }

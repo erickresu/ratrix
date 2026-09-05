@@ -190,11 +190,13 @@ class _RatesShellViewState extends State<_RatesShellView> {
     // fresh, and skipped entirely once no calculator client is selected.
     final calcClientId = state.selectedCalcClientId;
     if (calcClientId == null) return shell;
+    final targetChargeCode = state.selectedCalcTargetChargeCode;
     return BlocProvider<ShippingCalculatorBloc>(
-      key: ValueKey('calc-bloc-$calcClientId'),
+      key: ValueKey('calc-bloc-$calcClientId-${targetChargeCode ?? ''}'),
       create: (_) => ShippingCalculatorBloc(
         getIt<RatesRepository>(),
         clientId: calcClientId,
+        autoSelectChargeCode: targetChargeCode,
       ),
       child: shell,
     );

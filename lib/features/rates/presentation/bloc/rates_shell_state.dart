@@ -85,6 +85,17 @@ class RatesShellState extends Equatable {
   final int calcClientPage;
   final String? selectedCalcClientId;
 
+  /// Set when arriving at the calculator via a rate table's "Try in
+  /// calculator" action — passed into `ShippingCalculatorBloc` so it can
+  /// auto-select this exact rate table once that client's rates load.
+  final String? selectedCalcTargetChargeCode;
+
+  /// The view `ShippingCalculatorBackRequested` should return to, captured
+  /// from whatever view was active when `TryRateInCalculatorRequested`
+  /// fired (e.g. Custom Client Rates). Null for the calculator's own client
+  /// picker flow — that falls back to the client picker list instead.
+  final RatesView? calculatorReturnView;
+
   final List<PublishedRate> publishedRates;
   final bool publishedRatesLoading;
   final String publishedRateSearch;
@@ -158,6 +169,8 @@ class RatesShellState extends Equatable {
     this.calcClientSearch = '',
     this.calcClientPage = 0,
     this.selectedCalcClientId,
+    this.selectedCalcTargetChargeCode,
+    this.calculatorReturnView,
     this.publishedRates = const [],
     this.publishedRatesLoading = false,
     this.publishedRateSearch = '',
@@ -331,6 +344,10 @@ class RatesShellState extends Equatable {
     int? calcClientPage,
     String? selectedCalcClientId,
     bool clearSelectedCalcClientId = false,
+    String? selectedCalcTargetChargeCode,
+    bool clearSelectedCalcTargetChargeCode = false,
+    RatesView? calculatorReturnView,
+    bool clearCalculatorReturnView = false,
     List<PublishedRate>? publishedRates,
     bool? publishedRatesLoading,
     String? publishedRateSearch,
@@ -397,6 +414,12 @@ class RatesShellState extends Equatable {
       selectedCalcClientId: clearSelectedCalcClientId
           ? null
           : (selectedCalcClientId ?? this.selectedCalcClientId),
+      selectedCalcTargetChargeCode: clearSelectedCalcTargetChargeCode
+          ? null
+          : (selectedCalcTargetChargeCode ?? this.selectedCalcTargetChargeCode),
+      calculatorReturnView: clearCalculatorReturnView
+          ? null
+          : (calculatorReturnView ?? this.calculatorReturnView),
       publishedRates: publishedRates ?? this.publishedRates,
       publishedRatesLoading:
           publishedRatesLoading ?? this.publishedRatesLoading,
@@ -464,6 +487,8 @@ class RatesShellState extends Equatable {
     calcClientSearch,
     calcClientPage,
     selectedCalcClientId,
+    selectedCalcTargetChargeCode,
+    calculatorReturnView,
     publishedRates,
     publishedRatesLoading,
     publishedRateSearch,

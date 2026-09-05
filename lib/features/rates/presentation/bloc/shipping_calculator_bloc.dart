@@ -13,9 +13,13 @@ part 'shipping_calculator_state.dart';
 
 class ShippingCalculatorBloc
     extends Bloc<ShippingCalculatorEvent, ShippingCalculatorState> {
-  ShippingCalculatorBloc(this._ratesRepository, {required String clientId})
-    : _clientId = clientId,
-      super(const ShippingCalculatorState()) {
+  ShippingCalculatorBloc(
+    this._ratesRepository, {
+    required String clientId,
+    String? autoSelectChargeCode,
+  }) : _clientId = clientId,
+       _autoSelectChargeCode = autoSelectChargeCode,
+       super(const ShippingCalculatorState()) {
     on<CalcRatesRequested>(_onRatesRequested);
     on<CalcRateCategoryChanged>(
       (event, emit) =>
@@ -146,6 +150,11 @@ class ShippingCalculatorBloc
   final RatesRepository _ratesRepository;
   final String _clientId;
 
+  /// Set when arriving here via a rate table's "Try in calculator" action —
+  /// once `clientRates` loads, auto-selects the matching rate table instead
+  /// of leaving the picker empty.
+  final String? _autoSelectChargeCode;
+
   void _updateDimension(
     Emitter<ShippingCalculatorState> emit,
     int index,
@@ -168,6 +177,22 @@ class ShippingCalculatorBloc
       // Leave rates empty — the rate-table dropdown just shows no options.
     }
     emit(state.copyWith(clientRates: rates, ratesLoading: false));
+
+    final target = _autoSelectChargeCode;
+    if (target == null) return;
+    ClientRate? match;
+    for (final r in rates) {
+      if (r.chargeCode == target) {
+        match = r;
+        break;
+      }
+    }
+    if (match == null) return;
+    // Match the rate's own freight/service mode first — `availableRateTables`
+    // filters by those, so the dropdown needs to agree with what's selected
+    // below or it'd show a table list that doesn't contain this rate.
+    emit(state.copyWith(freightMode: match.freightMode, serviceMode: match.serviceMode));
+    add(CalcRateTableChanged(match));
   }
 
   Future<void> _onRateTableChanged(

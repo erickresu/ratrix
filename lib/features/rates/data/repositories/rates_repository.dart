@@ -202,6 +202,7 @@ class RatesRepository {
       status: common.status,
       expiryLabel: common.expiryLabel,
       expiryDate: rate.rateExpiry,
+      createdAt: rate.createdAt,
     );
   }
 
@@ -217,6 +218,7 @@ class RatesRepository {
       status: common.status,
       expiryLabel: common.expiryLabel,
       expiryDate: rate.rateExpiry,
+      createdAt: rate.createdAt,
     );
   }
 

@@ -16,5 +16,6 @@ abstract class ClientRate with _$ClientRate {
     required RateStatus status,
     required String expiryLabel,
     DateTime? expiryDate,
+    DateTime? createdAt,
   }) = _ClientRate;
 }

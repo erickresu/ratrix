@@ -244,6 +244,22 @@ class ShippingCalculatorClientChosen extends RatesShellEvent {
   List<Object?> get props => [clientId];
 }
 
+/// Fired by a rate table row's "Try in calculator" action — jumps straight
+/// to the Shipping Calculator with this rate's client and rate table
+/// pre-selected instead of leaving the picker empty.
+class TryRateInCalculatorRequested extends RatesShellEvent {
+  const TryRateInCalculatorRequested({
+    required this.clientId,
+    required this.chargeCode,
+  });
+
+  final String clientId;
+  final String chargeCode;
+
+  @override
+  List<Object?> get props => [clientId, chargeCode];
+}
+
 class ShippingCalculatorClientSearchChanged extends RatesShellEvent {
   const ShippingCalculatorClientSearchChanged(this.query);
 

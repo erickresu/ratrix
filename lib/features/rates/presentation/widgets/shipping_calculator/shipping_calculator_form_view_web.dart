@@ -63,7 +63,7 @@ class ShippingCalculatorFormWeb extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 24),
-                  SizedBox(width: 400, child: parts.breakdownPanel),
+                  SizedBox(width: 440, child: parts.breakdownPanel),
                 ],
               ),
             ),

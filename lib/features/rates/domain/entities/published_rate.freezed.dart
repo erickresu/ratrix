@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PublishedRate {
 
- String get id; String get chargeCode; FreightMode get freightMode; ServiceMode get serviceMode; String get routeLabel; int get routeCount; RateStatus get status; String get expiryLabel; DateTime? get expiryDate;
+ String get id; String get chargeCode; FreightMode get freightMode; ServiceMode get serviceMode; String get routeLabel; int get routeCount; RateStatus get status; String get expiryLabel; DateTime? get expiryDate; DateTime? get createdAt;
 /// Create a copy of PublishedRate
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $PublishedRateCopyWith<PublishedRate> get copyWith => _$PublishedRateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PublishedRate&&(identical(other.id, id) || other.id == id)&&(identical(other.chargeCode, chargeCode) || other.chargeCode == chargeCode)&&(identical(other.freightMode, freightMode) || other.freightMode == freightMode)&&(identical(other.serviceMode, serviceMode) || other.serviceMode == serviceMode)&&(identical(other.routeLabel, routeLabel) || other.routeLabel == routeLabel)&&(identical(other.routeCount, routeCount) || other.routeCount == routeCount)&&(identical(other.status, status) || other.status == status)&&(identical(other.expiryLabel, expiryLabel) || other.expiryLabel == expiryLabel)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PublishedRate&&(identical(other.id, id) || other.id == id)&&(identical(other.chargeCode, chargeCode) || other.chargeCode == chargeCode)&&(identical(other.freightMode, freightMode) || other.freightMode == freightMode)&&(identical(other.serviceMode, serviceMode) || other.serviceMode == serviceMode)&&(identical(other.routeLabel, routeLabel) || other.routeLabel == routeLabel)&&(identical(other.routeCount, routeCount) || other.routeCount == routeCount)&&(identical(other.status, status) || other.status == status)&&(identical(other.expiryLabel, expiryLabel) || other.expiryLabel == expiryLabel)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,chargeCode,freightMode,serviceMode,routeLabel,routeCount,status,expiryLabel,expiryDate);
+int get hashCode => Object.hash(runtimeType,id,chargeCode,freightMode,serviceMode,routeLabel,routeCount,status,expiryLabel,expiryDate,createdAt);
 
 @override
 String toString() {
-  return 'PublishedRate(id: $id, chargeCode: $chargeCode, freightMode: $freightMode, serviceMode: $serviceMode, routeLabel: $routeLabel, routeCount: $routeCount, status: $status, expiryLabel: $expiryLabel, expiryDate: $expiryDate)';
+  return 'PublishedRate(id: $id, chargeCode: $chargeCode, freightMode: $freightMode, serviceMode: $serviceMode, routeLabel: $routeLabel, routeCount: $routeCount, status: $status, expiryLabel: $expiryLabel, expiryDate: $expiryDate, createdAt: $createdAt)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $PublishedRateCopyWith<$Res>  {
   factory $PublishedRateCopyWith(PublishedRate value, $Res Function(PublishedRate) _then) = _$PublishedRateCopyWithImpl;
 @useResult
 $Res call({
- String id, String chargeCode, FreightMode freightMode, ServiceMode serviceMode, String routeLabel, int routeCount, RateStatus status, String expiryLabel, DateTime? expiryDate
+ String id, String chargeCode, FreightMode freightMode, ServiceMode serviceMode, String routeLabel, int routeCount, RateStatus status, String expiryLabel, DateTime? expiryDate, DateTime? createdAt
 });
 
 
@@ -62,7 +62,7 @@ class _$PublishedRateCopyWithImpl<$Res>
 
 /// Create a copy of PublishedRate
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? chargeCode = null,Object? freightMode = null,Object? serviceMode = null,Object? routeLabel = null,Object? routeCount = null,Object? status = null,Object? expiryLabel = null,Object? expiryDate = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? chargeCode = null,Object? freightMode = null,Object? serviceMode = null,Object? routeLabel = null,Object? routeCount = null,Object? status = null,Object? expiryLabel = null,Object? expiryDate = freezed,Object? createdAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,chargeCode: null == chargeCode ? _self.chargeCode : chargeCode // ignore: cast_nullable_to_non_nullable
@@ -73,6 +73,7 @@ as String,routeCount: null == routeCount ? _self.routeCount : routeCount // igno
 as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as RateStatus,expiryLabel: null == expiryLabel ? _self.expiryLabel : expiryLabel // ignore: cast_nullable_to_non_nullable
 as String,expiryDate: freezed == expiryDate ? _self.expiryDate : expiryDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
@@ -158,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String chargeCode,  FreightMode freightMode,  ServiceMode serviceMode,  String routeLabel,  int routeCount,  RateStatus status,  String expiryLabel,  DateTime? expiryDate)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String chargeCode,  FreightMode freightMode,  ServiceMode serviceMode,  String routeLabel,  int routeCount,  RateStatus status,  String expiryLabel,  DateTime? expiryDate,  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PublishedRate() when $default != null:
-return $default(_that.id,_that.chargeCode,_that.freightMode,_that.serviceMode,_that.routeLabel,_that.routeCount,_that.status,_that.expiryLabel,_that.expiryDate);case _:
+return $default(_that.id,_that.chargeCode,_that.freightMode,_that.serviceMode,_that.routeLabel,_that.routeCount,_that.status,_that.expiryLabel,_that.expiryDate,_that.createdAt);case _:
   return orElse();
 
 }
@@ -179,10 +180,10 @@ return $default(_that.id,_that.chargeCode,_that.freightMode,_that.serviceMode,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String chargeCode,  FreightMode freightMode,  ServiceMode serviceMode,  String routeLabel,  int routeCount,  RateStatus status,  String expiryLabel,  DateTime? expiryDate)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String chargeCode,  FreightMode freightMode,  ServiceMode serviceMode,  String routeLabel,  int routeCount,  RateStatus status,  String expiryLabel,  DateTime? expiryDate,  DateTime? createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _PublishedRate():
-return $default(_that.id,_that.chargeCode,_that.freightMode,_that.serviceMode,_that.routeLabel,_that.routeCount,_that.status,_that.expiryLabel,_that.expiryDate);case _:
+return $default(_that.id,_that.chargeCode,_that.freightMode,_that.serviceMode,_that.routeLabel,_that.routeCount,_that.status,_that.expiryLabel,_that.expiryDate,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +200,10 @@ return $default(_that.id,_that.chargeCode,_that.freightMode,_that.serviceMode,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String chargeCode,  FreightMode freightMode,  ServiceMode serviceMode,  String routeLabel,  int routeCount,  RateStatus status,  String expiryLabel,  DateTime? expiryDate)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String chargeCode,  FreightMode freightMode,  ServiceMode serviceMode,  String routeLabel,  int routeCount,  RateStatus status,  String expiryLabel,  DateTime? expiryDate,  DateTime? createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _PublishedRate() when $default != null:
-return $default(_that.id,_that.chargeCode,_that.freightMode,_that.serviceMode,_that.routeLabel,_that.routeCount,_that.status,_that.expiryLabel,_that.expiryDate);case _:
+return $default(_that.id,_that.chargeCode,_that.freightMode,_that.serviceMode,_that.routeLabel,_that.routeCount,_that.status,_that.expiryLabel,_that.expiryDate,_that.createdAt);case _:
   return null;
 
 }
@@ -214,7 +215,7 @@ return $default(_that.id,_that.chargeCode,_that.freightMode,_that.serviceMode,_t
 
 
 class _PublishedRate implements PublishedRate {
-  const _PublishedRate({required this.id, required this.chargeCode, required this.freightMode, required this.serviceMode, required this.routeLabel, required this.routeCount, required this.status, required this.expiryLabel, this.expiryDate});
+  const _PublishedRate({required this.id, required this.chargeCode, required this.freightMode, required this.serviceMode, required this.routeLabel, required this.routeCount, required this.status, required this.expiryLabel, this.expiryDate, this.createdAt});
   
 
 @override final  String id;
@@ -226,6 +227,7 @@ class _PublishedRate implements PublishedRate {
 @override final  RateStatus status;
 @override final  String expiryLabel;
 @override final  DateTime? expiryDate;
+@override final  DateTime? createdAt;
 
 /// Create a copy of PublishedRate
 /// with the given fields replaced by the non-null parameter values.
@@ -237,16 +239,16 @@ _$PublishedRateCopyWith<_PublishedRate> get copyWith => __$PublishedRateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PublishedRate&&(identical(other.id, id) || other.id == id)&&(identical(other.chargeCode, chargeCode) || other.chargeCode == chargeCode)&&(identical(other.freightMode, freightMode) || other.freightMode == freightMode)&&(identical(other.serviceMode, serviceMode) || other.serviceMode == serviceMode)&&(identical(other.routeLabel, routeLabel) || other.routeLabel == routeLabel)&&(identical(other.routeCount, routeCount) || other.routeCount == routeCount)&&(identical(other.status, status) || other.status == status)&&(identical(other.expiryLabel, expiryLabel) || other.expiryLabel == expiryLabel)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PublishedRate&&(identical(other.id, id) || other.id == id)&&(identical(other.chargeCode, chargeCode) || other.chargeCode == chargeCode)&&(identical(other.freightMode, freightMode) || other.freightMode == freightMode)&&(identical(other.serviceMode, serviceMode) || other.serviceMode == serviceMode)&&(identical(other.routeLabel, routeLabel) || other.routeLabel == routeLabel)&&(identical(other.routeCount, routeCount) || other.routeCount == routeCount)&&(identical(other.status, status) || other.status == status)&&(identical(other.expiryLabel, expiryLabel) || other.expiryLabel == expiryLabel)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,chargeCode,freightMode,serviceMode,routeLabel,routeCount,status,expiryLabel,expiryDate);
+int get hashCode => Object.hash(runtimeType,id,chargeCode,freightMode,serviceMode,routeLabel,routeCount,status,expiryLabel,expiryDate,createdAt);
 
 @override
 String toString() {
-  return 'PublishedRate(id: $id, chargeCode: $chargeCode, freightMode: $freightMode, serviceMode: $serviceMode, routeLabel: $routeLabel, routeCount: $routeCount, status: $status, expiryLabel: $expiryLabel, expiryDate: $expiryDate)';
+  return 'PublishedRate(id: $id, chargeCode: $chargeCode, freightMode: $freightMode, serviceMode: $serviceMode, routeLabel: $routeLabel, routeCount: $routeCount, status: $status, expiryLabel: $expiryLabel, expiryDate: $expiryDate, createdAt: $createdAt)';
 }
 
 
@@ -257,7 +259,7 @@ abstract mixin class _$PublishedRateCopyWith<$Res> implements $PublishedRateCopy
   factory _$PublishedRateCopyWith(_PublishedRate value, $Res Function(_PublishedRate) _then) = __$PublishedRateCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String chargeCode, FreightMode freightMode, ServiceMode serviceMode, String routeLabel, int routeCount, RateStatus status, String expiryLabel, DateTime? expiryDate
+ String id, String chargeCode, FreightMode freightMode, ServiceMode serviceMode, String routeLabel, int routeCount, RateStatus status, String expiryLabel, DateTime? expiryDate, DateTime? createdAt
 });
 
 
@@ -274,7 +276,7 @@ class __$PublishedRateCopyWithImpl<$Res>
 
 /// Create a copy of PublishedRate
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? chargeCode = null,Object? freightMode = null,Object? serviceMode = null,Object? routeLabel = null,Object? routeCount = null,Object? status = null,Object? expiryLabel = null,Object? expiryDate = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? chargeCode = null,Object? freightMode = null,Object? serviceMode = null,Object? routeLabel = null,Object? routeCount = null,Object? status = null,Object? expiryLabel = null,Object? expiryDate = freezed,Object? createdAt = freezed,}) {
   return _then(_PublishedRate(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,chargeCode: null == chargeCode ? _self.chargeCode : chargeCode // ignore: cast_nullable_to_non_nullable
@@ -285,6 +287,7 @@ as String,routeCount: null == routeCount ? _self.routeCount : routeCount // igno
 as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as RateStatus,expiryLabel: null == expiryLabel ? _self.expiryLabel : expiryLabel // ignore: cast_nullable_to_non_nullable
 as String,expiryDate: freezed == expiryDate ? _self.expiryDate : expiryDate // ignore: cast_nullable_to_non_nullable
+as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }

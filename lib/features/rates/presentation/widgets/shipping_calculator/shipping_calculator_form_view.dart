@@ -765,20 +765,23 @@ class _CbmCalculatorDialog extends StatelessWidget {
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          SizedBox(
-                            width: 96,
-                            child: Text(
-                              'Weight',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
-                            ),
-                          ),
                           const SizedBox(width: 14),
                           SizedBox(
                             width: 60,
                             child: Text(
                               'Quantity',
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            width: 96,
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                'Weight',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.colors.textMuted),
+                              ),
                             ),
                           ),
                           if (state.dimensions.length > 1) const SizedBox(width: 36),
@@ -815,6 +818,17 @@ class _CbmCalculatorDialog extends StatelessWidget {
                                     bloc.add(CalcDimensionHeightChanged(i, v)),
                               ),
                             ),
+                            const SizedBox(width: 14),
+                            SizedBox(
+                              width: 60,
+                              child: _DimensionField(
+                                dimKey: 'calc-dim-p-$i',
+                                initialValue: state.dimensions[i].packages,
+                                onChanged: (v) => bloc.add(
+                                  CalcDimensionPackagesChanged(i, v),
+                                ),
+                              ),
+                            ),
                             const SizedBox(width: 10),
                             SizedBox(
                               width: 96,
@@ -838,17 +852,6 @@ class _CbmCalculatorDialog extends StatelessWidget {
                                       color: context.colors.primaryDeep,
                                     ),
                                   ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            SizedBox(
-                              width: 60,
-                              child: _DimensionField(
-                                dimKey: 'calc-dim-p-$i',
-                                initialValue: state.dimensions[i].packages,
-                                onChanged: (v) => bloc.add(
-                                  CalcDimensionPackagesChanged(i, v),
                                 ),
                               ),
                             ),
