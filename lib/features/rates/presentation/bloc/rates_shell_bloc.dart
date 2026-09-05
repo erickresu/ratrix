@@ -253,6 +253,18 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
     on<AuditLogPageChanged>(
       (event, emit) => emit(state.copyWith(auditLogPage: event.page)),
     );
+    on<AuditLogsPerPageChanged>((event, emit) {
+      if (event.perPage == state.auditLogsPerPage) return;
+      final newPageCount = (state.filteredAuditLogs.length / event.perPage)
+          .ceil()
+          .clamp(1, 1 << 30);
+      emit(
+        state.copyWith(
+          auditLogsPerPage: event.perPage,
+          auditLogPage: state.auditLogPage.clamp(0, newPageCount - 1),
+        ),
+      );
+    });
   }
 
   final RatesRepository _repository;

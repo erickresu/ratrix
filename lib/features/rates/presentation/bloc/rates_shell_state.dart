@@ -120,6 +120,11 @@ class RatesShellState extends Equatable {
   final String? auditLogActionFilter;
   final int auditLogPage;
 
+  /// How many rows the audit log table shows per page — starts at the
+  /// default and is kept in sync with however many rows actually fit the
+  /// table's measured height (see `AuditLogsPerPageChanged`).
+  final int auditLogsPerPage;
+
   const RatesShellState({
     this.isLoading = true,
     this.view = RatesView.dashboard,
@@ -170,10 +175,10 @@ class RatesShellState extends Equatable {
     this.auditLogSearch = '',
     this.auditLogActionFilter,
     this.auditLogPage = 0,
+    this.auditLogsPerPage = 8,
   });
 
   static const clientsPerPage = 9;
-  static const auditLogsPerPage = 8;
 
   List<Client> get filteredClients => _searchClients(clients, clientSearch);
 
@@ -348,6 +353,7 @@ class RatesShellState extends Equatable {
     String? auditLogActionFilter,
     bool clearAuditLogActionFilter = false,
     int? auditLogPage,
+    int? auditLogsPerPage,
   }) {
     return RatesShellState(
       isLoading: isLoading ?? this.isLoading,
@@ -420,6 +426,7 @@ class RatesShellState extends Equatable {
           ? null
           : (auditLogActionFilter ?? this.auditLogActionFilter),
       auditLogPage: auditLogPage ?? this.auditLogPage,
+      auditLogsPerPage: auditLogsPerPage ?? this.auditLogsPerPage,
     );
   }
 
@@ -474,5 +481,6 @@ class RatesShellState extends Equatable {
     auditLogSearch,
     auditLogActionFilter,
     auditLogPage,
+    auditLogsPerPage,
   ];
 }

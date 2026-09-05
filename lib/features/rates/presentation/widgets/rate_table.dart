@@ -146,11 +146,19 @@ class RateTableFitReporter extends StatefulWidget {
     required this.currentPerPage,
     required this.onFit,
     required this.builder,
+    this.headerHeight = ResponsiveRateTable.headerHeight,
+    this.rowHeight = ResponsiveRateTable.rowHeight,
   });
 
   final int currentPerPage;
   final ValueChanged<int> onFit;
   final Widget Function(BuildContext context, double availableHeight, int fit) builder;
+
+  /// Defaults to [ResponsiveRateTable]'s own header/row heights — pass
+  /// explicit values for a differently-shaped table (e.g. the audit log's
+  /// shorter rows).
+  final double headerHeight;
+  final double rowHeight;
 
   @override
   State<RateTableFitReporter> createState() => _RateTableFitReporterState();
@@ -161,8 +169,8 @@ class _RateTableFitReporterState extends State<RateTableFitReporter> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final available = constraints.maxHeight - ResponsiveRateTable.headerHeight;
-        final fit = (available / ResponsiveRateTable.rowHeight).floor().clamp(1, 50);
+        final available = constraints.maxHeight - widget.headerHeight;
+        final fit = (available / widget.rowHeight).floor().clamp(1, 50);
         if (fit != widget.currentPerPage) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) widget.onFit(fit);

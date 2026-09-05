@@ -61,31 +61,34 @@ class PaginationBar extends StatelessWidget {
       ],
     );
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(
-        isMobile ? 16 : 40,
-        12,
-        isMobile ? 16 : 40,
-        20,
-      ),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        border: Border(top: BorderSide(color: context.colors.border)),
-      ),
-      child: isMobile
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                rangeText,
-                const SizedBox(height: 10),
-                pageControls,
-              ],
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [rangeText, pageControls],
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Same 15%-of-width left/right whitespace as the rest of a
+        // desktop page's content, so the bar's text lines up with the
+        // table above it instead of a narrower fixed margin.
+        final side = isMobile ? 16.0 : constraints.maxWidth * 0.15;
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(side, 12, side, 20),
+          decoration: BoxDecoration(
+            color: context.colors.surface,
+            border: Border(top: BorderSide(color: context.colors.border)),
+          ),
+          child: isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    rangeText,
+                    const SizedBox(height: 10),
+                    pageControls,
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [rangeText, pageControls],
+                ),
+        );
+      },
     );
   }
 }

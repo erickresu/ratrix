@@ -313,3 +313,14 @@ class AuditLogPageChanged extends RatesShellEvent {
   @override
   List<Object?> get props => [page];
 }
+
+/// Fired when the audit log table measures how many rows actually fit its
+/// available height (e.g. after a window resize).
+class AuditLogsPerPageChanged extends RatesShellEvent {
+  const AuditLogsPerPageChanged(this.perPage);
+
+  final int perPage;
+
+  @override
+  List<Object?> get props => [perPage];
+}

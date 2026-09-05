@@ -7,12 +7,12 @@ import '../../../../core/utils/breakpoints.dart';
 import '../../../../core/widgets/horizontal_scroll_table.dart';
 import '../../../../core/widgets/mr_ratrix.dart';
 import '../../../../core/widgets/pagination_bar.dart';
-import '../../../../core/widgets/skeleton_box.dart';
 import '../../domain/entities/audit_log.dart';
 import '../bloc/rates_shell_bloc.dart';
 import '../rates_colors.dart';
 import 'audit_trail_view_mobile.dart';
 import 'audit_trail_view_web.dart';
+import 'rate_table.dart';
 
 const _kAllValue = '__all__';
 
@@ -100,50 +100,54 @@ class AuditTrailView extends StatelessWidget {
       searchField: searchField,
     );
 
-    final body = state.auditLogsLoading
-        ? const SkeletonShimmer(
-            child: Column(
-              children: [
-                ListRowCardSkeleton(),
-                SizedBox(height: 16),
-                ListRowCardSkeleton(),
-                SizedBox(height: 16),
-                ListRowCardSkeleton(),
-              ],
-            ),
-          )
-        : state.filteredAuditLogs.isEmpty
-        ? Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(40),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: context.colors.borderStrong,
-                style: BorderStyle.solid,
-              ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const MrRatrix(size: 96),
-                const SizedBox(height: 4),
-                Text(
-                  'No audit activity found.',
-                  style: TextStyle(fontSize: 14, color: context.colors.textMuted),
+    final body = RateTableFitReporter(
+      currentPerPage: state.auditLogsPerPage,
+      onFit: (fit) => bloc.add(AuditLogsPerPageChanged(fit)),
+      rowHeight: _kAuditRowHeight,
+      builder: (context, availableHeight, fit) => state.auditLogsLoading
+          ? buildFittedRateSkeleton(availableHeight)
+          : state.filteredAuditLogs.isEmpty
+          ? Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(40),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: context.colors.borderStrong,
+                  style: BorderStyle.solid,
                 ),
-              ],
-            ),
-          )
-        : _AuditLogTable(logs: state.pagedAuditLogs);
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const MrRatrix(size: 96),
+                  const SizedBox(height: 4),
+                  Text(
+                    'No audit activity found.',
+                    style: TextStyle(fontSize: 14, color: context.colors.textMuted),
+                  ),
+                ],
+              ),
+            )
+          : _AuditLogTable(logs: state.pagedAuditLogs),
+    );
 
-    final paginationBar = !state.auditLogsLoading && state.filteredAuditLogs.isNotEmpty
-        ? PaginationBar(
-            page: state.auditLogPage,
-            itemsPerPage: RatesShellState.auditLogsPerPage,
-            totalItems: state.filteredAuditLogs.length,
-            onPageChanged: (p) => bloc.add(AuditLogPageChanged(p)),
+    // Reserved even while loading (just invisible) so the table's measured
+    // height doesn't shrink the moment loading finishes and the bar turns
+    // visible — see the identical fix on the rate-table pages.
+    final paginationBar = state.auditLogsLoading || state.filteredAuditLogs.isNotEmpty
+        ? Opacity(
+            opacity: state.auditLogsLoading ? 0 : 1,
+            child: IgnorePointer(
+              ignoring: state.auditLogsLoading,
+              child: PaginationBar(
+                page: state.auditLogPage,
+                itemsPerPage: state.auditLogsPerPage,
+                totalItems: state.filteredAuditLogs.length,
+                onPageChanged: (p) => bloc.add(AuditLogPageChanged(p)),
+              ),
+            ),
           )
         : null;
 
@@ -194,26 +198,33 @@ class _AuditLogTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = Breakpoints.isMobile(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        border: Border.all(color: context.colors.border),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: context.colors.shadowSoft,
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
+    // Align (loose constraints) so the table hugs header + row content
+    // instead of stretching to fill whatever height its parent gives it —
+    // see the identical fix on `ResponsiveRateTable`.
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.colors.surface,
+          border: Border.all(color: context.colors.border),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: context.colors.shadowSoft,
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: isMobile ? _buildMobile(context) : _buildDesktop(context),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: isMobile ? _buildMobile(context) : _buildDesktop(context),
     );
   }
 
   Widget _buildDesktop(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
@@ -272,6 +283,7 @@ class _AuditLogTable extends StatelessWidget {
         SizedBox(
           width: _timeWidth,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 height: _headerHeight,
@@ -291,6 +303,7 @@ class _AuditLogTable extends StatelessWidget {
           child: HorizontalScrollTable(
             width: _scrollableWidth,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   height: _headerHeight,
@@ -346,7 +359,8 @@ class _AuditLogRow extends StatelessWidget {
     final time = log.createdAt;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      height: _kAuditRowHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: context.colors.border)),
       ),
