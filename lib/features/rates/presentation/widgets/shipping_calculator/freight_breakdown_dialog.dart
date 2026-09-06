@@ -85,11 +85,16 @@ class _FreightBreakdownFlowState extends State<_FreightBreakdownFlow> {
 
   @override
   Widget build(BuildContext context) {
+    // Calculating animation commented out for the mean time — shows the
+    // breakdown instantly instead of playing the typed-out LCD tape first.
+    /*
     return _revealed
         ? _FreightBreakdownDialog(client: widget.client)
         : _CalculatingDialog(
             onFinished: () => setState(() => _revealed = true),
           );
+    */
+    return _FreightBreakdownDialog(client: widget.client);
   }
 }
 
