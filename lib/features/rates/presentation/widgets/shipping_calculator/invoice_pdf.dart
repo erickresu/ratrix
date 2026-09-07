@@ -128,8 +128,8 @@ Future<void> generateInvoicePdf({
             pw.SizedBox(height: 4),
             pw.Text(
               'This is a computed freight breakdown, not a formal billing invoice - figures reflect the rate card and '
-              'cargo details entered above. Please confirm final charges and payment arrangements with your CERRO '
-              'RATRIX account handler before remitting payment.',
+              'cargo details entered above. Please confirm final charges and payment arrangements with your RATRIX '
+              'account handler before remitting payment.',
               style: pw.TextStyle(fontSize: 8, color: _textMuted, lineSpacing: 2),
             ),
             pw.SizedBox(height: 40),

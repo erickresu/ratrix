@@ -110,13 +110,21 @@ class _AddonField extends StatelessWidget {
     final mode = state.addonModes[field.key] ?? AddonMode.exact;
     final isPercentage = mode == AddonMode.percentage;
 
+    // A label like "Fuel Surcharge (FSC/BAF)" is too long to share a line
+    // with the Exact/Percentage toggle at this column width — split the
+    // parenthetical off into its own small caption line underneath so the
+    // main label stays short enough to actually sit inline with the toggle.
+    final parenStart = field.hasToggle ? field.label.indexOf(' (') : -1;
+    final mainLabel = parenStart == -1 ? field.label : field.label.substring(0, parenStart);
+    final subLabel = parenStart == -1 ? null : field.label.substring(parenStart + 1);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(child: Text(field.label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong))),
+            Expanded(child: Text(mainLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textMutedStrong))),
             if (field.hasToggle)
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -128,6 +136,10 @@ class _AddonField extends StatelessWidget {
               ),
           ],
         ),
+        if (subLabel != null) ...[
+          const SizedBox(height: 2),
+          Text(subLabel, style: TextStyle(fontSize: 11, color: context.colors.textMuted)),
+        ],
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),

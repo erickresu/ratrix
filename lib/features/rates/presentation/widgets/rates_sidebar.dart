@@ -191,7 +191,7 @@ class _Logo extends StatelessWidget {
     return const Align(
       alignment: Alignment.center,
       child: Text(
-        'CERRO RATRIX',
+        'RATRIX',
         style: TextStyle(
           color: Colors.white,
           fontSize: 18,

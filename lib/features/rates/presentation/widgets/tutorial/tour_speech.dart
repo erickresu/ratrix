@@ -24,9 +24,8 @@ final _tts = FlutterTts()
 String? _lastSpokenText;
 DateTime? _lastSpokenAt;
 
-/// TTS engines misread these brand names — swap in phonetic respellings for
-/// speech only (never shown to the reader): "Ratrix" comes out "ra-trix"
-/// instead of "ray-trix", and "Cerro" comes out wrong instead of "sero".
+/// TTS engines misread "Ratrix" as "ra-trix" instead of "ray-trix" — swap in
+/// a phonetic respelling for speech only (never shown to the reader).
 ///
 /// Also debounces: rapid rebuilds of the speaking widget can retrigger
 /// faster than the speech finishes, which sounded like the line looping.
@@ -36,7 +35,6 @@ Future<void> speakTourLine(String text) async {
     RegExp('Ratrix', caseSensitive: false),
     'Raytrix',
   );
-  spoken = spoken.replaceAll(RegExp('Cerro', caseSensitive: false), 'Sero');
 
   final now = DateTime.now();
   if (spoken == _lastSpokenText &&
@@ -58,7 +56,7 @@ void stopTourSpeech() {
 }
 
 /// White speech-bubble card: an optional [mascot] beside the title + tap-
-/// to-replay speaker icon, "Cerro: " narration body, and a Skip/primary
+/// to-replay speaker icon, "Ratrix: " narration body, and a Skip/primary
 /// button pair. Shared between every tour step's `Showcase.withWidget`
 /// container.
 class TourSpeechBubble extends StatelessWidget {
@@ -142,7 +140,7 @@ class TourSpeechBubble extends StatelessWidget {
             ),
             children: [
               const TextSpan(
-                text: 'Cerro: ',
+                text: 'Ratrix: ',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF17241F),

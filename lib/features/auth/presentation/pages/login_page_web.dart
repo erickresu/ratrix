@@ -73,7 +73,7 @@ class _BrandPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Cerro Ratrix',
+                        'Ratrix',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w700,

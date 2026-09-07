@@ -920,41 +920,13 @@ class _FreightModeCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: 160,
-                  height: 160,
-                  child: CustomPaint(
-                    painter: _DonutPainter(
-                      segments: [
-                        for (final m in _freightModeOrder)
-                          if ((counts[m] ?? 0) > 0)
-                            (counts[m]!, _freightModeColor(context, m)),
-                      ],
-                      total: total,
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '$total',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: context.colors.textBody,
-                            ),
-                          ),
-                          Text(
-                            'total rates',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: context.colors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                _DonutChart(
+                  segments: [
+                    for (final m in _freightModeOrder)
+                      if ((counts[m] ?? 0) > 0)
+                        (m, counts[m]!, _freightModeColor(context, m)),
+                  ],
+                  total: total,
                 ),
                 const SizedBox(width: 32),
                 Expanded(
@@ -989,25 +961,137 @@ class _FreightModeCard extends StatelessWidget {
   }
 }
 
-class _DonutPainter extends CustomPainter {
-  _DonutPainter({required this.segments, required this.total});
+/// Tappable donut: tapping a slice swaps the center label from the overall
+/// total to that slice's own count + share, tapping it again (or the empty
+/// center) reverts. No separate tooltip overlay — reusing the chart's own
+/// existing center label sidesteps the positioning/clipping issues that
+/// plagued every other overlay-based hint built this session.
+class _DonutChart extends StatefulWidget {
+  const _DonutChart({required this.segments, required this.total});
 
-  final List<(int, Color)> segments;
+  final List<(FreightMode, int, Color)> segments;
   final int total;
 
+  @override
+  State<_DonutChart> createState() => _DonutChartState();
+}
+
+class _DonutChartState extends State<_DonutChart> {
+  static const _size = 160.0;
+  static const _center = Offset(_size / 2, _size / 2);
+  static const _innerRadius = _size / 2 - _DonutPainter._strokeWidth;
+  static const _outerRadius = _size / 2;
+
+  int? _selected;
+
+  @override
+  void didUpdateWidget(covariant _DonutChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.segments != widget.segments) _selected = null;
+  }
+
+  void _handleTap(TapUpDetails details) {
+    final offset = details.localPosition - _center;
+    final distance = offset.distance;
+    if (distance < _innerRadius - 6 || distance > _outerRadius + 6) {
+      setState(() => _selected = null);
+      return;
+    }
+
+    // Canvas angles start at -pi/2 (12 o'clock) and increase clockwise,
+    // which is exactly what `atan2(dy, dx)` already gives in screen space
+    // (y grows downward) — just re-anchor it to that same start.
+    var theta = atan2(offset.dy, offset.dx) + pi / 2;
+    if (theta < 0) theta += 2 * pi;
+
+    var cumulative = 0.0;
+    for (var i = 0; i < widget.segments.length; i++) {
+      final sweep = 2 * pi * widget.segments[i].$2 / widget.total;
+      if (theta < cumulative + sweep) {
+        setState(() => _selected = _selected == i ? null : i);
+        return;
+      }
+      cumulative += sweep;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = _selected != null ? widget.segments[_selected!] : null;
+
+    return GestureDetector(
+      onTapUp: _handleTap,
+      child: SizedBox(
+        width: _size,
+        height: _size,
+        child: CustomPaint(
+          painter: _DonutPainter(segments: widget.segments, highlightIndex: _selected, total: widget.total),
+          child: Center(
+            child: selected == null
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${widget.total}',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: context.colors.textBody,
+                        ),
+                      ),
+                      Text(
+                        'total rates',
+                        style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${selected.$2}',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: selected.$3,
+                        ),
+                      ),
+                      Text(
+                        '${selected.$1.label} · ${(selected.$2 / widget.total * 100).round()}%',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 11, color: context.colors.textMuted),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DonutPainter extends CustomPainter {
+  _DonutPainter({required this.segments, required this.total, this.highlightIndex});
+
+  final List<(FreightMode, int, Color)> segments;
+  final int total;
+  final int? highlightIndex;
+
   static const _strokeWidth = 26.0;
+  static const _highlightStrokeWidth = 34.0;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (total == 0) return;
     final rect = (Offset.zero & size).deflate(_strokeWidth / 2);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _strokeWidth;
+    final paint = Paint()..style = PaintingStyle.stroke;
     var startAngle = -pi / 2;
-    for (final (count, color) in segments) {
+    for (var i = 0; i < segments.length; i++) {
+      final (_, count, color) = segments[i];
       final sweep = 2 * pi * count / total;
-      paint.color = color;
+      paint
+        ..color = color
+        ..strokeWidth = i == highlightIndex ? _highlightStrokeWidth : _strokeWidth;
       canvas.drawArc(rect, startAngle, sweep, false, paint);
       startAngle += sweep;
     }
@@ -1015,7 +1099,9 @@ class _DonutPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DonutPainter oldDelegate) =>
-      oldDelegate.segments != segments || oldDelegate.total != total;
+      oldDelegate.segments != segments ||
+      oldDelegate.total != total ||
+      oldDelegate.highlightIndex != highlightIndex;
 }
 
 /// Thin dashed rule separating each freight-mode legend row.
@@ -1102,18 +1188,42 @@ class _FreightModeLegendRow extends StatelessWidget {
   }
 }
 
-class _PublishedVsCustomBar extends StatelessWidget {
+class _PublishedVsCustomBar extends StatefulWidget {
   const _PublishedVsCustomBar({required this.state});
 
   final RatesShellState state;
 
   @override
+  State<_PublishedVsCustomBar> createState() => _PublishedVsCustomBarState();
+}
+
+class _PublishedVsCustomBarState extends State<_PublishedVsCustomBar> {
+  // null = nothing tapped (show the split %), true = Published segment
+  // tapped (show its raw count), false = Custom segment tapped.
+  bool? _selected;
+
+  @override
+  void didUpdateWidget(covariant _PublishedVsCustomBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.activePublishedCount != widget.state.activePublishedCount ||
+        oldWidget.state.activeCustomCount != widget.state.activeCustomCount) {
+      _selected = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final published = state.activePublishedCount;
-    final custom = state.activeCustomCount;
+    final published = widget.state.activePublishedCount;
+    final custom = widget.state.activeCustomCount;
     final total = published + custom;
     final publishedPct = total == 0 ? 0 : (published / total * 100).round();
     final customPct = total == 0 ? 0 : 100 - publishedPct;
+
+    final (headerText, headerColor) = switch (_selected) {
+      true => ('$published published', context.colors.primary),
+      false => ('$custom custom', context.colors.custom),
+      null => ('$publishedPct% / $customPct%', context.colors.textBody),
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1130,11 +1240,11 @@ class _PublishedVsCustomBar extends StatelessWidget {
               ),
             ),
             Text(
-              '$publishedPct% / $customPct%',
+              headerText,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: context.colors.textBody,
+                color: headerColor,
               ),
             ),
           ],
@@ -1150,11 +1260,25 @@ class _PublishedVsCustomBar extends StatelessWidget {
                     children: [
                       Expanded(
                         flex: published,
-                        child: Container(color: context.colors.primary),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selected = _selected == true ? null : true),
+                          child: Container(
+                            color: _selected == false
+                                ? context.colors.primary.withValues(alpha: 0.35)
+                                : context.colors.primary,
+                          ),
+                        ),
                       ),
                       Expanded(
                         flex: custom,
-                        child: Container(color: context.colors.custom),
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selected = _selected == false ? null : false),
+                          child: Container(
+                            color: _selected == true
+                                ? context.colors.custom.withValues(alpha: 0.35)
+                                : context.colors.custom,
+                          ),
+                        ),
                       ),
                     ],
                   ),

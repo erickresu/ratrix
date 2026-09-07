@@ -33,7 +33,7 @@ class LoginPageMobile extends StatelessWidget {
               const SizedBox(height: 4),
               const Center(
                 child: Text(
-                  'Cerro Ratrix',
+                  'Ratrix',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,

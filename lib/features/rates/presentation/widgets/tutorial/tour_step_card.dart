@@ -5,7 +5,7 @@ import '../../../../../core/widgets/mr_ratrix.dart';
 import 'app_tour.dart';
 import 'tour_speech.dart';
 
-/// Cerro (`MrRatrix`), inside the same [TourSpeechBubble] card rather than
+/// Ratrix (`MrRatrix`), inside the same [TourSpeechBubble] card rather than
 /// beside it — the custom `container` every tour step's
 /// `Showcase.withWidget` renders as its tooltip. Speaks its line via TTS
 /// once when it first mounts.
