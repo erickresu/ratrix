@@ -13,6 +13,7 @@ import '../rates_colors.dart';
 import 'delete_rate_dialog.dart';
 import 'published_rates_view_mobile.dart';
 import 'published_rates_view_web.dart';
+import 'rate_import_flow.dart';
 import 'rate_table.dart';
 import 'status_toast.dart';
 
@@ -61,12 +62,9 @@ class PublishedRatesView extends StatelessWidget {
       ],
     );
 
-    final createRateButton = ShadButton(
-      backgroundColor: context.colors.primary,
-      hoverBackgroundColor: context.colors.primaryHover,
-      leading: const Icon(CupertinoIcons.add, size: 17, color: Colors.white),
-      onPressed: () => bloc.add(const CreatePublishedRateRequested()),
-      child: const Text('Create New Rate'),
+    final createRateButton = CreateRateSplitButton(
+      label: 'Create New Rate',
+      onManual: () => bloc.add(const CreatePublishedRateRequested()),
     );
 
     final tabsRow = Row(

@@ -10,6 +10,7 @@ import '../../domain/entities/client.dart';
 import '../../domain/entities/client_rate.dart';
 import '../../domain/entities/expiring_soon_rate.dart';
 import '../../domain/entities/published_rate.dart';
+import '../../domain/entities/rate_import_data.dart';
 import '../../domain/entities/rate_stat.dart';
 import '../../domain/entities/rates_enums.dart';
 import '../../domain/entities/ratrix_rate.dart';
@@ -48,6 +49,18 @@ class RatesShellBloc extends Bloc<RatesShellEvent, RatesShellState> {
           view: RatesView.create,
           clearExistingRate: true,
           clearReturnView: true,
+        ),
+      ),
+    );
+    on<RateImportRequested>(
+      (event, emit) => emit(
+        state.copyWith(
+          modalOpen: false,
+          rateChoice: event.isCustom ? RateType.custom : RateType.published,
+          view: RatesView.create,
+          clearExistingRate: true,
+          clearReturnView: true,
+          importedRateData: event.data,
         ),
       ),
     );

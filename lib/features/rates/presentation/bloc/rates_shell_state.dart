@@ -75,6 +75,12 @@ class RatesShellState extends Equatable {
   final RatrixRate? existingRate;
   final bool editRateLoading;
 
+  /// Parsed result of an uploaded rate-import spreadsheet, set once
+  /// `RateImportRequested`'s parse resolves; `WizardPage` reads this the
+  /// same way it reads `existingRate` to pre-fill `RateWizardBloc`.
+  /// Cleared whenever a fresh (non-import) wizard is opened.
+  final RateImportData? importedRateData;
+
   /// The view to return to when the wizard exits (Back or a successful
   /// save), captured from whatever view was active when `EditRateRequested`
   /// fired. Null for a plain "create new rate" flow — those fall back to
@@ -165,6 +171,7 @@ class RatesShellState extends Equatable {
     this.clientRateSortByExpiry = false,
     this.existingRate,
     this.editRateLoading = false,
+    this.importedRateData,
     this.returnView,
     this.calcClientSearch = '',
     this.calcClientPage = 0,
@@ -338,6 +345,8 @@ class RatesShellState extends Equatable {
     RatrixRate? existingRate,
     bool clearExistingRate = false,
     bool? editRateLoading,
+    RateImportData? importedRateData,
+    bool clearImportedRateData = false,
     RatesView? returnView,
     bool clearReturnView = false,
     String? calcClientSearch,
@@ -408,6 +417,9 @@ class RatesShellState extends Equatable {
           ? null
           : (existingRate ?? this.existingRate),
       editRateLoading: editRateLoading ?? this.editRateLoading,
+      importedRateData: clearImportedRateData
+          ? null
+          : (importedRateData ?? this.importedRateData),
       returnView: clearReturnView ? null : (returnView ?? this.returnView),
       calcClientSearch: calcClientSearch ?? this.calcClientSearch,
       calcClientPage: calcClientPage ?? this.calcClientPage,
@@ -475,6 +487,7 @@ class RatesShellState extends Equatable {
     selectedClientRates,
     existingRate,
     editRateLoading,
+    importedRateData,
     returnView,
     clientRatesLoading,
     clientRateSearch,

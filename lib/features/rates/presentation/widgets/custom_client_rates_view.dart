@@ -14,6 +14,7 @@ import 'back_pill.dart';
 import 'custom_client_rates_view_mobile.dart';
 import 'custom_client_rates_view_web.dart';
 import 'delete_rate_dialog.dart';
+import 'rate_import_flow.dart';
 import 'rate_table.dart';
 import 'status_toast.dart';
 
@@ -90,13 +91,11 @@ class CustomClientRatesView extends StatelessWidget {
       ],
     );
 
-    final createRateButton = ShadButton(
-      backgroundColor: context.colors.primary,
-      hoverBackgroundColor: context.colors.primaryHover,
-      leading: const Icon(CupertinoIcons.add, size: 17, color: Colors.white),
-      onPressed: () =>
+    final createRateButton = CreateRateSplitButton(
+      label: 'Create New Rate',
+      isCustom: true,
+      onManual: () =>
           bloc.add(const CreateCustomRateForSelectedClientRequested()),
-      child: const Text('Create New Rate'),
     );
 
     final tabsRow = Row(

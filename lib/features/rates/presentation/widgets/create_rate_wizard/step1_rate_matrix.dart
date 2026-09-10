@@ -239,7 +239,6 @@ class Step1RateMatrix extends StatelessWidget {
           onRemoveRoute: (i) => bloc.add(RouteRemoveRequested(i)),
           isExcessPricing: state.isExcessPricing,
           useExpressRates: state.serviceLevel == ServiceLevel.express,
-          leftPaneWidthFraction: 0.4,
         ),
         const SizedBox(height: 20),
         Row(

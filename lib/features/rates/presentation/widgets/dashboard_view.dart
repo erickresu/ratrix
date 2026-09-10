@@ -156,7 +156,7 @@ class _DashboardBody extends StatelessWidget {
                         onPressed: () => context.read<RatesShellBloc>().add(
                           const NewRateModalOpened(),
                         ),
-                        child: const Text('Create new rate'),
+                        child: const Text('New rate'),
                       ),
                     ),
                   ),

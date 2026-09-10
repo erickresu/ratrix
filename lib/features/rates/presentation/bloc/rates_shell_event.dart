@@ -39,6 +39,28 @@ class CustomRateChosen extends RatesShellEvent {
   const CustomRateChosen();
 }
 
+/// Fired once a rate-import spreadsheet has been picked and parsed
+/// successfully (parsing itself happens outside the bloc, in the modal —
+/// it's a one-shot file read + Excel parse, not ongoing state this bloc
+/// needs to own). Lands the wizard pre-filled with [data], same as
+/// `EditRateRequested` does for editing an existing rate.
+///
+/// [isCustom] defaults to `false` (published) for the dashboard/sidebar
+/// entry points, which have no client context of their own to attach a
+/// custom rate to. The Custom Client Rates page's own "Import from Excel"
+/// menu item passes `true` instead, so an import kicked off from inside a
+/// specific client's page still creates a rate for that client rather than
+/// silently becoming a published one.
+class RateImportRequested extends RatesShellEvent {
+  const RateImportRequested(this.data, {this.isCustom = false});
+
+  final RateImportData data;
+  final bool isCustom;
+
+  @override
+  List<Object?> get props => [data, isCustom];
+}
+
 class CustomClientsRequested extends RatesShellEvent {
   const CustomClientsRequested();
 }

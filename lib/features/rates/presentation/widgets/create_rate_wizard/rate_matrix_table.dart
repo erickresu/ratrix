@@ -126,7 +126,10 @@ class RateMatrixTable extends StatelessWidget {
   static const _headerHeight = 104.0;
   static const _rowHeight = 64.0;
   static const _bwColWidth = 156.0;
-  static const _leftPaneWidth = 560.0;
+  // Sized to roughly 3 breakweight columns' worth of width, so
+  // Origin/Destination reads as proportionate to the rest of the table
+  // rather than cramped or oversized relative to it.
+  static const _leftPaneWidth = 3 * _bwColWidth;
   // Widened from 340 so each Origin/Destination field has enough room for
   // the inline leading "match by" label (30% of field width) plus a usable
   // text-entry area on mobile — the whole table already scrolls

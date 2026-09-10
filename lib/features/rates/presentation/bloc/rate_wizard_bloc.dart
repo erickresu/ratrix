@@ -7,6 +7,7 @@ import '../../data/repositories/rates_repository.dart';
 import '../../domain/entities/breakweight.dart';
 import '../../domain/entities/location_option.dart';
 import '../../domain/entities/matrix_row.dart';
+import '../../domain/entities/rate_import_data.dart';
 import '../../domain/entities/rate_wizard_payload_mapper.dart';
 import '../../domain/entities/ratrix_rate.dart';
 import '../../domain/entities/rates_enums.dart';
@@ -22,11 +23,19 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
     String? clientId,
     String? clientName,
     RatrixRate? existingRate,
+    RateImportData? importedRateData,
   }) : _ratesRepository = ratesRepository,
        super(
          existingRate != null
              ? _buildStateFromExistingRate(
                  existingRate,
+                 isCustom: isCustom,
+                 clientId: clientId,
+                 clientName: clientName,
+               )
+             : importedRateData != null
+             ? _buildStateFromImportedData(
+                 importedRateData,
                  isCustom: isCustom,
                  clientId: clientId,
                  clientName: clientName,
@@ -808,6 +817,36 @@ class RateWizardBloc extends Bloc<RateWizardEvent, RateWizardState> {
       addonModes: addonModes,
       originSearchType: originSearchType,
       destinationSearchType: destinationSearchType,
+    );
+  }
+
+  /// Builds initial wizard state from a parsed import spreadsheet
+  /// ([RateImportData]) — much more direct than
+  /// [_buildStateFromExistingRate] since the parser already resolved every
+  /// route's origin/destination to a real [LocationOption] and built the
+  /// shared breakweight columns + matrix rows in the exact shape the
+  /// wizard wants, rather than reconciling per-route independent data from
+  /// the API.
+  static RateWizardState _buildStateFromImportedData(
+    RateImportData data, {
+    required bool isCustom,
+    String? clientId,
+    String? clientName,
+  }) {
+    return RateWizardState(
+      isCustom: isCustom,
+      clientId: clientId,
+      clientName: clientName,
+      freightMode: data.freightMode,
+      serviceMode: data.serviceMode,
+      chargeBasis: data.chargeBasis,
+      pricingOption: data.pricingOption,
+      breakweights: data.breakweights,
+      matrixRows: data.matrixRows,
+      originSearchType: LocationSearchType.cityProvince,
+      destinationSearchType: LocationSearchType.cityProvince,
+      addonValues: const {'valuation': '1'},
+      addonModes: const {'valuation': AddonMode.percentage},
     );
   }
 

@@ -33,6 +33,7 @@ class WizardPage extends StatelessWidget {
     final shellState = context.read<RatesShellBloc>().state;
     final selectedClient = shellState.selectedClient;
     final existingRate = shellState.existingRate;
+    final importedRateData = shellState.importedRateData;
 
     return BlocProvider(
       create: (_) => RateWizardBloc(
@@ -41,6 +42,7 @@ class WizardPage extends StatelessWidget {
         clientId: selectedClient?.id,
         clientName: selectedClient?.name,
         existingRate: existingRate,
+        importedRateData: importedRateData,
       ),
       child: const _WizardView(),
     );
